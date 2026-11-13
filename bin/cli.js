@@ -44,7 +44,10 @@ function readDescription(frontmatter) {
   const start = lines.findIndex((line) => line.startsWith("description:"));
   if (start < 0) return "";
   const inline = lines[start].slice("description:".length).trim();
-  if (inline && !["|", "|-", ">", ">-"].includes(inline)) return inline;
+  if (inline && !["|", "|-", ">", ">-"].includes(inline)) {
+    const quoted = inline.match(/^(["'])([\s\S]*)\1$/);
+    return quoted ? quoted[2] : inline;
+  }
   const parts = [];
   for (let i = start + 1; i < lines.length; i++) {
     if (!/^\s+\S/.test(lines[i])) break;

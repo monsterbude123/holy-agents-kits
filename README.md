@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、选择性分支同步、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、选择性分支同步、规则层治理、文档内容管理、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -41,6 +41,16 @@ mindmap
       日志与服务器选项
       订阅套餐与 OAuth 应用
       无面板脚本化运维
+    rules-layer-governance
+      规则文件立法与出处制
+      预算瘦身与规则下沉
+      门禁脚本与死引用扫描
+      改动独立复核
+    human-docs
+      面向人的渐进披露
+      图形与伪代码表达
+      过程产物禁入
+      agent 手记与时效分层
     skill-creator-v2
       Skill 骨架生成
       正文拆分 references
@@ -56,10 +66,13 @@ mindmap
 | `jenkins-controller` | 控制器容器的部署、迁移、切流、口令轮换、体检 | 「Jenkins 容器起不来」「切回宿主机」 |
 | `fy-new-api-app-framework` | 用 new-api 做身份与 AI 网关，开发外部 Web 应用（含参考 demo） | 「用 new-api 做登录」「接 new-api 的计费和充值」 |
 | `fy-newapi-cli` | 在终端运维 new-api：用户、渠道、Token、日志、套餐 | 「登进 new-api 看下渠道」「给它建个 API key」 |
+| `rules-layer-governance` | 给 AGENTS.md / SKILL.md 这类规则文件做立法、瘦身、下沉门禁与独立复核 | 「AGENTS.md 太肥了」「把规则下沉成脚本门禁」 |
+| `human-docs` | 文档按读者分离：给人看的表达层 + 给 agent 的记忆层 | 「写份给人看的文档」「这笔记下个上下文就忘了」 |
 | `skill-creator-v2` | 开发、拆分、校验、评测 Skill 本身 | 「写一个 skill」「SKILL.md 太长」 |
 
 两个 Jenkins 技能互为边界：`jenkins-cli` 只管流水线，`jenkins-controller` 只管控制器本身，触发时不会互相抢。
 两个 new-api 技能同样分工：`fy-new-api-app-framework` 管「在 new-api 外面写应用」，`fy-newapi-cli` 管「运维已经在跑的 new-api」。
+两个文档治理技能也是一对：`rules-layer-governance` 只治规则文件（AGENTS.md / SKILL.md / 章程）的立法与下沉，`human-docs` 管普通文档怎么写、agent 手记怎么记。
 
 ## 安装
 
@@ -91,7 +104,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 **卸载**：删除 `~/.agents/skills/<skill-name>` 目录即可。安装器不会写注册表，不会留残留。
 
-## 七个技能分别做什么
+## 九个技能分别做什么
 
 ### analysis-codegraph —— 按符号查代码
 
@@ -141,6 +154,22 @@ npx holy-agents-kits install jenkins-cli --force
 
 **边界**：不改 new-api 源码，不直接碰数据库；这些问题交给应用开发技能或 new-api 本身的技能。
 
+### rules-layer-governance —— 规则文件本身的立法与瘦身
+
+**可观察行为**：产出有出处、有模板、有门禁的规则文件——存量的来源查不到就写「存量-未溯源」，不编造；能脚本验证的规则下沉成 `scripts/gates/<编号>.sh`，正文只留一行指针且编号不动；改动由独立复核的三向语义保真校验器背书，不采信执行方自检。
+
+**用法**：说「AGENTS.md 太长了」「把规则下沉成脚本门禁」，agent 走 6 步流程（盘点 → 立法 → 模板化 → 下沉 → 复核 → 记账），立法那步须人批准后才生效。
+
+**边界**：只治规则文件本身；代码规范怎么写归项目自己的技能，经验记账不归它。
+
+### human-docs —— 文档按读者分离
+
+**可观察行为**：文档分两层——面向人的表达层（渐进披露、图形与伪代码、过程产物禁入、单一事实来源）与面向 agent 的记忆层（DAG 任务表、分层索引地图、临时 todos、冻结/活跃/临时时效分层与「用完即焚」）。落地时附一份机器自检清单：禁词扫描靠脚本，不靠自觉。
+
+**用法**：说「写份给用户看的文档」「这些笔记留到下个上下文就忘了」，agent 先按读者选层，再检查正文里有没有混进只有开发过程的人才懂的记号。
+
+**边界**：不管文档内容的正确性，也不替项目决定文档放哪；它管的是表达方式与记忆结构。
+
 ### skill-creator-v2 —— 技能本身的开发与评测
 
 **可观察行为**：生成三段式技能骨架；把超长正文拆到 `references/` 并在原处留指针；跑规范校验（行数、frontmatter、引用完整性、代码外泄）；按反馈迭代 `description`。
@@ -160,6 +189,8 @@ holy-agents-kits/
 │   ├── jenkins-controller/         SKILL.md + references/ + scripts/
 │   ├── fy-new-api-app-framework/   SKILL.md + references/（含参考 demo）+ scripts/
 │   ├── fy-newapi-cli/              SKILL.md
+│   ├── rules-layer-governance/     SKILL.md + references/ + templates/
+│   ├── human-docs/                 SKILL.md + references/
 │   └── skill-creator-v2/           SKILL.md + references/ + scripts/
 ├── bin/cli.js                      安装器（零依赖）
 ├── FEEDBACK.md                     issue 上报入口与必填信息
@@ -195,6 +226,7 @@ npx holy-agents-kits feedback
 - `analysis-codegraph` 需要目标仓库已装 codegraph 并建好索引；没有索引时按技能内的降级路径处理。
 - `git-selective-branch-sync` 针对同一仓库内的两个分支，跨仓库搬运不适用。
 - `skill-creator-v2` 的触发率评测脚本依赖 `claude` CLI；本机没有时走人工跑用例的降级路径，技能里写明了。
+- `rules-layer-governance` 与 `human-docs` 是纯方法论技能，不需要外部服务、机器或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改。
 - 本仓库只放技能与方法，不含业务代码、部署包和任何真实凭据。
 
 ## 许可
