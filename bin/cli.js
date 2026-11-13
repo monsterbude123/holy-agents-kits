@@ -35,15 +35,28 @@ function skillNames() {
     .sort();
 }
 
+function readDescription(frontmatter) {
+  const lines = frontmatter.split(/\r?\n/);
+  const start = lines.findIndex((line) => line.startsWith("description:"));
+  if (start < 0) return "";
+  const inline = lines[start].slice("description:".length).trim();
+  if (inline && !["|", "|-", ">", ">-"].includes(inline)) return inline;
+  const parts = [];
+  for (let i = start + 1; i < lines.length; i++) {
+    if (!/^\s+\S/.test(lines[i])) break;
+    parts.push(lines[i].trim());
+  }
+  return parts.join(" ");
+}
+
 function summarize(name) {
   const text = fs.readFileSync(path.join(SKILLS_DIR, name, "SKILL.md"), "utf8");
   const frontmatter = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!frontmatter) return "";
-  const line = frontmatter[1].match(/^description:\s*(.+)$/m);
-  if (!line) return "";
-  const desc = line[1].trim();
+  const desc = readDescription(frontmatter[1]);
   const end = desc.indexOf("。");
-  return end > 0 ? desc.slice(0, end) : desc.slice(0, 100);
+  const summary = end > 0 ? desc.slice(0, end) : desc;
+  return summary.length > 100 ? summary.slice(0, 100) + "…" : summary;
 }
 
 function copyDir(src, dest) {
