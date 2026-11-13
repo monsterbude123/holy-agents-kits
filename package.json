@@ -1,0 +1,35 @@
+{
+  "name": "holy-agents-kits",
+  "version": "0.1.0",
+  "description": "Agent Skills 合集：Jenkins 流水线、Jenkins 控制器、Skill 开发与校验。一条命令装进你的 agent。",
+  "bin": {
+    "holy-agents-kits": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node bin/cli.js list"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [
+    "agent-skills",
+    "skill",
+    "jenkins",
+    "jenkinsfile",
+    "ci",
+    "claude",
+    "trae"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monsterbude123/holy-agents-kits.git"
+  },
+  "author": "monsterbude123",
+  "license": "MIT"
+}

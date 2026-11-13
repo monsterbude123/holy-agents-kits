@@ -1,0 +1,4 @@
+### 服务器 .agents/skills 现有内容
+find /opt/deploy-services/.agents -maxdepth 4 | sort
+### 服务器技能文件清单
+find /opt/deploy-services/.agents/skills -type f -printf '%M %8s %p\n' 2>/dev/null | sort

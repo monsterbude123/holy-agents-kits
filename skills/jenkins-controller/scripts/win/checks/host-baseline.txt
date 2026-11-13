@@ -1,0 +1,33 @@
+### 容器
+docker ps --filter name=jenkins-190 --format '{{.Names}} {{.Status}} {{.Ports}}'
+### 镜像
+docker images jenkins-190 --format '{{.Repository}}:{{.Tag}} {{.Size}} {{.CreatedSince}}'
+### 端口监听
+ss -lntp | grep -E ':(8080|28080|25000) ' || echo '没有 8080/28080/25000 监听'
+### 旧 systemd 服务
+systemctl is-active jenkins.service
+systemctl is-enabled jenkins.service
+### nginx 上游
+grep -n 'proxy_pass' /www/server/panel/vhost/nginx/jenkins.0xfiang.com.conf
+### nginx 语法
+/www/server/nginx/sbin/nginx -t
+### 对外三码
+curl -s -o /dev/null -w 'GET / -> %{http_code}\n' https://jenkins.0xfiang.com/
+curl -s -o /dev/null -w 'GET /login -> %{http_code}\n' https://jenkins.0xfiang.com/login
+curl -s -o /dev/null -w 'GET /api/json -> %{http_code}\n' https://jenkins.0xfiang.com/api/json
+### 容器内身份
+docker exec jenkins-190 id jenkins
+docker exec jenkins-190 id www
+### 容器内宿主 systemd
+docker exec jenkins-190 sudo -n /bin/systemctl status ai-short-studio-prod.service
+### 卷内数据
+docker exec jenkins-190 ls /var/jenkins_home/users
+docker exec jenkins-190 ls /var/jenkins_home/jobs
+### 初始化收敛痕迹
+docker logs jenkins-190 2>&1 | grep -E 'SUMMARY user=' | tail -2
+### 包内 .env 字段名（不打印值）
+grep -oE '^[A-Z_]+=' /opt/deploy-services/test-190/jenkins/.env
+### 磁盘
+df -h / /var/lib/docker | tail -3
+### 备份
+ls -lh /var/backups/jenkins-migration/ 2>/dev/null || echo '无备份目录'

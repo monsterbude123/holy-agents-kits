@@ -1,0 +1,10 @@
+### /opt/deploy-services 顶层
+ls -la /opt/deploy-services/
+### .agents 是否存在
+ls -la /opt/deploy-services/.agents 2>/dev/null || echo '没有 .agents 目录'
+### 旧包内 scripts
+ls -la /opt/deploy-services/test-190/jenkins/scripts/ 2>/dev/null || echo '没有包内 scripts 目录'
+### 包根文件
+ls -la /opt/deploy-services/test-190/jenkins/
+### 旧脚本 md5（迁移前留证）
+md5sum /opt/deploy-services/test-190/jenkins/scripts/*.sh 2>/dev/null || echo '无旧脚本'

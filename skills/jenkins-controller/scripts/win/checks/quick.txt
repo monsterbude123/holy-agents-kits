@@ -1,0 +1,8 @@
+### 容器是否活着
+docker ps --filter name=jenkins-190 --format '{{.Names}} {{.Status}}'
+### 对外三码（匿名 403 / 登录页 200）
+curl -s -o /dev/null -w '/ -> %{http_code}\n' https://jenkins.0xfiang.com/
+curl -s -o /dev/null -w '/login -> %{http_code}\n' https://jenkins.0xfiang.com/login
+curl -s -o /dev/null -w '/api/json -> %{http_code}\n' https://jenkins.0xfiang.com/api/json
+### 上游指向
+grep -n 'proxy_pass' /www/server/panel/vhost/nginx/jenkins.0xfiang.com.conf
