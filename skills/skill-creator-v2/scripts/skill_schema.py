@@ -388,7 +388,8 @@ def validate_skill(
         rel = info.relative(path)
         if path.name in EXEMPT_REFERENCE_NAMES:
             continue  # INDEX.md / README.md 是索引与说明，天然无需在正文点名
-        if rel.split("/")[-1] not in info.referenced_references:
+        ref_key = rel[len("references/"):] if rel.startswith("references/") else rel
+        if ref_key not in info.referenced_references and path.name not in info.referenced_references:
             add("warn", "reference.orphan", "%s 未被 SKILL.md 引用（孤立文档不会被读到）" % rel)
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > MAX_REFERENCE_LINES:
