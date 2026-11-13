@@ -22,8 +22,8 @@ function usage() {
   -h, --help     显示本帮助
 
 示例:
-  npx holy-agents-kits install jenkins-ci
-  npx holy-agents-kits install jenkins-ci jenkins-controller --dir .agents/skills`);
+  npx holy-agents-kits install jenkins-cli
+  npx holy-agents-kits install jenkins-cli jenkins-controller --dir .agents/skills`);
 }
 
 function skillNames() {

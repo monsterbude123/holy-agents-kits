@@ -1,12 +1,12 @@
 ---
 name: jenkins-controller
-description: 容器化 Jenkins 控制器的部署、迁移、切换与体检。Invoke when 用户要部署/重建 Jenkins 控制器容器、把宿主机 systemd Jenkins 迁到容器、切 nginx upstream、轮换管理员口令、跑控制器全量体检，或排查控制器容器起不来、匿名可读、sudo/systemd 不可达、init.groovy.d 没生效、nginx 502。日常写流水线/改 Jenkinsfile 用 jenkins-ci 技能。触发词：Jenkins 容器、cutover、迁移 JENKINS_HOME、nginx upstream、匿名可读、sudo 免密、systemd、init.groovy.d。
+description: 容器化 Jenkins 控制器的部署、迁移、切换与体检。Invoke when 用户要部署/重建 Jenkins 控制器容器、把宿主机 systemd Jenkins 迁到容器、切 nginx upstream、轮换管理员口令、跑控制器全量体检，或排查控制器容器起不来、匿名可读、sudo/systemd 不可达、init.groovy.d 没生效、nginx 502。日常写流水线/改 Jenkinsfile 用 jenkins-cli 技能。触发词：Jenkins 容器、cutover、迁移 JENKINS_HOME、nginx upstream、匿名可读、sudo 免密、systemd、init.groovy.d。
 ---
 
 # jenkins-controller：控制器容器的生命周期
 
 只管**控制器本身**（跑 Jenkins 的容器/进程）：部署、迁移、切上游、安全收敛、体检。
-写流水线、改 Jenkinsfile、配凭据 → `jenkins-ci` 技能，不要在这里找。
+写流水线、改 Jenkinsfile、配凭据 → `jenkins-cli` 技能，不要在这里找。
 
 部署包在 `<repo>/test-190/jenkins/`（compose、Dockerfile、init.groovy.d、sudoers drop-in）；
 服务器上脚本与包同根：`/opt/deploy-services/{.agents/skills/jenkins-controller,test-190/jenkins}`。

@@ -1,9 +1,9 @@
 ---
-name: jenkins-ci
+name: jenkins-cli
 description: Jenkins 流水线编写与日常运维：写/生成/校验 Jenkinsfile、选型（Declarative / Scripted / Shared Library）、DooD 挂 docker.sock 构建部署、GitLab 凭据与 webhook、lint 规则分级、pipeline 报错排障。Invoke when 用户要写或改 Jenkinsfile、生成 CI 流水线、scaffold shared library、让 Jenkins 拉代码构建镜像部署容器、配 GitLab webhook/凭据，或排查 pipeline 报错。部署/迁移/切换控制器容器本身用 jenkins-controller 技能。触发词：Jenkinsfile、CI 流水线、DooD、docker.sock、GitLab webhook、shared library、Jenkinsfile lint。
 ---
 
-# jenkins-ci：流水线怎么写
+# jenkins-cli：流水线怎么写
 
 本仓库 Jenkins 跑在 Docker 容器里，经宿主 `docker.sock` 操作宿主 daemon（DooD）；代码源 GitLab，
 产物是应用镜像与应用容器。

@@ -1,7 +1,7 @@
 # 控制器排障速查
 
 > 什么时候读这份：控制器容器起不来、鉴权不对、sudo/systemd 不通、nginx 502、收敛脚本没生效。
-> 流水线侧的报错 → `jenkins-ci` 技能的 `references/troubleshooting.md`。
+> 流水线侧的报错 → `jenkins-cli` 技能的 `references/troubleshooting.md`。
 
 先跑体检定位到具体分区：`bash scripts/verify-controller.sh`（10 项，输出 PASS/FAIL/WARN + 退出码）。
 

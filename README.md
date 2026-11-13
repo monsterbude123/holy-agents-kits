@@ -5,7 +5,7 @@
 
 ```bash
 npx holy-agents-kits list
-npx holy-agents-kits install jenkins-ci
+npx holy-agents-kits install jenkins-cli
 ```
 
 ## 技能一览
@@ -13,7 +13,7 @@ npx holy-agents-kits install jenkins-ci
 ```mermaid
 mindmap
   root((holy-agents-kits))
-    jenkins-ci
+    jenkins-cli
       写 / 改 Jenkinsfile
       DooD 构建与部署
       GitLab 凭据与 webhook
@@ -32,11 +32,11 @@ mindmap
 
 | Skill | 解决什么 | 你会怎么说 |
 |---|---|---|
-| `jenkins-ci` | 写/改/校验 Jenkinsfile，DooD 构建部署，接 GitLab | 「帮我写条流水线」「这个 Jenkinsfile 报错」 |
+| `jenkins-cli` | 写/改/校验 Jenkinsfile，DooD 构建部署，接 GitLab | 「帮我写条流水线」「这个 Jenkinsfile 报错」 |
 | `jenkins-controller` | 控制器容器的部署、迁移、切流、口令轮换、体检 | 「Jenkins 容器起不来」「切回宿主机」 |
 | `skill-creator-v2` | 开发、拆分、校验、评测 Skill 本身 | 「写一个 skill」「SKILL.md 太长」 |
 
-两个 Jenkins 技能互为边界：`jenkins-ci` 只管流水线，`jenkins-controller` 只管控制器本身，触发时不会互相抢。
+两个 Jenkins 技能互为边界：`jenkins-cli` 只管流水线，`jenkins-controller` 只管控制器本身，触发时不会互相抢。
 
 ## 安装
 
@@ -45,16 +45,16 @@ mindmap
 npx holy-agents-kits list
 
 # 安装指定 skill（默认装到 ~/.agents/skills）
-npx holy-agents-kits install jenkins-ci
+npx holy-agents-kits install jenkins-cli
 
 # 一次装多个
-npx holy-agents-kits install jenkins-ci jenkins-controller
+npx holy-agents-kits install jenkins-cli jenkins-controller
 
 # 装到当前项目，而不是用户目录
-npx holy-agents-kits install jenkins-ci --dir .agents/skills
+npx holy-agents-kits install jenkins-cli --dir .agents/skills
 
 # 已存在时覆盖
-npx holy-agents-kits install jenkins-ci --force
+npx holy-agents-kits install jenkins-cli --force
 ```
 
 | 参数 | 作用 |
@@ -69,7 +69,7 @@ npx holy-agents-kits install jenkins-ci --force
 
 ## 三个技能分别做什么
 
-### jenkins-ci —— 流水线怎么写
+### jenkins-cli —— 流水线怎么写
 
 **可观察行为**：让 agent 产出结构完整、能过 lint 的 Jenkinsfile；判断 lint 告警该不该修；按症状定位流水线故障。
 
@@ -83,7 +83,7 @@ npx holy-agents-kits install jenkins-ci --force
 
 **用法**：说「部署一套带账密的 Jenkins」「把宿主 Jenkins 迁到容器」「切回宿主」，agent 调对应脚本；先 `--dry-run` 看计划。
 
-**边界**：写流水线、改 Jenkinsfile 用 `jenkins-ci`。
+**边界**：写流水线、改 Jenkinsfile 用 `jenkins-cli`。
 
 ### skill-creator-v2 —— 技能本身的开发与评测
 
@@ -98,7 +98,7 @@ npx holy-agents-kits install jenkins-ci --force
 ```
 holy-agents-kits/
 ├── skills/
-│   ├── jenkins-ci/           SKILL.md + references/ + scripts/
+│   ├── jenkins-cli/           SKILL.md + references/ + scripts/
 │   ├── jenkins-controller/   SKILL.md + references/ + scripts/
 │   └── skill-creator-v2/     SKILL.md + references/ + scripts/
 ├── bin/cli.js                安装器（零依赖）
