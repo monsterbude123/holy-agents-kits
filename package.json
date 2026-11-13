@@ -1,7 +1,7 @@
 {
   "name": "holy-agents-kits",
-  "version": "0.2.1",
-  "description": "Agent Skills 合集：Jenkins 流水线、Jenkins 控制器、Skill 开发与校验。一条命令装进你的 agent。",
+  "version": "0.3.3",
+  "description": "Agent Skills 合集：Jenkins 流水线、Jenkins 控制器、new-api 应用与 CLI、代码图谱分析、选择性分支同步、Skill 开发与校验。一条命令装进你的 agent。",
   "bin": {
     "holy-agents-kits": "bin/cli.js"
   },
@@ -9,10 +9,13 @@
     "bin/",
     "skills/",
     "README.md",
+    "FEEDBACK.md",
     "LICENSE"
   ],
   "scripts": {
-    "test": "node bin/cli.js list"
+    "check": "python skills/skill-creator-v2/scripts/validate_skill.py --all --root .",
+    "test": "npm run check && node bin/cli.js list",
+    "prepublishOnly": "npm run check"
   },
   "engines": {
     "node": ">=16"
@@ -23,6 +26,9 @@
     "jenkins",
     "jenkinsfile",
     "new-api",
+    "codegraph",
+    "code-analysis",
+    "git",
     "ci",
     "claude",
     "trae"

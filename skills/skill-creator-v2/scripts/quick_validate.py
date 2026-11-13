@@ -22,7 +22,7 @@ def main(argv=None) -> int:
         return 2
 
     try:
-        info = validate_skill(Path(argv[0]))
+        info = validate_skill(Path(argv[0]), require_feedback=True)
     except FileNotFoundError as exc:
         print(str(exc))
         return 1

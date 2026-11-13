@@ -6,6 +6,8 @@ const os = require("os");
 const path = require("path");
 
 const SKILLS_DIR = path.join(__dirname, "..", "skills");
+const FEEDBACK_FILE = path.join(__dirname, "..", "FEEDBACK.md");
+const FEEDBACK_URL = "https://github.com/monsterbude123/holy-agents-kits/issues/new";
 const DEFAULT_TARGET = path.join(os.homedir(), ".agents", "skills");
 const SKIP_NAMES = new Set(["node_modules", "__pycache__", ".git"]);
 
@@ -15,6 +17,7 @@ function usage() {
 用法:
   holy-agents-kits list
   holy-agents-kits install <skill...> [--dir <path>] [--force]
+  holy-agents-kits feedback
 
 参数:
   --dir <path>   安装目录，默认 ~/.agents/skills
@@ -23,7 +26,8 @@ function usage() {
 
 示例:
   npx holy-agents-kits install jenkins-cli
-  npx holy-agents-kits install jenkins-cli jenkins-controller --dir .agents/skills`);
+  npx holy-agents-kits install jenkins-cli jenkins-controller --dir .agents/skills
+  npx holy-agents-kits feedback`);
 }
 
 function skillNames() {
@@ -105,6 +109,17 @@ function cmdList() {
   for (const name of names) {
     console.log(name.padEnd(width) + summarize(name));
   }
+  console.log("\n反馈：" + FEEDBACK_URL + "（技能写错、缺步骤、命令跑不通，直接开 issue）");
+  return 0;
+}
+
+function cmdFeedback() {
+  console.log(`反馈入口：
+  ${FEEDBACK_URL}
+
+技能写错、缺步骤、命令跑不通，直接开 issue。标题前缀写技能名（如 [git-selective-branch-sync]），
+跨技能问题写 [kit]。正文写清：哪份文件、任务原话、实际报错原文、期望结果、环境。
+不要贴凭据、token、内网地址或私有代码。完整说明见 FEEDBACK.md。`);
   return 0;
 }
 
@@ -135,6 +150,13 @@ function cmdInstall(opts) {
     copyDir(path.join(SKILLS_DIR, name), dest);
     console.log("已安装 " + name + " → " + dest);
   }
+
+  // 反馈入口放在安装目录根下，与具体 skill 无关，agent 扫目录时能看到。
+  if (fs.existsSync(FEEDBACK_FILE)) {
+    const dest = path.join(target, "FEEDBACK.md");
+    if (!fs.existsSync(dest) || opts.force) fs.copyFileSync(FEEDBACK_FILE, dest);
+    console.log("反馈入口 → " + dest + "（" + FEEDBACK_URL + "）");
+  }
   return failed;
 }
 
@@ -154,6 +176,7 @@ function main() {
   }
   if (opts.command === "list") return cmdList();
   if (opts.command === "install") return cmdInstall(opts);
+  if (opts.command === "feedback") return cmdFeedback();
   console.error("未知命令：" + opts.command);
   usage();
   return 2;

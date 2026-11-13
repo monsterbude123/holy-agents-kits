@@ -27,12 +27,15 @@ from skill_schema import (  # noqa: E402
 LEVEL_MARK = {"error": "[ERROR]", "warn": "[WARN] "}
 
 
-def format_report(info) -> str:
+def format_report(info, require_feedback: bool = False) -> str:
     lines = ["技能：%s" % info.path.name]
     lines.append("  name: %s" % (info.name or "<缺失>"))
     lines.append("  正文行数: %d（上限 %d）" % (info.body_line_count, DEFAULT_SKILL_MD_MAX_LINES))
     lines.append("  引用: %d 个 references/，%d 个 scripts/" % (
         len(info.referenced_references), len(info.referenced_scripts)))
+    if require_feedback:
+        has_footer = any(i.code == "feedback.footer" for i in info.issues)
+        lines.append("  反馈入口: %s" % ("缺失" if has_footer else "有"))
     if not info.issues:
         lines.append("  ✓ 通过")
         return "\n".join(lines)
@@ -51,6 +54,10 @@ def main(argv=None) -> int:
     parser.add_argument("--max-lines", type=int, default=DEFAULT_SKILL_MD_MAX_LINES,
                         help="SKILL.md 正文行数上限（默认 %d）" % DEFAULT_SKILL_MD_MAX_LINES)
     parser.add_argument("--json", action="store_true", help="以 JSON 输出")
+    parser.add_argument("--require-feedback", action="store_true",
+                        help="检查 SKILL.md 末尾的仓库级反馈入口（--all 时默认开启）")
+    parser.add_argument("--no-feedback-check", action="store_true",
+                        help="跳过仓库级反馈入口检查（默认 --all 时开启）")
     args = parser.parse_args(argv)
 
     targets = [Path(t) for t in args.targets]
@@ -61,11 +68,14 @@ def main(argv=None) -> int:
         print("错误：需要指定技能目录，或使用 --all", file=sys.stderr)
         return 2
 
+    require_feedback = (args.all or args.require_feedback) and not args.no_feedback_check
+
     reports = []
     failed = False
     for target in targets:
         try:
-            info = validate_skill(target, max_lines=args.max_lines)
+            info = validate_skill(target, max_lines=args.max_lines,
+                                  require_feedback=require_feedback)
         except FileNotFoundError as exc:
             reports.append({"skill": str(target), "error": str(exc)})
             failed = True
@@ -79,7 +89,7 @@ def main(argv=None) -> int:
         if any(i.level == "error" for i in info.issues):
             failed = True
         if not args.json:
-            print(format_report(info))
+            print(format_report(info, require_feedback))
             print("")
 
     if args.json:

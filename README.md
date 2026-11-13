@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、选择性分支同步、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -13,6 +13,14 @@ npx holy-agents-kits install jenkins-cli
 ```mermaid
 mindmap
   root((holy-agents-kits))
+    analysis-codegraph
+      符号定位与调用链
+      改名 / 废弃的影响面
+      陌生子系统摸底
+    git-selective-branch-sync
+      三方合并保两侧改动
+      不同步台账
+      逐路径完整性核对
     jenkins-cli
       写 / 改 Jenkinsfile
       DooD 构建与部署
@@ -42,6 +50,8 @@ mindmap
 
 | Skill | 解决什么 | 你会怎么说 |
 |---|---|---|
+| `analysis-codegraph` | 按符号与调用链查代码，一次调用拿到源码与影响面 | 「这个函数谁在调」「改这个字段会影响哪」 |
+| `git-selective-branch-sync` | 两个分支差距大时只搬指定部分，保住目标分支已有改动 | 「把这个分支的功能并过来，文档不要」 |
 | `jenkins-cli` | 写/改/校验 Jenkinsfile，DooD 构建部署，接 GitLab | 「帮我写条流水线」「这个 Jenkinsfile 报错」 |
 | `jenkins-controller` | 控制器容器的部署、迁移、切流、口令轮换、体检 | 「Jenkins 容器起不来」「切回宿主机」 |
 | `fy-new-api-app-framework` | 用 new-api 做身份与 AI 网关，开发外部 Web 应用（含参考 demo） | 「用 new-api 做登录」「接 new-api 的计费和充值」 |
@@ -75,12 +85,29 @@ npx holy-agents-kits install jenkins-cli --force
 | `--dir <path>` | 安装目录，默认 `~/.agents/skills` |
 | `--force` | 目标已存在时覆盖 |
 | `list` | 列出全部 skill 与一句话说明 |
+| `feedback` | 打印 issue 上报入口与必填信息 |
 
-安装完即生效：agent 读取 `SKILL.md` 的 `description` 判断是否加载，不需要额外注册。
+安装完即生效：agent 读取 `SKILL.md` 的 `description` 判断是否加载，不需要额外注册。安装时会在目标目录根下写入一份 `FEEDBACK.md`，让 agent 知道反馈该提到哪。
 
 **卸载**：删除 `~/.agents/skills/<skill-name>` 目录即可。安装器不会写注册表，不会留残留。
 
-## 五个技能分别做什么
+## 七个技能分别做什么
+
+### analysis-codegraph —— 按符号查代码
+
+**可观察行为**：一次查询返回按文件分组的源码、调用关系与影响面；能定位符号、追调用链、评估改名或删除的波及范围。
+
+**用法**：说「这个函数谁在调」「改这个接口会影响哪些地方」，agent 调 codegraph 查询，而不是反复 Grep + Read。
+
+**边界**：要求仓库已装 codegraph 并建好索引（`.codegraph/`）；git 历史、文档、配置文件和字面量搜索不走它。
+
+### git-selective-branch-sync —— 只搬该搬的那部分
+
+**可观察行为**：三方合并保住目标分支的既有改动；不迁的部分进入台账可核对；迁移后用逐路径比对证明「该迁的都迁了、不该迁的没动」。
+
+**用法**：说「把 A 分支的功能并到 B，那些文档不要」，agent 列清单、跑三方合并、核对完整性。
+
+**边界**：两个分支必须在同一个 git 仓库里；跨仓库搬运不适用。
 
 ### jenkins-cli —— 流水线怎么写
 
@@ -127,19 +154,46 @@ npx holy-agents-kits install jenkins-cli --force
 ```
 holy-agents-kits/
 ├── skills/
+│   ├── analysis-codegraph/         SKILL.md + references/
+│   ├── git-selective-branch-sync/  SKILL.md + references/ + scripts/
 │   ├── jenkins-cli/                SKILL.md + references/ + scripts/
 │   ├── jenkins-controller/         SKILL.md + references/ + scripts/
 │   ├── fy-new-api-app-framework/   SKILL.md + references/（含参考 demo）+ scripts/
 │   ├── fy-newapi-cli/              SKILL.md
 │   └── skill-creator-v2/           SKILL.md + references/ + scripts/
 ├── bin/cli.js                      安装器（零依赖）
+├── FEEDBACK.md                     issue 上报入口与必填信息
 └── package.json
 ```
+
+## 反馈
+
+技能由 agent 直接执行，写错、缺步骤、命令跑不通，直接开 issue，不用先问维护者：
+
+```bash
+# 打开 issue 页
+https://github.com/monsterbude123/holy-agents-kits/issues/new
+
+# 或者让安装器把入口和必填项打出来
+npx holy-agents-kits feedback
+```
+
+这个入口跟着技能走，其他机器上的 agent 也能看到：
+
+- 每个 `SKILL.md` 末尾有一行仓库级反馈入口，技能被复制到哪都带着它
+- 安装器每次安装都会打印入口，并在安装目录根下写一份 `FEEDBACK.md`
+- `list` 与 `feedback` 命令都会打印入口
+
+标题前缀写技能名（如 `[git-selective-branch-sync]`），跨技能问题写 `[kit]`。正文写清：哪份文件、任务原话、实际报错原文、期望结果、环境。不要贴凭据、token、内网地址或私有代码。
+
+完整说明见 [FEEDBACK.md](FEEDBACK.md)。
 
 ## 前提与边界
 
 - 两个 Jenkins 技能里的脚本面向真实环境：需要 Docker、SSH 可达的服务器、`test-190/jenkins` 部署包。没有环境时可以先读 `references/` 里的做法与排障表。
 - 两个 new-api 技能需要一个已经部署好的 new-api 实例；`fy-newapi-cli` 还要一条 `nap_` 开头的个人访问令牌。参考 demo 需要 Node.js、Supabase 与 Vercel 账号。
+- `analysis-codegraph` 需要目标仓库已装 codegraph 并建好索引；没有索引时按技能内的降级路径处理。
+- `git-selective-branch-sync` 针对同一仓库内的两个分支，跨仓库搬运不适用。
 - `skill-creator-v2` 的触发率评测脚本依赖 `claude` CLI；本机没有时走人工跑用例的降级路径，技能里写明了。
 - 本仓库只放技能与方法，不含业务代码、部署包和任何真实凭据。
 

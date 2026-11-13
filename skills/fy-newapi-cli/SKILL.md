@@ -137,3 +137,5 @@ If `auth status` reports `not_logged_in`, run `auth login`. If a call returns
 | `references/commands.md` | need an exact flag, a plan/product/oauth-app example, or update semantics |
 | `references/scopes.md` | a call returns 403, or you need to know which scope a command needs |
 | `references/api.md` | the endpoint has no subcommand; OAuth-app raw calls; `self.id` vs `auth.users.id` |
+
+> 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new

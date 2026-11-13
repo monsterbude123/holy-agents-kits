@@ -16,6 +16,10 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from skill_schema import FEEDBACK_URL  # noqa: E402
+
 SKILL_MD_TEMPLATE = """---
 name: {name}
 description: {description}
@@ -66,6 +70,8 @@ python scripts/<name>.py --help
 <!-- 详细协议、错误码、参数表等按需读取；每条都要写清「什么时候读」。 -->
 
 - `references/<topic>.md` —— <何时读它>
+
+> 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：{feedback_url}
 """
 
 REFERENCES_INDEX_TEMPLATE = """# references 索引
@@ -119,7 +125,8 @@ def main(argv=None) -> int:
     (skill_dir / "scripts").mkdir(exist_ok=True)
 
     skill_md.write_text(
-        SKILL_MD_TEMPLATE.format(name=name, description=description, title=title),
+        SKILL_MD_TEMPLATE.format(name=name, description=description, title=title,
+                                 feedback_url=FEEDBACK_URL),
         encoding="utf-8",
     )
     (skill_dir / "references" / "INDEX.md").write_text(REFERENCES_INDEX_TEMPLATE, encoding="utf-8")

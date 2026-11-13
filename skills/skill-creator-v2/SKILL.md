@@ -110,7 +110,7 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 | 脚本 | 用途 |
 |---|---|
 | `scripts/skill_schema.py` | skill 定义的固有 schema：frontmatter 解析、章节切分、引用扫描、校验规则 |
-| `scripts/validate_skill.py` | 全量校验（行数、frontmatter、引用完整性、代码外泄） |
+| `scripts/validate_skill.py` | 全量校验（行数、frontmatter、引用完整性、代码外泄、末尾反馈入口） |
 | `scripts/scaffold_skill.py` | 生成三段式技能骨架 |
 | `scripts/split_skill.py` | SKILL.md 超长时自动抽到 `references/`，原处留引用 |
 | `scripts/quick_validate.py` | 单技能快速校验（薄封装） |
@@ -123,8 +123,8 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 | `scripts/utils.py` | 公共解析工具（内部模块） |
 
 ```bash
-# 校验仓库内全部技能
-python .agents/skills/skill-creator/scripts/validate_skill.py --all --root .
+# 仓库门禁：校验全部技能，并检查每个 SKILL.md 末尾的反馈入口
+python .agents/skills/skill-creator-v2/scripts/validate_skill.py --all --root .
 
 # 生成骨架
 python .agents/skills/skill-creator/scripts/scaffold_skill.py skills new-skill --description "一句话说明"
@@ -149,3 +149,5 @@ python .agents/skills/skill-creator/scripts/split_skill.py skills/new-skill --ma
 - `references/environments.md` —— Claude.ai / Cowork / 本仓的环境差异与降级路径。
 - `references/schemas.md` —— evals.json / grading.json / timing.json 的 JSON 结构。
 - `references/benchmark-schemas.md` —— benchmark.json / comparison.json / analysis.json 的 JSON 结构。
+
+> 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new

@@ -64,3 +64,5 @@ python scripts/generate_shared_library.py --name <lib> --package <pkg>
 | `references/dood-and-gitlab.md` | 流水线要操作宿主 docker、接 GitLab 私有仓库或 webhook |
 | `references/lint-rules.md` | 判断一条 lint 规则该不该修、判级边界 |
 | `references/troubleshooting.md` | 流水线按症状排障；控制器问题转 `jenkins-controller` |
+
+> 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new

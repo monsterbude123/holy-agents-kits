@@ -146,3 +146,5 @@ Non-negotiables: secrets stay server-side, `state` / PKCE are validated on callb
 | `api:write` | Non-read AI endpoints (chat, images, embeddings, ...) and plan/product/top-up checkout |
 
 These scopes belong to OAuth access tokens only. Dashboard PATs use a separate catalog (`profile:*`, `wallet:*`, `billing:*`, ...); list it with `GET /api/user/access_tokens/scopes`. Per-App model restriction (`ai_model_whitelist`) and scope details: `references/playbook.md` § Scopes Reference.
+
+> 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new

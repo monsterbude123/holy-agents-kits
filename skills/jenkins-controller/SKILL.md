@@ -83,3 +83,5 @@ verify-controller.sh → 失败项落到具体分区 → 按 troubleshooting 修
 |---|---|
 | `references/controller-container.md` | 部署/迁移的完整做法：uid/gid 对齐、sudoers、systemd 与 pid:host、init.groovy.d 收敛、迁卷、切上游 |
 | `references/troubleshooting.md` | 按症状查控制器故障（sudo/systemd/匿名可读/nginx 502/脚本没生效） |
+
+> 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new

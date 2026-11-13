@@ -48,6 +48,10 @@ EXEMPT_REFERENCE_NAMES = frozenset({"INDEX.md", "README.md"})
 # scripts/ 下免于「必须被正文引用」检查的文件（包标记）
 EXEMPT_SCRIPT_NAMES = frozenset({"__init__.py"})
 
+# 本仓约定：每个 SKILL.md 末尾必须带仓库级反馈入口，随技能分发到任何机器
+FEEDBACK_URL = "https://github.com/monsterbude123/holy-agents-kits/issues/new"
+FEEDBACK_FOOTER_PREFIX = "> 反馈："
+
 # SKILL.md 正文里不允许内嵌可执行代码块——代码必须落在 scripts/
 CODE_FENCE_LANGUAGES = ("python", "py", "bash", "sh", "shell", "javascript", "ts", "typescript")
 
@@ -306,9 +310,14 @@ def load_skill(skill_dir: Path) -> SkillInfo:
 
 
 def validate_skill(
-    skill_dir: Path, max_lines: int = DEFAULT_SKILL_MD_MAX_LINES
+    skill_dir: Path,
+    max_lines: int = DEFAULT_SKILL_MD_MAX_LINES,
+    require_feedback: bool = False,
 ) -> SkillInfo:
-    """执行全部校验，返回带 issues 的 SkillInfo。"""
+    """执行全部校验，返回带 issues 的 SkillInfo。
+
+    require_feedback=True 时额外检查 SKILL.md 末尾的仓库级反馈入口（本仓门禁）。
+    """
     skill_dir = Path(skill_dir)
     info = load_skill(skill_dir)
 
@@ -416,6 +425,18 @@ def validate_skill(
             "SKILL.md 正文内嵌了 %d 段实现型代码（%s）；实现必须固化到 scripts/，正文只留调用方式"
             % (len(blocks), langs),
         )
+
+    # ---- 反馈入口（本仓门禁） ------------------------------------------
+    # 放在正文最后一行，技能被复制到任何机器的技能目录时都带着它。
+    if require_feedback:
+        tail = next((line for line in reversed(info.body_lines) if line.strip()), "")
+        if not tail.lstrip().startswith(FEEDBACK_FOOTER_PREFIX) or FEEDBACK_URL not in tail:
+            add(
+                "error",
+                "feedback.footer",
+                "SKILL.md 末尾缺少仓库级反馈入口：最后一行应为「%s本技能来自 ...，发现错误、缺步骤或命令跑不通，"
+                "直接开 issue：%s」" % (FEEDBACK_FOOTER_PREFIX, FEEDBACK_URL),
+            )
 
     return info
 
