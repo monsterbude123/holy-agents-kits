@@ -1,6 +1,6 @@
 {
   "name": "holy-agents-kits",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Agent Skills 合集：Jenkins 流水线、Jenkins 控制器、Skill 开发与校验。一条命令装进你的 agent。",
   "bin": {
     "holy-agents-kits": "bin/cli.js"
