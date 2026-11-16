@@ -27,12 +27,14 @@ description: "holy-agents-kits 仓库的发版与发布流程。核心语义：n
 | 6 | `git push` 后 `git log origin/main..HEAD` | **必须为空**（不为空 = 还有 commit 没上去） |
 | 7 | 全局覆盖：`node bin/cli.js install <skills> --force`，再 `diff -r skills/<s> ~/.agents/skills/<s>` | diff 无输出 = 逐字节一致 |
 
-## npx / 缓存语义（「装了没生效」的头号根因）
+## npx / 旧副本语义（「装了没生效」的头号根因）
 
-- **npx 裸包名吃旧缓存**：`npx holy-agents-kits list` 复用 `_npx` 缓存里满足 spec 的旧版本，**永远不会主动追 latest**。实测：registry 已是 0.5.0 时，裸名 npx 仍跑 0.3.3（只列 7 个技能）。
-  - 强制新版：`npx holy-agents-kits@latest …`（实测立即生效）
-  - 清缓存：删 `%LOCALAPPDATA%\npm-cache\_npx\`（Windows）或 `~/.npm/_npx/`（mac/linux）
-  - 判别方法：`npm view <pkg> version`（registry 真值）vs npx 实际行为，两者不一致 = 缓存问题
+- **npx 裸包名不追 latest**：`npx <pkg>` 解析时优先命中**已存在的同名旧副本**——两类藏身处：
+  1. **全局 npm 包**（本机实测真因）：很久前 `npm i -g` 装过 0.3.3，registry 已是 0.5.0 时裸名 npx 仍跑 0.3.3（只列 7 个技能）。查：`npm ls -g <pkg>`。
+  2. **npx 缓存**：`%LOCALAPPDATA%\npm-cache\_npx\`（Windows）/ `~/.npm/_npx/`（mac/linux）里满足 spec 的旧树会被复用。
+  - 强制新版：`npx <pkg>@latest …`（带版本 spec 才强制重新解析，实测立即生效）
+  - 治本：`npm i -g <pkg>@latest` 更新全局旧包，或卸掉它让 npx 走 registry
+  - 判别方法：`npm view <pkg> version`（registry 真值）vs npx 实际行为，两者不一致 = 有旧副本
 - **registry CDN 传播延迟**：`npm publish` 成功后几十秒到几分钟内，`npm view` / npx 可能仍解析到旧版。这是传播，不是失败——等，再验。
 - **安装器对已存在目录默认跳过**：输出「跳过 xxx：已存在（加 --force 覆盖）」并返回码 1。看到「跳过」就是没装，补 `--force`。
 
@@ -40,7 +42,7 @@ description: "holy-agents-kits 仓库的发版与发布流程。核心语义：n
 
 | 症状 | 根因 | 修法 |
 | --- | --- | --- |
-| npx list / install 跑出来还是旧技能集 | 裸包名 npx 缓存 | `@latest` 或清 `_npx` |
+| npx list / install 跑出来还是旧技能集 | 裸包名命中旧副本（全局包 / _npx 缓存），不追 latest | `@latest` 强制解析；`npm i -g <pkg>@latest` 或卸掉全局旧包 |
 | install 提示没生效，输出里有「跳过」 | 目标已存在、未带 --force | 补 `--force` |
 | GitHub 上看不到新版本 | publish 不等于 push | `git push`，验 `origin/main..HEAD` 为空 |
 | 刚 publish 完 `npm view` 还是旧版 | CDN 传播延迟 | 等几分钟重验，别重复 publish |
