@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、选择性分支同步、规则层治理、文档内容管理、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、选择性分支同步、规则层治理、文档内容管理、知识可视化、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -51,6 +51,11 @@ mindmap
       图形与伪代码表达
       过程产物禁入
       agent 手记与时效分层
+    knowledge-surface
+      Markdown 库一眼全图
+      canvas 树披露式明细
+      关联边有据可查
+      单文件离线交付
     skill-creator-v2
       Skill 骨架生成
       正文拆分 references
@@ -68,6 +73,7 @@ mindmap
 | `fy-newapi-cli` | 在终端运维 new-api：用户、渠道、Token、日志、套餐 | 「登进 new-api 看下渠道」「给它建个 API key」 |
 | `rules-layer-governance` | 给 AGENTS.md / SKILL.md 这类规则文件做立法、瘦身、下沉门禁与独立复核 | 「AGENTS.md 太肥了」「把规则下沉成脚本门禁」 |
 | `human-docs` | 文档按读者分离：给人看的表达层 + 给 agent 的记忆层 | 「写份给人看的文档」「这笔记下个上下文就忘了」 |
+| `knowledge-surface` | 把 Markdown 文档库变成一眼全图 + 披露式明细的可探索界面 | 「把这堆文档做成脑图」「给我个能钻进去的知识图谱」 |
 | `skill-creator-v2` | 开发、拆分、校验、评测 Skill 本身 | 「写一个 skill」「SKILL.md 太长」 |
 
 两个 Jenkins 技能互为边界：`jenkins-cli` 只管流水线，`jenkins-controller` 只管控制器本身，触发时不会互相抢。
@@ -104,7 +110,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 **卸载**：删除 `~/.agents/skills/<skill-name>` 目录即可。安装器不会写注册表，不会留残留。
 
-## 九个技能分别做什么
+## 十个技能分别做什么
 
 ### analysis-codegraph —— 按符号查代码
 
@@ -170,6 +176,14 @@ npx holy-agents-kits install jenkins-cli --force
 
 **边界**：不管文档内容的正确性，也不替项目决定文档放哪；它管的是表达方式与记忆结构。
 
+### knowledge-surface —— 文档库变成一眼全图的可探索界面
+
+**可观察行为**：一条命令把 Markdown 目录构建成单文件 HTML（数据内嵌、双击即开）——canvas 树布局、分组配色、hover 出一句话摘要、点开见渲染后的全文、Esc 关闭；关联边只由共享概念词推出，位置关系的边明确标注「同文件相邻」；自带构建自检（摘要缺失、孤儿节点必须为 0）。
+
+**用法**：说「把这堆文档做成能点的知识图谱」，agent 先盘结构写 `surface.config.json`（分组 / 摘要段），再跑 `scripts/build_surface.mjs`，按 QA 清单全图体检 + 披露体检后交付。
+
+**边界**：只管「结构 → 图 → 披露」的呈现范式；不做检索索引、不产出内容。语料超过 800 节点要按组拆多张图，不是硬塞一张画布。
+
 ### skill-creator-v2 —— 技能本身的开发与评测
 
 **可观察行为**：生成三段式技能骨架；把超长正文拆到 `references/` 并在原处留指针；跑规范校验（行数、frontmatter、引用完整性、代码外泄）；按反馈迭代 `description`。
@@ -191,6 +205,7 @@ holy-agents-kits/
 │   ├── fy-newapi-cli/              SKILL.md
 │   ├── rules-layer-governance/     SKILL.md + references/ + templates/
 │   ├── human-docs/                 SKILL.md + references/
+│   ├── knowledge-surface/          SKILL.md + references/ + scripts/ + assets/
 │   └── skill-creator-v2/           SKILL.md + references/ + scripts/
 ├── bin/cli.js                      安装器（零依赖）
 ├── FEEDBACK.md                     issue 上报入口与必填信息
@@ -227,6 +242,7 @@ npx holy-agents-kits feedback
 - `git-selective-branch-sync` 针对同一仓库内的两个分支，跨仓库搬运不适用。
 - `skill-creator-v2` 的触发率评测脚本依赖 `claude` CLI；本机没有时走人工跑用例的降级路径，技能里写明了。
 - `rules-layer-governance` 与 `human-docs` 是纯方法论技能，不需要外部服务、机器或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改。
+- `knowledge-surface` 的构建脚本零依赖，只需 Node ≥ 18；`--echarts` 指定本地 `echarts.min.js` 则产物离线自包含，不给则走 CDN（需联网打开）。
 - 本仓库只放技能与方法，不含业务代码、部署包和任何真实凭据。
 
 ## 许可
