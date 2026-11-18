@@ -5,3 +5,6 @@ __pycache__/
 .trae/prompt-logs/
 *.log
 .DS_Store
+
+# 机器本地运行时配置（由 skills/*/scripts/setup-env.sh 生成，不入库不分发）
+skills/*/config.json
