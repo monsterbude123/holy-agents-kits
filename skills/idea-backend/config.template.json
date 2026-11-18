@@ -1,0 +1,38 @@
+{
+  "platform": "<windows|linux|mac>",
+  "_comment": "idea-backend 运行时配置模板。复制为 config.json 后按本机事实填写；或由 scripts/setup-env.sh 自动探测生成。config.json 是机器本地文件，分发 skill 时不要携带。",
+  "idea": {
+    "exe": "<installRoot>\\bin\\idea64.exe",
+    "installRoot": "<IDEA 安装根目录，如 D:\\workplace\\idea-2026.2.5>",
+    "fallbackRoot": "<可选：降级后备安装根>",
+    "devRepo": "<可选：monster 维护仓本地工作副本路径（仅参与插件开发时需要）",
+    "commonProject": "<可选：常开项目路径，用于免问启动>",
+    "configDir": "<%APPDATA%\\JetBrains\\IdeaIC<版本> 目录>",
+    "logDir": "<configDir 对应 %LOCALAPPDATA%\\JetBrains\\IdeaIC<版本>\\log>"
+  },
+  "ports": {
+    "builtinMcp": 64342,
+    "indexMcp": 29170
+  },
+  "runtime": {
+    "endpointReadyTimeoutSec": 60,
+    "warmupSecondsBeforeVerdict": 120,
+    "maxFilesPerInspect": 200
+  },
+  "plugins": {
+    "indexMcp": {
+      "id": "com.github.hechtcarmel.jetbrainsindexmcpplugin",
+      "monsterRepo": "https://github.com/monsterbude123/jetbrains-index-mcp-plugin-monster",
+      "sideLoadDir": "<configDir>\\plugins\\jetbrains-index-mcp-plugin"
+    },
+    "p3c": {
+      "id": "com.alibaba.p3c.xenoamess",
+      "source": "Marketplace"
+    },
+    "lombok": {
+      "id": "Lombok",
+      "source": "Marketplace",
+      "note": "2026.2+ 不再捆绑，缺失会误报 Cannot resolve symbol"
+    }
+  }
+}

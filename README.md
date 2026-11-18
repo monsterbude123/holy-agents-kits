@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、选择性分支同步、规则层治理、文档内容管理、知识可视化、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -17,6 +17,11 @@ mindmap
       符号定位与调用链
       改名 / 废弃的影响面
       陌生子系统摸底
+    idea-backend
+      IDEA 作为语义后端
+      PSI 符号与调用链
+      inspection 门禁含 P3C
+      审查 → 修复流水线
     git-selective-branch-sync
       三方合并保两侧改动
       不同步台账
@@ -66,6 +71,7 @@ mindmap
 | Skill | 解决什么 | 你会怎么说 |
 |---|---|---|
 | `analysis-codegraph` | 按符号与调用链查代码，一次调用拿到源码与影响面 | 「这个函数谁在调」「改这个字段会影响哪」 |
+| `idea-backend` | 把本机 IDEA 当 agent 的语义后端：PSI 检索、inspection 门禁（含阿里 P3C）、审查 → 修复流水线，能力持续扩展 | 「用 IDEA 查这个符号」「按 P3C 审一遍」「让 IDEA 帮我重构」 |
 | `git-selective-branch-sync` | 两个分支差距大时只搬指定部分，保住目标分支已有改动 | 「把这个分支的功能并过来，文档不要」 |
 | `jenkins-cli` | 写/改/校验 Jenkinsfile，DooD 构建部署，接 GitLab | 「帮我写条流水线」「这个 Jenkinsfile 报错」 |
 | `jenkins-controller` | 控制器容器的部署、迁移、切流、口令轮换、体检 | 「Jenkins 容器起不来」「切回宿主机」 |
@@ -110,7 +116,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 **卸载**：删除 `~/.agents/skills/<skill-name>` 目录即可。安装器不会写注册表，不会留残留。
 
-## 十个技能分别做什么
+## 十一个技能分别做什么
 
 ### analysis-codegraph —— 按符号查代码
 
@@ -119,6 +125,14 @@ npx holy-agents-kits install jenkins-cli --force
 **用法**：说「这个函数谁在调」「改这个接口会影响哪些地方」，agent 调 codegraph 查询，而不是反复 Grep + Read。
 
 **边界**：要求仓库已装 codegraph 并建好索引（`.codegraph/`）；git 历史、文档、配置文件和字面量搜索不走它。
+
+### idea-backend —— 把本机 IDEA 当 agent 的语义后端
+
+**可观察行为**：调用本机 IDEA 的两个 MCP server（内置 + Index 插件）做 PSI 语义检索与 inspection 检视——按符号取定义/引用/调用链，按范围批检视并产出 XML 清单；再按「审查 → 修复」流水线把清单按文件边界分簇、精确投递给子代理修完，避免整组返工。新能力按固定扩展模式（给 MCP 插件加一个工具）继续长进来。
+
+**用法**：说「用 IDEA 查一下这个符号」「按 P3C 规范审一遍，改完再验一遍」，agent 走 `scripts/audit-baseline.sh` 拿基线清单 → 分簇派发修复 → `scripts/inspect-diff.sh` 复检。
+
+**边界**：需要本机装好 IDEA 2026.2.5（社区版）与 MCP server、P3C / Lombok / Index 插件，机器事实由技能内 `setup-env.sh` 探测写入本地 `config.json`（不入库、不分发）；P3C 的 65 条规则里只有 11 条能经 MCP 驱动，其余需走 GUI 或 PMD CLI。后续 IDEA 能力（重构、运行配置、模板、VCS）一律往这个技能里加，不另起炉灶。
 
 ### git-selective-branch-sync —— 只搬该搬的那部分
 
@@ -198,6 +212,7 @@ npx holy-agents-kits install jenkins-cli --force
 holy-agents-kits/
 ├── skills/
 │   ├── analysis-codegraph/         SKILL.md + references/
+│   ├── idea-backend/               SKILL.md + references/ + rules/ + scripts/
 │   ├── git-selective-branch-sync/  SKILL.md + references/ + scripts/
 │   ├── jenkins-cli/                SKILL.md + references/ + scripts/
 │   ├── jenkins-controller/         SKILL.md + references/ + scripts/
@@ -239,6 +254,7 @@ npx holy-agents-kits feedback
 - 两个 Jenkins 技能里的脚本面向真实环境：需要 Docker、SSH 可达的服务器、`test-190/jenkins` 部署包。没有环境时可以先读 `references/` 里的做法与排障表。
 - 两个 new-api 技能需要一个已经部署好的 new-api 实例；`fy-newapi-cli` 还要一条 `nap_` 开头的个人访问令牌。参考 demo 需要 Node.js、Supabase 与 Vercel 账号。
 - `analysis-codegraph` 需要目标仓库已装 codegraph 并建好索引；没有索引时按技能内的降级路径处理。
+- `idea-backend` 需要本机装好 IDEA 2026.2.5（社区版）及 MCP server、P3C / Lombok / Index 插件；机器事实由技能内 `setup-env.sh` 探测并写入本地 `config.json`（不入库、不分发），没有 IDEA 时只能读 `references/` 里的做法。
 - `git-selective-branch-sync` 针对同一仓库内的两个分支，跨仓库搬运不适用。
 - `skill-creator-v2` 的触发率评测脚本依赖 `claude` CLI；本机没有时走人工跑用例的降级路径，技能里写明了。
 - `rules-layer-governance` 与 `human-docs` 是纯方法论技能，不需要外部服务、机器或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改。
