@@ -21,7 +21,7 @@
 
 | 用途 | 工具 | 调用要点 |
 |---|---|---|
-| 查引用（改签名前必做） | `mcp__idea-index__ide_find_references` | `{"project_path":"<绝对路径>","language":"Java","symbol":"com.x.Y#m"}` 或 `{"file":"...","line":N,"column":M}`；含测试文件（`scope` 默认 project_files 就够） |
+| 查引用（改签名前必做） | `mcp__idea-index__ide_find_references` | `{"project_path":"<绝对路径>","language":"Java","symbol":"com.x.Y#m"}` 或 `{"file":"...","line":N,"column":M}`；含测试文件（`scope` 默认 project_files 就够）。⚠️ **Java 口径**：TS/Next 仓位置法会解析到**目录符号**（静默给错，不报错）→ 改用 `ide_search_text`（`wholeWord:true`+`context:"code"`）并人工核对 |
 | 调用链 | `mcp__idea-index__ide_call_hierarchy` | `{"project_path":"...","language":"Java","symbol":"com.x.Y","direction":"callers","depth":2}` |
 | 查实现 | `mcp__idea-index__ide_find_implementations` | `{"project_path":"...","language":"Java","symbol":"com.x.Interface"}` |
 | 找类 | `mcp__idea-index__ide_find_class` | `{"project_path":"...","query":"Name"}` |
@@ -96,7 +96,7 @@ bash <skill>/scripts/mcp-call.sh index <tool> '<json-args>'
 2. → `mcp__idea-index__ide_diagnostics`（files = 你改过的文件 + 你同步改过的测试文件,
    `includeBuildErrors=true`, `severity="errors"`）→ 必须 `buildErrors: []`
 
-编排层会统一跑 `ide_inspect` 复检 + `mvn test`，你**不需要**自己复检（避免重复劳动）。
+编排层会统一跑检视复检（有 `ide_inspect` 时用 `ide_inspect`，插件版本没暴露该工具时降级 `ide_diagnostics`）+ 项目构建测试，你**不需要**自己复检（避免重复劳动）。
 
 ---
 

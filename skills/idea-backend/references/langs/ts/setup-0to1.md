@@ -1,6 +1,6 @@
 # setup-0to1 —— 把一个 TS 项目接进 IntelliJ IDEA
 
-> 本文件是**人/agent 照着走的操作手册**；`references/checklist.json` 是**可机器自证的清单**。
+> 本文件是**人/agent 照着走的操作手册**；`references/langs/ts/checklist.json` 是**可机器自证的清单**。
 > 两者配套：手册讲"怎么做"，清单讲"怎么算做完了"。
 
 ---
@@ -54,8 +54,8 @@ IDEA 的 TS 能力分两层，别混：
 
 把模板落到项目里：
 
-- `bash scripts/init-ts-project.sh <目标项目目录> --template ts-project --name <包名>` —— Node ESM 服务（tsc 构建，nodenext + dist/ + sourcemap）
-- `bash scripts/init-ts-project.sh <目标项目目录> --template ts-web --name <包名>` —— 前端（Vite + React + TS，preserve + bundler 解析 + noEmit + `@/` 别名）
+- `bash scripts/init-project.sh <目标项目目录> --lang ts --template ts-project --name <包名>` —— Node ESM 服务（tsc 构建，nodenext + dist/ + sourcemap）
+- `bash scripts/init-project.sh <目标项目目录> --lang ts --template ts-web --name <包名>` —— 前端（Vite + React + TS，preserve + bundler 解析 + noEmit + `@/` 别名）
 
 **接已有项目**（更常见）先跑探测：
 
@@ -96,7 +96,7 @@ IDEA 的 TS 能力分两层，别混：
 
 ## 第 3 步：IDE 侧设置（Ultimate / WebStorm）
 
-按 `references/idea-settings.json` 的顺序逐条做，那里有每一项的**路径 + 期望状态 + 怎么断言**。要点：
+按 `references/langs/ts/idea-settings.json` 的顺序逐条做，那里有每一项的**路径 + 期望状态 + 怎么断言**。要点：
 
 1. **Settings > Languages & Frameworks > JavaScript Runtime**：Preferred runtime → Browse → Add Local → 选 Node 安装目录；Version 字段要和 `node -v` 一致；勾 "Coding assistance for Node.js" 才有 Node 内置类型。
    （IDEA 认识哪些解释器会记在 `<configDir>/options/nodejs.xml` 的 `NodeJsLocalInterpreterManager` 组件下；这个文件只有 JS/TS 插件栈装上后才出现，`setup-env.sh probe` 报的 `IDEA_NODE_REGISTRY` 就是它。）

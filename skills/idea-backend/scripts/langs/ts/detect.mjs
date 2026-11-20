@@ -1,26 +1,21 @@
 #!/usr/bin/env node
-// Classify an existing TypeScript project so the agent knows which template
-// and which checklist items apply to it.
+// TS 分册探测器：判一个已有 TS 项目的形态与事实，供通用分发器
+// （scripts/inspect-project.mjs）过滤本分册的适用清单条目。
 //
-//   node scripts/inspect-project.mjs <project-dir> [--ids] [--json]
+//   node scripts/langs/ts/detect.mjs <project-dir>
 //
-// Prints key=value lines (or the applicable checklist ids with --ids).
-// Nothing is written and nothing is required from the project except files;
-// a project that is not a TS project simply comes back as SHAPE=unknown.
+// 打印 key=value 行（含 CONDITIONS=，逗号分隔的条件集合）。不写任何文件；
+// 不是 TS 项目就如实报 SHAPE=unknown。
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-import { join, resolve, basename } from 'node:path';
+import { join, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
-const wantIds = args.includes('--ids');
-const wantJson = args.includes('--json');
-const checkIds = args.includes('--check-ids');
 const dirArg = args.find((a) => !a.startsWith('--'));
 if (!dirArg) {
-  console.error('usage: inspect-project.mjs <project-dir> [--ids] [--json]');
+  console.error('usage: detect.mjs <project-dir>');
   process.exit(2);
 }
 const DIR = resolve(dirArg);
-const SKILL_DIR = resolve(import.meta.dirname, '..');
 
 // tsconfig.json is JSONC (comments allowed) — strip them before parsing.
 function stripJsonComments(text) {
@@ -248,10 +243,11 @@ else if (['nodenext', 'node16', 'node20', 'node18'].includes(co.module ?? '')) s
 else if (pkg.type === 'module' || deps.typescript) shape = 'node';
 set('SHAPE', shape);
 
-// ---- applicable checklist items -----------------------------------------
-// Each item declares applies_to as a list of conditions; it applies when ANY
-// of them holds for the detected project ("any" always holds).
+// ---- conditions（供分发器按条件过滤本分册清单） ---------------------------
+// 每条清单条目的 applies_to 是一个条件列表；命中任意一个即适用（"any" 恒适用）。
 const conditions = new Set();
+if (tsconfigFiles.length) conditions.add('tsconfig');
+if (existsSync(join(DIR, 'package.json'))) conditions.add('js-project');
 if (shape === 'node') conditions.add('node');
 if (shape === 'web') conditions.add('web');
 if (runner === 'vitest') conditions.add('vitest');
@@ -264,35 +260,5 @@ if (workspaceGlobs.length || pkgWorkspaces.length) conditions.add('workspace');
 if (tsconfigFiles.length > 1) conditions.add('multi-tsconfig');
 set('CONDITIONS', [...conditions].sort().join(','));
 
-let applicable = [];
-let knownIds = new Set();
-try {
-  const items = JSON.parse(readFileSync(join(SKILL_DIR, 'references', 'checklist.json'), 'utf8'));
-  knownIds = new Set(items.map((it) => it.id));
-  applicable = items
-    .filter((it) => {
-      const conds = Array.isArray(it.applies_to) ? it.applies_to : [it.applies_to ?? 'any'];
-      return conds.includes('any') || conds.some((c) => conditions.has(c));
-    })
-    .map((it) => it.id);
-} catch { /* no checklist shipped */ }
-set('APPLICABLE_COUNT', applicable.length);
-
-// --check-ids: the inspector must only ever hand back ids that exist
-if (checkIds) {
-  const unknown = applicable.filter((id) => !knownIds.has(id));
-  if (unknown.length) {
-    console.error(`inspector returned unknown checklist ids: ${unknown.join(', ')}`);
-    process.exit(1);
-  }
-  console.error(`all ${applicable.length} applicable ids exist in the checklist`);
-}
-
-if (wantIds) {
-  for (const id of applicable) console.log(id);
-} else if (wantJson) {
-  console.log(JSON.stringify({ facts, applicable }, null, 2));
-} else {
-  for (const [k, v] of Object.entries(facts)) console.log(`${k}=${v}`);
-  if (process.stderr.isTTY) console.error(`${basename(DIR)}: ${shape} (${applicable.length} applicable items)`);
-}
+// ---- 输出事实 -------------------------------------------------------------
+for (const [k, v] of Object.entries(facts)) console.log(`${k}=${v}`);

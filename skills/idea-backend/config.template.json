@@ -1,11 +1,14 @@
 {
   "platform": "<windows|linux|mac>",
-  "_comment": "idea-backend 运行时配置模板。复制为 config.json 后按本机事实填写；或由 scripts/setup-env.sh 自动探测生成。config.json 是机器本地文件，分发 skill 时不要携带。",
+  "_comment": "idea-backend 运行时配置模板。复制为 config.json 后按本机事实填写；或由 scripts/setup-env.sh init 自动探测生成。config.json 是机器本地文件，分发 skill 时不要携带（装机脚本也会跳过它）。",
   "idea": {
-    "exe": "<installRoot>\\bin\\idea64.exe",
     "installRoot": "<IDEA 安装根目录，如 D:\\workplace\\idea-2026.2.5>",
+    "exe": "<installRoot>\\bin\\idea64.exe",
+    "version": "<版本，如 2026.2.5>",
+    "build": "<构建号>",
+    "productCode": "<IC=社区版 IU=Ultimate WS=WebStorm PY=PyCharm>",
+    "edition": "<community|ultimate|webstorm|pycharm>",
     "fallbackRoot": "<可选：降级后备安装根>",
-    "devRepo": "<可选：monster 维护仓本地工作副本路径（仅参与插件开发时需要）",
     "commonProject": "<可选：常开项目路径，用于免问启动>",
     "configDir": "<%APPDATA%\\JetBrains\\IdeaIC<版本> 目录>",
     "logDir": "<configDir 对应 %LOCALAPPDATA%\\JetBrains\\IdeaIC<版本>\\log>"
@@ -23,16 +26,32 @@
     "indexMcp": {
       "id": "com.github.hechtcarmel.jetbrainsindexmcpplugin",
       "monsterRepo": "https://github.com/monsterbude123/jetbrains-index-mcp-plugin-monster",
-      "sideLoadDir": "<configDir>\\plugins\\jetbrains-index-mcp-plugin"
+      "sideLoadDir": "<configDir>\\plugins\\jetbrains-index-mcp-plugin",
+      "pluginVersion": "<jar 版本号，如 5.20.7(上游) / 5.21.0-monster.1(monster 分支)>",
+      "build": "<upstream | monster>",
+      "probe": "bash scripts/mcp-call.sh list index（权威口径=当前 server 真实暴露的工具）; has index <tool> 判单个工具在不在",
+      "note": "上游版只有 16 个工具（没有 ide_inspect / ide_refactor_extract_method / ide_create_from_template）→ 审查流水线自动降级 ide_diagnostics"
     },
-    "p3c": {
-      "id": "com.alibaba.p3c.xenoamess",
-      "source": "Marketplace"
+    "installed": {
+      "_comment": "每门语言的插件在位情况，由 setup-env.sh plugins/init 探测写入（需求在 references/langs/<lang>/profile.json）",
+      "java": { "required": 2, "present": 2, "state": "present" },
+      "ts": { "required": 2, "present": 0, "state": "absent" },
+      "python": { "required": 2, "present": 0, "state": "absent" }
+    }
+  },
+  "toolchains": {
+    "_comment": "各语言工具链事实（通用探测在 scripts/setup-env.sh）",
+    "node": {
+      "bin": "<node 可执行文件路径>",
+      "version": "<如 v22.14.0>",
+      "npmBin": "<npm 可执行文件路径>",
+      "npmVersion": "<如 10.9.2>"
     },
-    "lombok": {
-      "id": "Lombok",
-      "source": "Marketplace",
-      "note": "2026.2+ 不再捆绑，缺失会误报 Cannot resolve symbol"
+    "python": {
+      "bin": "<python 可执行文件路径>",
+      "version": "<如 3.13.5>",
+      "pipBin": "<pip 可执行文件路径>",
+      "uvBin": "<uv 可执行文件路径>"
     }
   }
 }

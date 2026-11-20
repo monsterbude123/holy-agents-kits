@@ -1,7 +1,7 @@
 # 来源快照（Sources）
 
-> 本文件是 `references/checklist.json` 的**溯源底账**：清单里每一条的 `source`（URL）与
-> `quote`（原句）都必须能在这里逐字命中，否则该条在 `scripts/verify-checklist` 的溯源门
+> 本文件是 `references/langs/ts/checklist.json` 的**溯源底账**：清单里每一条的 `source`（URL）与
+> `quote`（原句）都必须能在这里逐字命中，否则该条在 `scripts/verify-quotes.mjs` 的溯源门
 > 里判负——**不许凭记忆写引文**。
 >
 > 抓取时间：2026-11-20。JetBrains 文档对应 2026.3 文档构建；本仓实测的 IDEA 是

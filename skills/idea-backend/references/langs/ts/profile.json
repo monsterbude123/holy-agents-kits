@@ -1,0 +1,18 @@
+{
+  "lang": "ts",
+  "displayName": "TypeScript / JavaScript",
+  "markers": ["tsconfig.json", "package.json"],
+  "pluginDirs": ["javascript-impl", "javascript-frontend"],
+  "registries": {
+    "nodejs.xml": { "key": "IDEA_NODE_REGISTRY", "contains": "NodeJsLocalInterpreterManager" }
+  },
+  "bundledIn": ["IU", "WS"],
+  "edition": "ultimate",
+  "toolchain": "node",
+  "checklist": "checklist.json",
+  "checklistRequires": ["tsconfig"],
+  "settings": "idea-settings.json",
+  "templates": ["ts-project", "ts-web"],
+  "detector": "scripts/langs/ts/detect.mjs",
+  "note": "JS/TS 插件在 Marketplace 的兼容列表不含 IC → 社区版装不了，得换 Ultimate/WebStorm（证据见 references/langs/ts/sources.md 的 idea-edition-gate 条目）。运行期能力档位见 references/langs/ts/runtime.md。"
+}

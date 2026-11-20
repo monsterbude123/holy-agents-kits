@@ -22,11 +22,9 @@ mindmap
       PSI 符号与调用链
       inspection 门禁含 P3C
       审查 → 修复流水线
-    idea-ts-setup
-      IDEA 的 TS 开发环境
-      版本门禁 社区版 vs Ultimate
-      可溯源配置清单
-      逐条 verify 自证
+      语言分册 多语言通用
+      版本门禁 / 能力档位
+      可溯源配置清单 逐条 verify
     git-selective-branch-sync
       三方合并保两侧改动
       不同步台账
@@ -76,8 +74,7 @@ mindmap
 | Skill | 解决什么 | 你会怎么说 |
 |---|---|---|
 | `analysis-codegraph` | 按符号与调用链查代码，一次调用拿到源码与影响面 | 「这个函数谁在调」「改这个字段会影响哪」 |
-| `idea-backend` | 把本机 IDEA 当 agent 的语义后端：PSI 检索、inspection 门禁（含阿里 P3C）、审查 → 修复流水线，能力持续扩展 | 「用 IDEA 查这个符号」「按 P3C 审一遍」「让 IDEA 帮我重构」 |
-| `idea-ts-setup` | 把 TS 项目接进 IntelliJ IDEA：版本门禁（社区版 vs Ultimate）、Node 解释器与 TS 语言服务、tsconfig/eslint/prettier/vitest 关键项、共享运行配置与索引排除；清单每条带真跑的 verify 与官方出处 | 「IDEA 里怎么配 TS」「tsconfig 改了 IDE 不生效」「社区版能不能跑 TS」 |
+| `idea-backend` | 把本机 IDEA 当 agent 的**多语言**语义后端：一段是「把项目接进 IDEA」（按语言分册：版本门禁、项目侧清单、IDE 侧设置、模板，每条带真跑的 verify 与官方出处），一段是「用 IDEA 的语义能力干活」（PSI 检索、inspection 门禁含阿里 P3C、审查 → 修复流水线、IDE 级重构与运行配置）。语言不是前提：装上对应插件就应对应语言，能到哪一档由能力矩阵判定并可探测 | 「用 IDEA 查这个符号」「按 P3C 审一遍」「这个仓怎么接进 IDEA」「tsconfig 改了 IDE 不生效」「社区版能不能跑 TS」 |
 | `git-selective-branch-sync` | 两个分支差距大时只搬指定部分，保住目标分支已有改动 | 「把这个分支的功能并过来，文档不要」 |
 | `jenkins-cli` | 写/改/校验 Jenkinsfile，DooD 构建部署，接 GitLab | 「帮我写条流水线」「这个 Jenkinsfile 报错」 |
 | `jenkins-controller` | 控制器容器的部署、迁移、切流、口令轮换、体检 | 「Jenkins 容器起不来」「切回宿主机」 |
@@ -132,21 +129,15 @@ npx holy-agents-kits install jenkins-cli --force
 
 **边界**：要求仓库已装 codegraph 并建好索引（`.codegraph/`）；git 历史、文档、配置文件和字面量搜索不走它。
 
-### idea-backend —— 把本机 IDEA 当 agent 的语义后端
+### idea-backend —— 把本机 IDEA 当 agent 的多语言语义后端
 
-**可观察行为**：调用本机 IDEA 的两个 MCP server（内置 + Index 插件）做 PSI 语义检索与 inspection 检视——按符号取定义/引用/调用链，按范围批检视并产出 XML 清单；再按「审查 → 修复」流水线把清单按文件边界分簇、精确投递给子代理修完，避免整组返工。新能力按固定扩展模式（给 MCP 插件加一个工具）继续长进来。
+**可观察行为**：分两段用同一套机器事实。**接进 IDEA**（配置侧）：按语言分册给出可执行清单，每条带**真跑**的 `verify` 与官方文档出处 —— 已建册：TS/JS（64 条，真实大型 Next.js + pnpm 仓库回归过一轮）、JVM（检视侧）、Python（建册中）；分册探测器判项目形态并筛出适用条目。**调 IDEA 能力**（运行侧）：调用本机 IDEA 的两个 MCP server（内置 + Index 插件）做 PSI 语义检索与 inspection 检视——按符号取定义/引用/调用链，按范围批检视并产出 XML 清单；再按「审查 → 修复」流水线把清单按文件边界分簇、精确投递给子代理修完，避免整组返工。新能力按固定扩展模式（给 MCP 插件加一个工具）继续长进来。
 
-**用法**：说「用 IDEA 查一下这个符号」「按 P3C 规范审一遍，改完再验一遍」，agent 走 `scripts/audit-baseline.sh` 拿基线清单 → 分簇派发修复 → `scripts/inspect-diff.sh` 复检。
+**用法**：说「用 IDEA 查一下这个符号」「按 P3C 规范审一遍，改完再验一遍」，agent 走 `scripts/audit-baseline.sh` 拿基线清单 → 分簇派发修复 → `scripts/inspect-diff.sh` 复检；说「这个仓怎么接进 IDEA」，agent 走 `scripts/inspect-project.mjs` 判语言与形态 → 按语言分册逐条落配置 → `scripts/verify-item.sh --lang <lang> --all` 逐条自证。
 
-**边界**：需要本机装好 IDEA 2026.2.5（社区版）与 MCP server、P3C / Lombok / Index 插件，机器事实由技能内 `setup-env.sh` 探测写入本地 `config.json`（不入库、不分发）；P3C 的 65 条规则里只有 11 条能经 MCP 驱动，其余需走 GUI 或 PMD CLI。后续 IDEA 能力（重构、运行配置、模板、VCS）一律往这个技能里加，不另起炉灶。
+**边界**：**语言不是前提，档位才是** —— 装上对应插件就能用这门语言，但支持到哪一档由「IDE 版本 + 插件栈 + 插件构建」共同决定，逐档可探测（档位定义与探测判据见技能内 `references/capability-matrix.md`）。例如 TS/JS 与 Python 的**语言插件**在社区版都装不了（Marketplace 兼容列表只有 `IDEA_PRO`），只能换 Ultimate/WebStorm/PyCharm；而 Go 语言插件、Ruff 这类**工具插件**社区版可装 —— **门禁是每个插件一行，不是每门语言一行**。需要本机装好 IDEA 2026.2.5（社区版）与 MCP server；P3C / Lombok / Index 插件按语言分册需要什么就装什么，机器事实由技能内 `setup-env.sh` 探测写入本地 `config.json`（不入库、不分发）。P3C 的 65 条规则里只有 11 条能经 MCP 驱动，其余需走 GUI 或 PMD CLI。**工具面随插件版本变**：上游版只有 16 个工具（没有 `ide_inspect`），流水线会自动降级到文件级检视，权威判据是 `mcp-call.sh list index`。
 
-### idea-ts-setup —— 把 TS 项目接进 IntelliJ IDEA
-
-**可观察行为**：给出一份 64 条的 IDEA×TS 配置清单，每条都带**真跑**的 `verify` 命令与官方文档出处：项目侧覆盖 tsconfig / package.json / eslint / prettier / vitest / Node 版本钉版，IDE 侧覆盖版本门禁、Node 解释器与包管理器、TS 语言服务与 TS 包版本、ESLint/Prettier 集成、运行与调试、测试、索引排除。另有 `inspect-project.mjs` 判已有项目的形态（node / web）与包管理器/工作区/多 tsconfig 事实，并按形态筛出适用条目。清单在真实大型 Next.js + pnpm 仓库上跑过一轮并据此改掉 6 条误报（回归记录见 `references/field-test.md`）。
-
-**用法**：说「IDEA 里怎么配 TS」「tsconfig 改了 IDE 不生效」「社区版能不能跑 TS」，agent 跑 `scripts/inspect-project.mjs` 判形态 → 照 `references/setup-0to1.md` 落配置 → `bash scripts/verify-item.sh --all` 逐条自证。
-
-**边界**：**社区版（IdeaIC）只能做 TS 编写与静态检查，跑不了、调不了、测不了 TS**——Node.js 与 JavaScript Debugger 插件、JS/TS 测试执行都是 Ultimate 独占，且 JS/TS 语言插件根本不在 Marketplace 的社区版兼容列表里。要跑要调只能用 Ultimate 或 WebStorm。清单的 `verify` 验的是技能随附的模板，接用户项目时由 agent 对着用户的 tsconfig/package.json 逐条核对。
+> **迁移说明（2026-11-20）**：原独立的 `idea-ts-setup` 技能已并入本技能，成为 **TS / JavaScript 语言分册**（`skills/idea-backend/references/langs/ts/`）：清单、模板、探测器、引文快照原样保留，路径改为分册目录；`setup-env.sh` 两个脚本合并为一个（机器事实只有一份），`inspect-project.mjs` 改为通用分发器（按 marker 判语言 → 调该语言分册探测器 → 过滤该语言清单）。命令变化：`bash scripts/verify-item.sh --all` → `bash scripts/verify-item.sh --lang ts --all`；`scripts/init-ts-project.sh` → `scripts/init-project.sh --lang ts`。已经装过 `idea-ts-setup` 的机器请删掉那份（`rm -rf ~/.agents/skills/idea-ts-setup`）并重装 `idea-backend`。
 
 ### git-selective-branch-sync —— 只搬该搬的那部分
 
@@ -226,8 +217,7 @@ npx holy-agents-kits install jenkins-cli --force
 holy-agents-kits/
 ├── skills/
 │   ├── analysis-codegraph/         SKILL.md + references/
-│   ├── idea-backend/               SKILL.md + references/ + rules/ + scripts/
-│   ├── idea-ts-setup/              SKILL.md + references/ + scripts/ + templates/
+│   ├── idea-backend/               SKILL.md + references/（含 langs/<语言> 分册）+ scripts/（含 langs/<语言>）+ templates/
 │   ├── git-selective-branch-sync/  SKILL.md + references/ + scripts/
 │   ├── jenkins-cli/                SKILL.md + references/ + scripts/
 │   ├── jenkins-controller/         SKILL.md + references/ + scripts/
@@ -269,7 +259,7 @@ npx holy-agents-kits feedback
 - 两个 Jenkins 技能里的脚本面向真实环境：需要 Docker、SSH 可达的服务器、`test-190/jenkins` 部署包。没有环境时可以先读 `references/` 里的做法与排障表。
 - 两个 new-api 技能需要一个已经部署好的 new-api 实例；`fy-newapi-cli` 还要一条 `nap_` 开头的个人访问令牌。参考 demo 需要 Node.js、Supabase 与 Vercel 账号。
 - `analysis-codegraph` 需要目标仓库已装 codegraph 并建好索引；没有索引时按技能内的降级路径处理。
-- `idea-backend` 需要本机装好 IDEA 2026.2.5（社区版）及 MCP server、P3C / Lombok / Index 插件；机器事实由技能内 `setup-env.sh` 探测并写入本地 `config.json`（不入库、不分发），没有 IDEA 时只能读 `references/` 里的做法。
+- `idea-backend` 需要本机装好 IDEA 2026.2.5（社区版）与 MCP server；**用什么语言还要装对应插件**（P3C / Lombok / Index 插件按语言分册需要什么就装什么，社区版装不了的语言插件要换 Ultimate/WebStorm 等对应产品）；机器事实由技能内 `setup-env.sh` 探测并写入本地 `config.json`（不入库、不分发），没有 IDEA 时只能读 `references/` 里的做法。
 - `git-selective-branch-sync` 针对同一仓库内的两个分支，跨仓库搬运不适用。
 - `skill-creator-v2` 的触发率评测脚本依赖 `claude` CLI；本机没有时走人工跑用例的降级路径，技能里写明了。
 - `rules-layer-governance` 与 `human-docs` 是纯方法论技能，不需要外部服务、机器或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改。

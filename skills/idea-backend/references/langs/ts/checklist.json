@@ -3,7 +3,7 @@
     "id": "idea-edition-gate",
     "title": "先判定 IDEA 版本门禁：社区版(IC)没有原生 TypeScript 能力",
     "category": "ide-gate",
-    "action": "读安装根的 product-info.json：productCode=IC 是社区版、IU 是 Ultimate、WS 是 WebStorm。社区版不捆绑 JavaScript/TypeScript 插件栈（plugins/ 下没有 javascript-impl / javascript-frontend），原生 TS 能力不存在，必须换 Ultimate/WebStorm，或走 references/setup-0to1.md 的降级路径。本技能的 scripts/setup-env.sh probe <root> 会直接给出 IDEA_EDITION 与 IDEA_TS_PLUGINS。",
+    "action": "读安装根的 product-info.json：productCode=IC 是社区版、IU 是 Ultimate、WS 是 WebStorm。社区版不捆绑 JavaScript/TypeScript 插件栈（plugins/ 下没有 javascript-impl / javascript-frontend），原生 TS 能力不存在，必须换 Ultimate/WebStorm，或走 references/langs/ts/setup-0to1.md 的降级路径。本技能的 scripts/setup-env.sh probe <root> 会直接给出 IDEA_EDITION 与 IDEA_TS_PLUGINS。",
     "verify": "T1=$(mktemp -d) && mkdir -p \"$T1/bin\" \"$T1/plugins/javascript-impl\" && : > \"$T1/bin/idea64.exe\" && printf '{\"productCode\":\"IU\",\"version\":\"2026.2.5\",\"buildNumber\":\"IU-262.1\",\"dataDirectoryName\":\"IdeaIU2026.2\"}' > \"$T1/product-info.json\" && U=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T1\") && T2=$(mktemp -d) && mkdir -p \"$T2/bin\" && : > \"$T2/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T2/product-info.json\" && C=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T2\") && rm -rf \"$T1\" \"$T2\" && echo \"$U\" | grep -q '^IDEA_EDITION=ultimate$' && echo \"$U\" | grep -q '^IDEA_TS_PLUGINS=present$' && echo \"$C\" | grep -q '^IDEA_EDITION=community$' && echo \"$C\" | grep -q '^IDEA_TS_PLUGINS=absent$'",
     "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-node-js.html",
     "quote": "The plugins are available only in IntelliJ IDEA with the Ultimate subscription.",
@@ -702,7 +702,7 @@
     "applies_to": [
       "any"
     ],
-    "action": "接入**已有**项目时，先跑 `node scripts/inspect-project.mjs <项目目录>`。它读 tsconfig*.json（容忍 JSONC 注释）、package.json、.nvmrc 与配置文件，输出形态与关键事实：SHAPE（node/web/unknown）、MODULE_MODE、MODULE_RESOLUTION、STRICT、JSX、PATHS、NO_EMIT、BUILD_MODE、TEST_RUNNER、NODE_MATCHES_PIN 等。判错形态就会选错模板、漏掉该做的配置项——所以这一条本身必须能被复核。",
+    "action": "接入**已有**项目时，先跑 `node scripts/inspect-project.mjs <项目目录>（通用分发器 → TS 分册探测器）`。它读 tsconfig*.json（容忍 JSONC 注释）、package.json、.nvmrc 与配置文件，输出形态与关键事实：SHAPE（node/web/unknown）、MODULE_MODE、MODULE_RESOLUTION、STRICT、JSX、PATHS、NO_EMIT、BUILD_MODE、TEST_RUNNER、NODE_MATCHES_PIN 等。判错形态就会选错模板、漏掉该做的配置项——所以这一条本身必须能被复核。",
     "verify": "I=\"$SKILL_DIR/scripts/inspect-project.mjs\" && N=$(node \"$I\" \"$SKILL_DIR/templates/ts-project\") && W=$(node \"$I\" \"$SKILL_DIR/templates/ts-web\") && printf '%s\\n' \"$N\" | grep -q '^SHAPE=node$' && printf '%s\\n' \"$N\" | grep -q '^MODULE_MODE=nodenext$' && printf '%s\\n' \"$N\" | grep -q '^STRICT=true$' && printf '%s\\n' \"$N\" | grep -q '^TEST_RUNNER=vitest$' && printf '%s\\n' \"$N\" | grep -q '^BUILD_MODE=tsc-build$' && printf '%s\\n' \"$N\" | grep -q '^NODE_MATCHES_PIN=yes$' && printf '%s\\n' \"$W\" | grep -q '^SHAPE=web$' && printf '%s\\n' \"$W\" | grep -q '^MODULE_RESOLUTION=bundler$' && printf '%s\\n' \"$W\" | grep -q '^JSX=react-jsx$' && printf '%s\\n' \"$W\" | grep -q '^PATHS=yes$' && printf '%s\\n' \"$W\" | grep -q '^NO_EMIT=true$' && printf '%s\\n' \"$W\" | grep -q '^BUILD_MODE=bundler$'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "You can then use TypeScript as a tool for providing editor integration, and as a source code type-checker."
@@ -714,7 +714,7 @@
     "applies_to": [
       "any"
     ],
-    "action": "`node scripts/inspect-project.mjs <目录> --ids` 输出该项目形态下适用的清单条目（按每条的 applies_to 过滤：any / node / web），`--check-ids` 会校验返回的每个 id 都真实存在于 references/checklist.json。前端专属项（jsx / paths / noEmit）不该出现在 Node 服务项目里，Node 专属项（outDir / sourceMap 构建）也不该出现在前端项目里——过滤错了就等于漏做或做无用功。",
+    "action": "通用探测器（scripts/inspect-project.mjs）先按 marker 判语言 → 调本分册探测器 scripts/langs/ts/detect.mjs → 按每条的 applies_to 过滤（any / node / web / vitest / pnpm / workspace 等）。前端专属项（jsx / paths / noEmit）不该出现在 Node 服务项目里，Node 专属项（outDir / sourceMap 构建）也不该出现在前端项目里——过滤错了就等于漏做或做无用功。",
     "verify": "I=\"$SKILL_DIR/scripts/inspect-project.mjs\" && N=$(node \"$I\" \"$SKILL_DIR/templates/ts-project\" --ids) && W=$(node \"$I\" \"$SKILL_DIR/templates/ts-web\" --ids) && printf '%s\\n' \"$N\" | grep -qx 'tsconfig-strict' && ! printf '%s\\n' \"$N\" | grep -qx 'tsconfig-jsx' && printf '%s\\n' \"$W\" | grep -qx 'tsconfig-jsx' && ! printf '%s\\n' \"$W\" | grep -qx 'tsconfig-out-dir' && node \"$I\" \"$SKILL_DIR/templates/ts-project\" --ids --check-ids >/dev/null && node \"$I\" \"$SKILL_DIR/templates/ts-web\" --ids --check-ids >/dev/null",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "Important: exclude only changes which files are included as a result of the include setting."

@@ -1,0 +1,194 @@
+[
+  {
+    "id": "pyproject-parse",
+    "title": "项目元数据与依赖声明在 pyproject.toml（PEP 621）",
+    "category": "pyproject",
+    "action": "项目名、版本、Python 版本下限、运行期依赖都写在 pyproject.toml 的 [project] 表里；没有它就没有可复现的依赖声明，IDE 的解释器也无处可指。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && python -c \"import tomllib;d=tomllib.load(open('pyproject.toml','rb'));assert d['project']['name'];assert d['project']['version'];assert d['project']['requires-python'];assert isinstance(d['project']['dependencies'],list)\"",
+    "source": "https://peps.python.org/pep-0621/",
+    "quote": "This PEP specifies how to write a project’s core metadata in a pyproject.toml file for packaging-related tools to consume.",
+    "applies_to": [
+      "pyproject"
+    ]
+  },
+  {
+    "id": "requires-python-declared",
+    "title": "声明 Python 版本下限（requires-python）",
+    "category": "version",
+    "action": "[project].requires-python 写清项目支持的下限（如 >=3.13）：IDE 选解释器、工具链装包都靠它判断相容性。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && python -c \"import tomllib,re;d=tomllib.load(open('pyproject.toml','rb'));r=d['project']['requires-python'];assert re.match(r'^>=\\d+\\.\\d+',r), r\"",
+    "source": "https://www.jetbrains.com/help/idea/python.html",
+    "quote": "All Python functionality in IntelliJ IDEA is fully supported on Python 3.9 or later.",
+    "applies_to": [
+      "version-pinned"
+    ]
+  },
+  {
+    "id": "python-version-pin",
+    "title": "解释器版本钉在 .python-version，且与 requires-python 一致",
+    "category": "version",
+    "action": ".python-version 钉住开发版本，且必须与 requires-python 的下限一致——两处不一致时，IDE 与命令行会跑在不同版本上。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && python -c \"import tomllib,pathlib;d=tomllib.load(open('pyproject.toml','rb'));pin=pathlib.Path('.python-version').read_text().strip();minv=d['project']['requires-python'].lstrip('>=');assert pin==minv,(pin,minv)\"",
+    "source": "https://www.jetbrains.com/help/idea/python.html",
+    "quote": "Python 3: from the version 3.9 up to the version 3.15",
+    "applies_to": [
+      "version-pinned"
+    ]
+  },
+  {
+    "id": "ruff-config",
+    "title": "lint 门禁走 ruff，配置写在 [tool.ruff]",
+    "category": "lint",
+    "action": "ruff 配置放 pyproject 的 [tool.ruff]；ruff check 退出 0 才算这一条成立（IDE 与命令行同一条门禁）。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && uv run ruff check . && python -c \"import tomllib;assert tomllib.load(open('pyproject.toml','rb'))['tool']['ruff']\"",
+    "source": "https://docs.astral.sh/ruff/",
+    "quote": "An extremely fast Python linter and code formatter, written in Rust.",
+    "applies_to": [
+      "ruff"
+    ]
+  },
+  {
+    "id": "ruff-format-config",
+    "title": "格式化门禁走 ruff format（--check 只读不改）",
+    "category": "format",
+    "action": "ruff format --check 退出 0：格式化规则只有一处定义（IDE 侧选 ruff formatter，命令行侧 ruff format）。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && uv run ruff format --check .",
+    "source": "https://docs.astral.sh/ruff/",
+    "quote": "Ruff aims to be orders of magnitude faster than alternative tools while integrating more functionality behind a single, common interface.",
+    "applies_to": [
+      "ruff-format"
+    ]
+  },
+  {
+    "id": "mypy-config",
+    "title": "类型门禁走 mypy，配置写在 [tool.mypy]",
+    "category": "typecheck",
+    "action": "mypy 配置放 pyproject 的 [tool.mypy]（或 mypy.ini）；mypy 退出 0 才算成立——Python 的类型权威是 mypy，不是 IDE。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && uv run mypy && python -c \"import tomllib;assert tomllib.load(open('pyproject.toml','rb'))['tool']['mypy']\"",
+    "source": "https://mypy.readthedocs.io/en/stable/config_file.html",
+    "quote": "Instead of using a `mypy.ini` file, a `pyproject.toml` file (as specified by PEP 518) may be used instead.",
+    "applies_to": [
+      "mypy"
+    ]
+  },
+  {
+    "id": "pytest-config",
+    "title": "测试配置写在 pyproject 的 [tool.pytest.ini_options]",
+    "category": "test",
+    "action": "pytest 的 testpaths / pythonpath / addopts 写在 [tool.pytest.ini_options]；IDE 的 pytest 运行配置与命令行读同一份。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && python -c \"import tomllib;assert tomllib.load(open('pyproject.toml','rb'))['tool']['pytest']['ini_options']\" && uv run pytest --collect-only -q | grep -qE ':[[:space:]]*[0-9]+'",
+    "source": "https://www.jetbrains.com/help/idea/pytest.html",
+    "quote": "Specify the pythonpath option in the pytest configuration file, for example, in pyproject.toml.",
+    "applies_to": [
+      "pytest"
+    ]
+  },
+  {
+    "id": "pytest-gate",
+    "title": "测试能跑通（退出 0）",
+    "category": "test",
+    "action": "pytest 退出 0 才是真门禁；IDE 里跑 pytest 只是同一件事的图形界面版本。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && uv run pytest",
+    "source": "https://www.jetbrains.com/help/idea/pytest.html",
+    "quote": "PyCharm detects it and makes it the default project test runner.",
+    "applies_to": [
+      "pytest"
+    ]
+  },
+  {
+    "id": "deps-declared",
+    "title": "开发依赖声明在 [dependency-groups].dev，运行依赖在 [project].dependencies",
+    "category": "deps",
+    "action": "运行期依赖进 [project].dependencies；ruff/mypy/pytest 这类开发依赖进 [dependency-groups].dev——分错位置会让生产镜像带上开发工具，或让 IDE 找不到工具。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && python -c \"import tomllib;d=tomllib.load(open('pyproject.toml','rb'));dev=[x.split('>=')[0].split('==')[0].strip() for x in d['dependency-groups']['dev']];assert 'ruff' in dev and 'mypy' in dev and 'pytest' in dev, dev\"",
+    "source": "https://peps.python.org/pep-0621/",
+    "quote": "Tools MUST specify fields defined by this PEP in a table named [project].",
+    "applies_to": [
+      "pyproject"
+    ]
+  },
+  {
+    "id": "uv-lock-reproducible",
+    "title": "锁文件入库、依赖可复现（uv lock --check）",
+    "category": "lock",
+    "action": "uv.lock 入库并保持最新：uv lock --check 退出 0 才算依赖可复现；否则别人 clone 下来装到的是另一套版本。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && test -f uv.lock && uv lock --check",
+    "source": "https://docs.astral.sh/uv/",
+    "quote": "An extremely fast Python package and project manager, written in Rust.",
+    "applies_to": [
+      "uv"
+    ]
+  },
+  {
+    "id": "venv-ignored",
+    "title": ".venv 与缓存不进库、也不进索引",
+    "category": "ide-indexing",
+    "action": ".gitignore 忽略 .venv/、__pycache__/、.mypy_cache/、.ruff_cache/、.pytest_cache/；IDE 侧再把这些目录 Mark Directory As | Excluded，否则索引会被几万个文件拖垮。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && grep -q '^\\.venv/' .gitignore && grep -q '__pycache__/' .gitignore && grep -q '.mypy_cache/' .gitignore",
+    "source": "https://www.jetbrains.com/help/idea/indexing.html",
+    "quote": "Excluded files and folders are not indexed during project analysis",
+    "applies_to": [
+      "any"
+    ]
+  },
+  {
+    "id": "src-layout",
+    "title": "源码在 src/<包名>/，包名与项目名对应",
+    "category": "layout",
+    "action": "src/<包名>/ 布局：项目名里的连字符换成下划线就是包名（有 __init__.py）。布局与包名不一致时，IDE 的索引与 pytest 的导入路径会对不上。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && python -c \"import tomllib,pathlib;d=tomllib.load(open('pyproject.toml','rb'));pkg=d['project']['name'].replace('-','_');p=pathlib.Path('src')/pkg;assert p.is_dir(), p;assert (p/'__init__.py').exists()\"",
+    "source": "https://www.jetbrains.com/help/idea/pytest.html",
+    "quote": "Specify the pythonpath option in the pytest configuration file, for example, in pyproject.toml.",
+    "applies_to": [
+      "src-layout"
+    ]
+  },
+  {
+    "id": "pythonpath-src",
+    "title": "pytest 的 pythonpath 指到 src（测试免安装导入源码）",
+    "category": "layout",
+    "action": "[tool.pytest.ini_options].pythonpath = [\"src\"]：测试直接看见源码，项目不必先 install。",
+    "verify": "cd \"$SKILL_DIR/templates/py-project\" && python -c \"import tomllib;ini=tomllib.load(open('pyproject.toml','rb'))['tool']['pytest']['ini_options'];assert ini.get('pythonpath')==['src'], ini\"",
+    "source": "https://www.jetbrains.com/help/idea/pytest.html",
+    "quote": "Specify the pythonpath option in the pytest configuration file, for example, in pyproject.toml.",
+    "applies_to": [
+      "pytest"
+    ]
+  },
+  {
+    "id": "ide-plugin-gate",
+    "title": "先判 Python 插件在不在（社区版没有 Python 语言插件）",
+    "category": "ide-gate",
+    "action": "用 `bash scripts/setup-env.sh probe <IDEA安装根>` 看 IDEA_PYTHON_PLUGINS 与 IDEA_PYTHON_GATE：插件不在 = 这台 IDE 没有 Python 语言支持（Marketplace 上 Python 语言插件只发布到 Ultimate），要么装到支持它的 IDE，要么改用命令行工具链（uv/ruff/mypy/pytest）。",
+    "verify": "T1=$(mktemp -d) && mkdir -p \"$T1/bin\" \"$T1/plugins/python\" && : > \"$T1/bin/idea64.exe\" && printf '{\"productCode\":\"IU\",\"version\":\"2026.2.5\",\"buildNumber\":\"IU-262.1\",\"dataDirectoryName\":\"IdeaIU2026.2\"}' > \"$T1/product-info.json\" && U=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T1\") && T2=$(mktemp -d) && mkdir -p \"$T2/bin\" && : > \"$T2/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T2/product-info.json\" && C=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T2\") && rm -rf \"$T1\" \"$T2\" && echo \"$U\" | grep -q '^IDEA_PYTHON_PLUGINS=present$' && echo \"$C\" | grep -q '^IDEA_PYTHON_PLUGINS=absent$' && echo \"$C\" | grep -q '^IDEA_PYTHON_GATE=ultimate$'",
+    "source": "https://plugins.jetbrains.com/api/plugins/631/updates?size=1",
+    "quote": "\"products\": [\"JBCLIENT\",\"IDEA_PRO\"]",
+    "applies_to": [
+      "any"
+    ]
+  },
+  {
+    "id": "inspect-project-classifies-shape",
+    "title": "通用探测器判出这是 Python 项目与它的形态事实",
+    "category": "detector",
+    "action": "`node scripts/inspect-project.mjs <项目目录>` 先按 marker 判语言，再调 Python 分册探测器（scripts/langs/python/detect.mjs）出事实：PYPROJECT / PACKAGE_MANAGER / VENV_DIR / TEST_RUNNER / TYPE_CHECKER / LINTER / SRC_LAYOUT。判错形态就会选错配置项。",
+    "verify": "I=\"$SKILL_DIR/scripts/inspect-project.mjs\" && O=$(node \"$I\" \"$SKILL_DIR/templates/py-project\") && printf '%s\\n' \"$O\" | grep -q '^LANG=python$' && printf '%s\\n' \"$O\" | grep -q '^PYPROJECT=yes$' && printf '%s\\n' \"$O\" | grep -q '^PACKAGE_MANAGER=uv$' && printf '%s\\n' \"$O\" | grep -q '^TEST_RUNNER=pytest$' && printf '%s\\n' \"$O\" | grep -q '^TYPE_CHECKER=mypy$' && printf '%s\\n' \"$O\" | grep -q '^LINTER=ruff$' && printf '%s\\n' \"$O\" | grep -q '^SRC_LAYOUT=src$'",
+    "source": "https://docs.astral.sh/ruff/",
+    "quote": "An extremely fast Python linter and code formatter, written in Rust.",
+    "applies_to": [
+      "any"
+    ]
+  },
+  {
+    "id": "inspect-project-applicable-items",
+    "title": "探测器只返回本形态适用的清单条目",
+    "category": "detector",
+    "action": "`node scripts/inspect-project.mjs <目录> --ids` 按每条的 applies_to 过滤（any / pyproject / ruff / mypy / pytest / uv / src-layout …），`--check-ids` 校验返回的 id 都真实存在。",
+    "verify": "I=\"$SKILL_DIR/scripts/inspect-project.mjs\" && node \"$I\" \"$SKILL_DIR/templates/py-project\" --ids | grep -qx 'ruff-config' && node \"$I\" \"$SKILL_DIR/templates/py-project\" --ids | grep -qx 'pytest-gate' && node \"$I\" \"$SKILL_DIR/templates/py-project\" --ids --check-ids >/dev/null",
+    "source": "https://peps.python.org/pep-0621/",
+    "quote": "Tools MUST specify fields defined by this PEP in a table named [project].",
+    "applies_to": [
+      "any"
+    ]
+  }
+]

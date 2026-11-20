@@ -9,7 +9,7 @@
 
 | 层 | 位置 | 作用 |
 | --- | --- | --- |
-| 项目 profile | `<项目>\.idea\inspectionProfiles\*.xml` + 同目录 `profiles_settings.xml` | 项目生效配置（本 skill 的 `rules/Project_Default.xml` 即此物，随 skill 分发复用） |
+| 项目 profile | `<项目>\.idea\inspectionProfiles\*.xml` + 同目录 `profiles_settings.xml` | 项目生效配置（本 skill 的 `references/langs/java/rules/Project_Default.xml` 即此物，随 skill 分发复用） |
 | IDE 全局 | `<configDir>\options\`（编辑器共享 profile） | 未启用项目 profile 时兜底 |
 
 - `profiles_settings.xml` 的 `<component name="InspectionProjectProfileManager"><option name="PROJECT_PROFILE" value="Project Default"/>` 决定项目用哪份 profile——**新项目 setup 时必须连这份一起拷**，否则 profile 文件在但不生效。

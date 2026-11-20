@@ -1,0 +1,14 @@
+{
+  "lang": "java",
+  "displayName": "Java / Kotlin (JVM)",
+  "markers": ["pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"],
+  "pluginDirs": ["java", "kotlin"],
+  "bundledIn": ["IC", "IU", "WS"],
+  "edition": "community",
+  "toolchain": "jdk",
+  "checklist": null,
+  "settings": null,
+  "templates": [],
+  "detector": "scripts/langs/java/detect.mjs",
+  "note": "JVM 语言栈是 IDEA 全版本捆绑 → 社区版即可用；检视侧另需 P3C 插件（阿里规范）与 Lombok（2026.2+ 不捆绑，缺它会误报 Cannot resolve symbol）。配置侧清单尚未建册 —— 运行期用法见 references/capability-matrix.md 与 references/audit-fix-playbook.md。"
+}

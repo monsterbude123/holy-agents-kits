@@ -1,0 +1,79 @@
+# JVM（Java / Kotlin）分册
+
+> **本分册的地位**：JVM 是 IDEA **全版本捆绑**的语言栈（社区版即可用）→ edition 门禁 = `community`，是所有语言里门槛最低的一档。它同时是 `idea-backend` 最早的实战场景（审查→修复流水线在 `ai-ocr-std-services` 上跑出 104 → 0）。
+> **本分册还没建配置侧清单**（没有 `checklist.json` / `idea-settings.json`）—— JVM 的"接进 IDEA"多数由 Maven/Gradle + JDK 自动完成；要把 IDE 侧设置也纳入自证清单，照 [../../capability-matrix.md](../../capability-matrix.md) §5 的契约补。
+
+---
+
+## §1 能力档位（2026-11-20 实测）
+
+| 档 | 状态 | 备注 |
+|---|---|---|
+| L0 文件级 | ✅ | `ide_find_file` |
+| L1 文本级 | ✅ | `ide_search_text` |
+| **L2 符号级（导航）** | ✅ | Java 是插件符号解析支持最完整的语言：`language:"Java"` + FQN（`com.example.Foo#bar`）或位置法都可用；`ide_find_references` 实测 1.6s / 95 引用零假命中 |
+| **L3 检视级（文件）** | ✅ | `ide_diagnostics` / 内置 `get_file_problems`、`lint_files` |
+| **L4 检视级（全局）** | ⚠️ 需 monster 分支 | 上游 Index 插件（5.20.x）只有 16 个工具，没有 `ide_inspect` → 流水线自动降级到 L3；降级后拿不到 P3C 与 global 批处理项 |
+| **L5 重构级** | ✅ | `ide_refactor_rename`（先 `dryRun:true`）、`ide_refactor_safe_delete`、`ide_move_file` |
+
+---
+
+## §2 必装插件
+
+| 插件 | id | 来源 | 缺了会怎样 |
+|---|---|---|---|
+| Alibaba Java Coding Guidelines（P3C） | `com.alibaba.p3c.xenoamess` | Marketplace | 检视里没有阿里规范；**且 P3C 的 65 条 `Ali*` 规则只有 11 条能经 MCP 驱动**（其余 54 条是 PMD 动态规则，daemon-core 与批处理管线都不执行）→ 经 MCP 能跑到的"阿里规范"= 直连 Ali 规则 + IDEA 平台检视 |
+| Lombok | `Lombok` | Marketplace | 2026.2+ 不再捆绑 → 大面积误报 `Cannot resolve symbol 'log'` / getter 不可解析 |
+
+inspection profile（项目当前生效的那份）在 [rules/Project_Default.xml](rules/Project_Default.xml)，用法与必装插件清单见 [rules/README.md](rules/README.md)。
+
+---
+
+## §3 符号级的正确姿势（Java 专属，但可作其它语言的目标形态）
+
+```bash
+# 名字法：先拿 symbolId，后续复用
+bash scripts/mcp-call.sh index ide_find_class '{"query":"Service","project_path":"<绝对路径>"}'
+
+# 位置法：file + line/column（1-based，落在符号首字符）+ language:"java"
+bash scripts/mcp-call.sh index ide_find_references '{"file":"src/main/java/...","line":42,"column":9,"language":"java","project_path":"<绝对路径>"}'
+
+# FQN 形式：com.example.Service#run
+bash scripts/mcp-call.sh index ide_call_hierarchy '{"language":"java","symbol":"com.example.Service#run","direction":"callers","depth":2,"project_path":"<绝对路径>"}'
+```
+
+> **凡是返回里带 `resolvedSymbol` 的结果，先确认它解析到了代码符号**（见 [../../capability-matrix.md](../../capability-matrix.md) §2 的 L2 行）——这是所有语言共用的判据。
+
+---
+
+## §4 检视噪音与豁免（每次审查先定）
+
+**通用噪音（直接豁免）**：
+
+- P3C `NonAsciiCharacters` —— 中文注释项目必刷屏（本仓实测 612 条）；
+- `BusyWait` —— 看门狗/轮询的 sleep 是设计意图；
+- `SpellCheckingInspection` 对协议词/产品词误报（`chatcmpl`/`minioadmin`/`rowcount`/`staleS`/`timeoutS`…）；
+- `FieldCanBeLocal` / `UnnecessaryLocalVariable` —— 纯风格，diff 噪音大于收益。
+
+**误报但要保留（不是豁免，是"加抑制 + 中文理由"）**：框架反射调用（`@Bean`/`@Scheduled`/`@PostConstruct`/`@EventListener`/Spring 注入字段）、端口契约方法、错误码注册表的登记项、不可变协议 DTO 的 record 访问器。
+
+**真死码要删**（零引用且非框架调用、非对外契约）：删前用 `ide_find_references` 确认。
+
+---
+
+## §5 审查→修复流水线（JVM 是它的主场）
+
+`ide_inspect` 批检视 → 归一化 `file:line | tool | desc` 清单 → 按**文件边界**分簇 → 并发派发 → JOIN 门禁 → 分组提交。方法论、时间预算、反例集、子代理 prompt 模板与 MCP 授权清单见 [../../audit-fix-playbook.md](../../audit-fix-playbook.md)。
+
+**这套流水线的语言前提**：P3C 规则、global 批处理项（unused declaration / DuplicateExpressions / SameParameterValue…）、`src/main` / `src/test` 分流，都是 JVM 侧能力。别的语言照搬会拿到空清单 —— 那门语言该走它的分册（检视权威源通常是 `tsc`/`ruff`/`go vet` 之类）。
+
+---
+
+## §6 未建册的部分（诚实标注）
+
+| 缺什么 | 影响 | 补法 |
+|---|---|---|
+| 配置侧清单（`checklist.json`） | JDK 版本、Maven/Gradle、代码风格、.idea 索引排除等没有"每条可自证"的要求 | 照 TS 分册的 schema 补（64 条的量级是 TS 独有的） |
+| IDE 侧设置清单（`idea-settings.json`） | 没有 IDE 设置项的出处/断言台账 | 同上 |
+| 探测器（`detect.mjs`） | 分发器对 JVM 项目只能靠 marker 判语言，出不了项目形态事实（多模块/构建工具/测试框架） | 补 `scripts/langs/java/detect.mjs` |
+| 运行期档位回归 | §1 的档位是 2026-11-20 的一次快照 | 每半年按 [../../capability-matrix.md](../../capability-matrix.md) §2 重探 |
