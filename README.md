@@ -200,7 +200,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 ### skill-creator-v2 —— 技能本身的开发与评测
 
-**可观察行为**：生成三段式技能骨架；把超长正文拆到 `references/` 并在原处留指针；跑规范校验（行数、frontmatter、引用完整性、代码外泄）；按反馈迭代 `description`。
+**可观察行为**：生成技能骨架（`--runtime node/python/uv`，脚本模板自带 .env 三级查找、BOM 兼容与 stdout 单行 JSON 契约）；把超长正文拆到 `references/` 并在原处留指针；跑规范校验（行数、frontmatter、引用完整性、代码外泄、.env 密钥泄漏）；按反馈迭代 `description`。
 
 **用法**：说「写一个 skill」「SKILL.md 太长」「校验一下这个技能」，agent 会调用技能自带的脚本。
 
@@ -221,7 +221,7 @@ holy-agents-kits/
 │   ├── rules-layer-governance/     SKILL.md + references/ + templates/
 │   ├── human-docs/                 SKILL.md + references/
 │   ├── knowledge-surface/          SKILL.md + references/ + scripts/ + assets/
-│   └── skill-creator-v2/           SKILL.md + references/ + scripts/
+│   └── skill-creator-v2/           SKILL.md + references/ + scripts/ + assets/templates/
 ├── bin/cli.js                      安装器（零依赖）
 ├── FEEDBACK.md                     issue 上报入口与必填信息
 └── package.json

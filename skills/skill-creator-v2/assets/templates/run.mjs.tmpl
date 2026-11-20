@@ -1,0 +1,75 @@
+#!/usr/bin/env node
+// 技能运行脚本模板（Node ESM，零依赖，需 Node >= 20.12）。
+// I/O 契约：stdout 只输出一行 JSON；日志走 stderr；成功退出 0、失败退出 1。
+// 完整规范：holy-agents-kits skills/skill-creator-v2/references/structure.md §5。
+
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// 手动解析 .env 而不用 process.loadEnvFile：要剥 UTF-8 BOM
+// （Windows 记事本存的 .env 带 BOM，loadEnvFile 会静默丢掉首个变量），且不覆盖已有环境变量。
+function loadEnvFile(path) {
+  if (!existsSync(path)) return;
+  const text = readFileSync(path, 'utf8').replace(/^\uFEFF/, '');
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!m) continue;
+    let value = m[2].trim();
+    const q = value[0];
+    if ((q === '"' || q === "'") && value.endsWith(q)) value = value.slice(1, -1);
+    if (!(m[1] in process.env)) process.env[m[1]] = value;
+  }
+}
+
+// 优先级：系统环境变量 > <项目根>/.agents/.env（从 CWD 向上找，找不到不报错） > <技能目录>/.env
+for (let dir = process.cwd(); ;) {
+  loadEnvFile(join(dir, '.agents', '.env'));
+  const parent = resolve(dir, '..');
+  if (parent === dir) break;
+  dir = parent;
+}
+loadEnvFile(join(__dirname, '..', '.env'));
+
+function reply(payload, exitCode = 0) {
+  process.stdout.write(JSON.stringify(payload) + '\n');
+  process.exit(exitCode);
+}
+
+const log = (...args) => console.error('[__SKILL_NAME__]', ...args);
+
+async function readStdin() {
+  if (process.stdin.isTTY) return '';
+  let data = '';
+  process.stdin.setEncoding('utf8');
+  for await (const chunk of process.stdin) data += chunk;
+  return data;
+}
+
+async function main() {
+  try {
+    const apiKey = process.env.TARGET_API_KEY;
+    if (!apiKey) {
+      return reply({ ok: false, error: '缺少 TARGET_API_KEY：在 <技能目录>/.env（参考 .env.example）、<项目根>/.agents/.env 或系统环境变量配置。' }, 1);
+    }
+
+    // 输入：CLI 参数优先，其次 stdin 管道（长文本/多行 JSON 用管道，避开跨平台引号转义）
+    const input = process.argv[2] || (await readStdin()).trim();
+    if (!input) {
+      return reply({ ok: false, error: '缺少输入：传位置参数，或通过 stdin 管道传入。' }, 1);
+    }
+
+    log('处理输入：', input);
+
+    // TODO: 核心业务逻辑（原生 fetch 调 API / 文件读写 / CLI 封装……）
+    const result = { received: input, keyPrefix: apiKey.slice(0, 4) + '***' };
+
+    return reply({ ok: true, data: result }, 0);
+  } catch (err) {
+    return reply({ ok: false, error: (err && err.message) || String(err) }, 1);
+  }
+}
+
+main();

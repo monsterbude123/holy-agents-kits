@@ -19,6 +19,7 @@
    值得建；输出主观的技能（写作风格、审美）通常不需要。按技能类型给建议，**由用户定**。
 
 **边界**：明确写出这个技能**不**做什么。边界不清的技能会到处抢触发，最后谁都不可靠。
+**通用性靠组合**：一个技能一个窄边界，别把「通用工具」当目标——宽技能抢触发，窄技能组合成流程。
 
 ---
 
@@ -35,7 +36,7 @@
 ## 3 起骨架
 
 ```bash
-python .agents/skills/skill-creator/scripts/scaffold_skill.py skills <name> --description "一句话说明"
+python .agents/skills/skill-creator-v2/scripts/scaffold_skill.py skills <name> --description "一句话说明"
 ```
 
 生成的是三段式空骨架（骨架流程 / 核心逻辑 / 核心循环）+ `references/` + `scripts/`。

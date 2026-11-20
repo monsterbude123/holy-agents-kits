@@ -23,7 +23,8 @@ except ImportError:  # 直接当脚本跑：python scripts/package_skill.py
 # Patterns to exclude when packaging skills.
 EXCLUDE_DIRS = {"__pycache__", "node_modules"}
 EXCLUDE_GLOBS = {"*.pyc"}
-EXCLUDE_FILES = {".DS_Store"}
+# .env 是本地真实密钥，绝不入分发包（.env.example 才是随包分发的模板）
+EXCLUDE_FILES = {".DS_Store", ".env"}
 # Directories excluded only at the skill root (not when nested deeper).
 ROOT_EXCLUDE_DIRS = {"evals"}
 

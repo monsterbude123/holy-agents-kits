@@ -13,14 +13,18 @@
 │   └── Markdown 正文
 ├── scripts/       可选 —— 固化的确定性流程
 ├── references/    可选 —— 按需加载的细节文档
-└── assets/        可选 —— 输出用的模板、图标、字体
+├── assets/        可选 —— 输出用的模板、图标、字体
+├── .env.example   可选 —— 需要环境变量的技能必带（提交入库）
+└── .env           实际密钥，本地生成，不入库、不入分发包
 ```
 
-| 目录 | 什么时候用 | 约束 |
+| 目录/文件 | 什么时候用 | 约束 |
 |---|---|---|
-| `scripts/` | 有「每次都要重写一遍」的代码 | 只依赖标准库；有 `--help`；stdout 是结果、stderr 是过程日志 |
-| `references/` | 协议表、错误码、示例集、长清单 | 单文件 ≤ 300 行；超过继续按主题拆 |
+| `scripts/` | 有「每次都要重写一遍」的代码 | 遵守 §5 运行时协议；有 `--help`；stdout 是结果、stderr 是过程日志 |
+| `references/` | 协议表、错误码、示例集、长清单、实战踩坑记录 | 单文件 ≤ 300 行；超过继续按主题拆 |
 | `assets/` | 要被复制进产物的静态文件 | 不在里面写说明文档 |
+| `.env.example` | 技能需要 API Key 等配置 | 声明全部变量名并留一行注释说明取值；入库 |
+| `.env` | 同上，本地真实值 | 由用户从 `.env.example` 复制生成；校验器见真实 `.env` 直接判错 |
 
 **判据**：内容会被**每次触发**都读 → 放正文；只在**特定分支**才读 → 放 references；
 **根本不需要读**、只需要执行 → 放 scripts。
@@ -124,6 +128,55 @@ SKILL.md 正文 = frontmatter 之后的全部行。
 | 目录名 | 与 `name` 完全一致 | `work-with-ai-gateway` |
 | `name` | kebab-case，单个连字符 | `parse-to-md` |
 | `references/` 文件 | 小写 kebab-case + `.md` | `gateway-api.md` |
-| `scripts/` 文件 | 小写 kebab-case + `.py` | `validate_skill.py` |
+| `scripts/` 文件 | 小写 kebab-case + `.py` / `.mjs` | `validate_skill.py`、`run.mjs` |
 
 **目录名与 `name` 不一致是最常见的低级错误**，校验器会直接判错。
+
+---
+
+## 5 scripts 运行时协议
+
+分发给其他 Agent 宿主（Claude Code、Trae、ZCode、Codex 等）的脚本，必须做到：
+**自带环境、自带配置定位、输出可解析**。规范只在这一节定义，SKILL.md 与脚手架只引用不复制。
+
+### 5.1 技术栈决策树（三选一）
+
+**先问要不要写脚本**（判据见 SKILL.md §2.3：重复出现、固定 schema、固定顺序可机械检查）；纯判断类技能可以没有 `scripts/`。决定写，再选型：
+
+| 场景 | 选型 | 理由 |
+|---|---|---|
+| 调外部 API、轻量文件读写、CLI 封装（**跨 Agent 分发默认**） | Node.js ESM（`.mjs`） | 宿主普遍自带 Node ≥ 20.12；原生 fetch，零 `package.json`、零 `npm install` |
+| 纯逻辑 / 文本处理 / 仓内工具 | Python 标准库 | 零前置依赖，连 uv 都不需要 |
+| 强依赖 Python 生态（pandas、PDF/Office 解析、图像、本地模型） | Python + uv（PEP 723） | `uv run x.py` 自动建隔离环境拉依赖；**禁止**手管 pip / venv |
+
+判据是「能不能在目标宿主裸跑」：宁可少一个依赖，不要多一个安装步骤。
+
+### 5.2 .env 三级查找
+
+Agent 调脚本时 CWD 通常是**用户项目根**而不是技能目录——配置定位必须基于脚本自身路径
+（`import.meta.url` / `__file__`），绝不依赖 `process.cwd()` 找技能自己的文件：
+
+| 优先级 | 位置 | 说明 |
+|---|---|---|
+| 1 | 系统环境变量 | 宿主注入的 Key 永远最高；加载 .env 时不得覆盖已有变量 |
+| 2 | `<项目根>/.agents/.env` | 从 CWD 向上找；项目级配置，找不到不报错 |
+| 3 | `<技能目录>/.env` | 基于脚本自身路径定位技能根；`.env.example` 入库，`.env` 本地生成 |
+
+坑：Windows 记事本存的 .env 带 UTF-8 BOM，Node `process.loadEnvFile` 会**静默丢掉首个变量**（实测）。
+Python 用 `encoding="utf-8-sig"` 读可免；Node 需手动剥 BOM。脚手架模板已内置处理。
+
+MCP Server 型技能例外：环境变量由宿主配置注入（如 `claude_desktop_config.json` 的 env 字段），
+脚本只读 `process.env` / `os.environ`，不自己找 `.env`。
+
+### 5.3 I/O 契约
+
+- **输入**：简单参数走 CLI 位置参数；长文本 / 多行 JSON 走 stdin 管道（避开跨平台引号转义差异）。
+- **stdout**：只允许输出**一行合法 JSON**——`{"ok": true, "data": ...}` 或 `{"ok": false, "error": "..."}`。
+  任何 `console.log` / `print` 调试文本都会让 Agent 解析失败，日志一律走 stderr。
+- **stderr**：运行日志、进度提示、警告。
+- **退出码**：成功 `0`、失败 `1`；参数校验自己写清楚错误信息，别让 argparse 的 usage 退出码 `2` 漏出来。
+- **SKILL.md 写死命令**：正文「脚本」段给出执行命令，路径用 `<skill_dir>` 占位**写死**，
+  不写裸相对路径——Agent 站在用户项目根照抄相对路径会直接找不到模块；并注明缺 Key 时引导用户去
+  `<技能目录>/.env` 配置（对照 `.env.example`）。
+
+模板在 `assets/templates/run.mjs.tmpl`、`run.py.tmpl`，由 `scaffold_skill.py --runtime` 生成，不要手抄。

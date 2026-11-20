@@ -61,7 +61,10 @@ FENCED_BLOCK_RE = re.compile(
     r"^```([A-Za-z0-9_+-]*)[ \t]*$.*?^```[ \t]*$", re.MULTILINE | re.DOTALL
 )
 REFERENCE_LINK_RE = re.compile(r"references/([A-Za-z0-9_./-]+\.md)")
-SCRIPT_LINK_RE = re.compile(r"scripts/([A-Za-z0-9_./-]+\.py)")
+SCRIPT_LINK_RE = re.compile(r"scripts/([A-Za-z0-9_./-]+\.(?:py|mjs))")
+
+# 正文里出现这类变量名说明技能需要密钥配置，应配套 .env.example（运行时协议 §5.2）
+ENV_HINT_RE = re.compile(r"\b[A-Z][A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)\b")
 
 
 # --------------------------------------------------------------------------
@@ -205,7 +208,8 @@ class SkillInfo:
     def script_files(self) -> List[Path]:
         if not self.scripts_dir.is_dir():
             return []
-        return sorted(p for p in self.scripts_dir.rglob("*.py") if p.is_file())
+        files = [p for pattern in ("*.py", "*.mjs") for p in self.scripts_dir.rglob(pattern)]
+        return sorted(p for p in files if p.is_file())
 
     def relative(self, target: Path) -> str:
         try:
@@ -424,6 +428,21 @@ def validate_skill(
             "body.code",
             "SKILL.md 正文内嵌了 %d 段实现型代码（%s）；实现必须固化到 scripts/，正文只留调用方式"
             % (len(blocks), langs),
+        )
+
+    # ---- 密钥文件防护（运行时协议 §5.2） -------------------------------
+    # 真实 .env 不入库、不入包（分发泄密）；入库的只有 .env.example 模板。
+    if (skill_dir / ".env").is_file():
+        add(
+            "error",
+            "env.committed",
+            "技能目录存在真实 .env（可能含密钥）：只提交 .env.example，.env 留在本地（git rm --cached 后加入 .gitignore）",
+        )
+    if not (skill_dir / ".env.example").is_file() and ENV_HINT_RE.search(info.body):
+        add(
+            "warn",
+            "env.example-missing",
+            "正文提到密钥型环境变量但缺 .env.example 模板；按运行时协议补一份（scaffold 生成的骨架自带）",
         )
 
     # ---- 反馈入口（本仓门禁） ------------------------------------------
