@@ -57,6 +57,18 @@ IDEA 的 TS 能力分两层，别混：
 - `bash scripts/init-ts-project.sh <目标项目目录> --template ts-project --name <包名>` —— Node ESM 服务（tsc 构建，nodenext + dist/ + sourcemap）
 - `bash scripts/init-ts-project.sh <目标项目目录> --template ts-web --name <包名>` —— 前端（Vite + React + TS，preserve + bundler 解析 + noEmit + `@/` 别名）
 
+**接已有项目**（更常见）先跑探测：
+
+`node scripts/inspect-project.mjs <项目目录>` —— 判形态、列事实。几个必看字段：
+
+- `PACKAGE_MANAGER` —— 以 package.json 的 `packageManager` 字段为准（不是 lockfile）。
+  **IDEA 的 Settings > JavaScript Runtime > Package manager 要跟它一致**，否则 Run 'npm install' 跑的是另一套依赖树。
+  `MULTIPLE_LOCKFILES=yes` 说明仓库里躺着两套 lockfile（npm + pnpm），先定一个再谈别的。
+- `TS_CONFIG_COUNT` / `TS_CONFIG_EXTENDS_MAIN` —— 大于 1 时，**每一个** `tsconfig.*.json` 都要登记在
+  Editor > File Types > Typescript config 文件类型下，否则 IDEA 不认它（IDE 取的是"最近且真正引用到该文件"的那份）。
+- `AT_TYPES_NODE_MATCHES_PIN` —— 为 no 时说明 @types/node 与运行时的 Node 主版本不一致，IDE 里的 Node API 签名会是错的。
+- `WORKSPACE` / `WORKSPACE_PACKAGES` —— 是工作区时，子包各有各的 tsconfig 与 `type`，要逐包核对，别只看根。
+
 它会做四件事：
 
 1. 复制 `templates/ts-project/`（跳过 node_modules/dist/coverage，已存在的文件默认不覆盖）
@@ -109,6 +121,8 @@ IDEA 的 TS 能力分两层，别混：
 每条的 `verify` 都是**真跑**的命令（装好了工具链的话，`tsc --noEmit`、`eslint .`、`prettier --check .`、`vitest run` 会真的执行）。跑不过就是没配好，别嘴硬。
 
 依赖没装时（`templates/ts-project/node_modules` 不存在），与执行相关的条目会明确报 "toolchain not installed"，先跑 `bash scripts/setup-env.sh install-deps`。
+
+**真实项目上跑门禁前先限定范围**：几百个包的仓库里，`eslint .` / `prettier --check .` / `vitest run` / `tsc --noEmit` 都是分钟到几十分钟量级（实测一个 2284 包的 pnpm 仓库，vitest 那一跑直接把整个测试套件拉起来了）。先用项目自带的 `npm run lint` / `npm run format:check` / `npm run typecheck`（通常已经封好了范围、并行度甚至堆上限），或先跑单个文件 / `vitest related <file>` 做配置验证，全量留给 CI。**类型检查尤其要走项目自己的入口**——裸 `tsc --noEmit` 在某些仓库会因默认堆上限 SIGABRT，日志里一条 `error TS` 都没有，很容易被读成"类型检查挂了"，真实原因只是内存不够。
 
 ---
 

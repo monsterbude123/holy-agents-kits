@@ -42,12 +42,16 @@ description: 把 TypeScript 项目接进 IntelliJ IDEA 的可执行配置清单�
 
 ## 自证机制（本技能的核心）
 
-清单在 `references/checklist.json`（项目侧 + IDE 侧共 63 条），每条含 `id / title / category / action / verify / source / quote`：
+清单在 `references/checklist.json`（项目侧 + IDE 侧共 64 条），每条含 `id / title / category / action / verify / source / quote`：
 
 - `verify` 是**在本机真跑**的命令，退出 0 才算这一条配好了；
 - `source` + `quote` 必须能在 `references/sources.md` 的抓取快照里逐字命中——**引文不许凭记忆写**；
-- `applies_to` 是条件列表（`any` / `node` / `web` / `tsc-build` / `bundler` / `vitest`），探测器按项目事实过滤，前端专属项不会出现在 Node 项目里；
+- `applies_to` 是条件列表（`any` / `node` / `web` / `tsc-build` / `bundler` / `vitest` / `pnpm` / `workspace` / `multi-tsconfig`），探测器按项目事实过滤，前端专属项不会出现在 Node 项目里；
 - IDE 设置项另有一张表 `references/idea-settings.json`（路径 + 期望状态 + 怎么断言 + 出处 + `edition`），由 `scripts/check-registry-entry.sh` 逐条校验。
+
+**这份清单在真实大型仓库上跑过**：Next.js 15 + pnpm 工作区（302 个 npm 脚本、2284 个包、3 个 tsconfig），
+首轮 PASS 2 / FAIL 41——多数是清单自己的误报，已逐条改正；复测 PASS 26 / FAIL 12，剩下的都是真问题。
+回归记录见 [references/field-test.md](references/field-test.md)。
 
 **注意 verify 验的是本技能随附的模板，不是用户的项目。** 接到用户项目上时，`action` 说的是"这一项在目标项目里应该长什么样"，由 agent 对着用户的 tsconfig/package.json 逐条核对；`verify` 保证的是"这套要求本身是自洽且可执行的"。
 
