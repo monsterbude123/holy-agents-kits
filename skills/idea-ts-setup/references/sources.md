@@ -115,11 +115,13 @@
 
 > extends: [js.configs.recommended, tseslint.configs.recommended],
 
-## [S14] ESLint — Command Line Interface（退出码）
+## [S14] ESLint — Command Line Interface（退出码 / 配置解析）
 - URL: https://eslint.org/docs/latest/use/command-line-interface
-- 用于条目：`eslint-gate`
+- 用于条目：`eslint-gate`、`eslint-print-config`
 
 > Linting was successful and there are no linting errors.
+
+> This option outputs the configuration to be used for the file passed.
 
 ## [S15] Prettier — Configuration
 - URL: https://prettier.io/docs/configuration
@@ -135,9 +137,11 @@
 
 ## [S17] Prettier — CLI
 - URL: https://prettier.io/docs/cli
-- 用于条目：`prettier-gate`
+- 用于条目：`prettier-gate`、`prettier-find-config`
 
 > When you want to check if your files are formatted, you can run Prettier with the --check flag (or -c).
+
+> In order to skip this, you may ask Prettier to find the config file once, and re-use it later on.
 
 ## [S18] nvm — .nvmrc
 - URL: https://github.com/nvm-sh/nvm#nvmrc

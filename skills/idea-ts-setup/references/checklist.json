@@ -718,5 +718,44 @@
     "verify": "I=\"$SKILL_DIR/scripts/inspect-project.mjs\" && N=$(node \"$I\" \"$SKILL_DIR/templates/ts-project\" --ids) && W=$(node \"$I\" \"$SKILL_DIR/templates/ts-web\" --ids) && printf '%s\\n' \"$N\" | grep -qx 'tsconfig-strict' && ! printf '%s\\n' \"$N\" | grep -qx 'tsconfig-jsx' && printf '%s\\n' \"$W\" | grep -qx 'tsconfig-jsx' && ! printf '%s\\n' \"$W\" | grep -qx 'tsconfig-out-dir' && node \"$I\" \"$SKILL_DIR/templates/ts-project\" --ids --check-ids >/dev/null && node \"$I\" \"$SKILL_DIR/templates/ts-web\" --ids --check-ids >/dev/null",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "Important: exclude only changes which files are included as a result of the include setting."
+  },
+  {
+    "id": "eslint-print-config",
+    "title": "ESLint 必须能为具体文件解析出配置（IDE 的自动配置走的是同一条查找路径）",
+    "category": "lint",
+    "applies_to": [
+      "any",
+      "web"
+    ],
+    "action": "IDE 的 Automatic ESLint configuration 是「从当前文件所在目录开始、逐级向上找到项目根」的查找。命令行可以复现同一条路径：`eslint --print-config <文件>` 打印的就是 IDE 会给这个文件用的配置。它比「跑一次 lint」更能定位问题——monorepo 里每个包的 eslint 版本/插件不同，只有按文件解析才知道 IDE 拿的是哪一份。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install eslint --print-config src/index.ts >/dev/null",
+    "source": "https://eslint.org/docs/latest/use/command-line-interface",
+    "quote": "This option outputs the configuration to be used for the file passed."
+  },
+  {
+    "id": "prettier-find-config",
+    "title": "Prettier 必须能为具体文件找到配置文件（IDE 的格式化器用的是同一条查找路径）",
+    "category": "format",
+    "applies_to": [
+      "any",
+      "web"
+    ],
+    "action": "`prettier --find-config-path <文件>` 打印的就是 IDE 对这个文件会用到的配置文件路径。找不到就说明「命令行格式化得好好的、IDE 里格式却不认」——根因通常是 .prettierrc 放错了目录层级，或者 IDE 指向了另一个工作目录。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && P=$(npx --no-install prettier --find-config-path src/index.ts) && test -f \"$P\"",
+    "source": "https://prettier.io/docs/cli",
+    "quote": "In order to skip this, you may ask Prettier to find the config file once, and re-use it later on."
+  },
+  {
+    "id": "npm-scripts-resolvable",
+    "title": "npm 必须能列出全部脚本（IDEA 的运行配置就是按脚本名引用它们）",
+    "category": "package",
+    "applies_to": [
+      "any",
+      "web"
+    ],
+    "action": "在项目目录跑一次不带参数的 `npm run`，它会列出 scripts 里的全部脚本。IDEA 的 NPM 运行配置填的就是这里的脚本名，名字对不上，配置就会变成一个跑不起来的空壳。这一步不需要装依赖，是最便宜的一道自检。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && npm run 2>&1 | grep -q 'typecheck' && npm run 2>&1 | grep -q 'lint' && npm run 2>&1 | grep -q 'build'",
+    "source": "https://docs.npmjs.com/cli/v11/using-npm/scripts",
+    "quote": "The \"scripts\" property in your package.json supports built-in lifecycle events and arbitrary scripts."
   }
 ]

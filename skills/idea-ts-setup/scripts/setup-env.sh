@@ -205,7 +205,10 @@ init_config() {
     echo "    \"build\": \"$(printf '%s\n' "$facts" | sed -n 's/^IDEA_BUILD=//p')\","
     echo "    \"productCode\": \"$(printf '%s\n' "$facts" | sed -n 's/^IDEA_PRODUCT_CODE=//p')\","
     echo "    \"edition\": \"$(printf '%s\n' "$facts" | sed -n 's/^IDEA_EDITION=//p')\","
-    echo "    \"configDir\": \"$(printf '%s\n' "$facts" | sed -n 's/^IDEA_CONFIG_DIR=//p')\""
+    echo "    \"configDir\": \"$(printf '%s\n' "$facts" | sed -n 's/^IDEA_CONFIG_DIR=//p')\","
+    echo "    \"tsPlugins\": \"$(printf '%s\n' "$facts" | sed -n 's/^IDEA_TS_PLUGINS=//p')\","
+    echo "    \"tsService\": \"$(printf '%s\n' "$facts" | sed -n 's/^IDEA_TS_SERVICE=//p')\","
+    echo "    \"nodeRegistry\": \"$(printf '%s\n' "$facts" | sed -n 's/^IDEA_NODE_REGISTRY=//p')\""
     echo "  },"
     echo "  \"toolchain\": {"
     echo "    \"nodeBin\": \"$(printf '%s\n' "$nodefacts" | sed -n 's/^NODE_BIN=//p')\","
@@ -230,7 +233,7 @@ check_config() {
     const root=c.idea?.installRoot;
     if(!root){console.error("config.json missing idea.installRoot");process.exit(1);}
     if(!fs.existsSync(root)){console.error("idea.installRoot does not exist: "+root);process.exit(1);}
-    console.log("OK: idea="+c.idea.edition+" ("+c.idea.productCode+") tsPlugins="+(c.idea.tsPlugins||"?")+" node="+(c.toolchain?.nodeVersion||"?"));
+    console.log("OK: idea="+c.idea.edition+" ("+c.idea.productCode+") tsPlugins="+(c.idea.tsPlugins||"?")+" nodeRegistry="+(c.idea.nodeRegistry||"?")+" node="+(c.toolchain?.nodeVersion||"?"));
   ' "$CONFIG"
 }
 

@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、IDEA 的 TypeScript 开发环境、选择性分支同步、规则层治理、文档内容管理、知识可视化、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -22,6 +22,11 @@ mindmap
       PSI 符号与调用链
       inspection 门禁含 P3C
       审查 → 修复流水线
+    idea-ts-setup
+      IDEA 的 TS 开发环境
+      版本门禁 社区版 vs Ultimate
+      可溯源配置清单
+      逐条 verify 自证
     git-selective-branch-sync
       三方合并保两侧改动
       不同步台账
@@ -72,6 +77,7 @@ mindmap
 |---|---|---|
 | `analysis-codegraph` | 按符号与调用链查代码，一次调用拿到源码与影响面 | 「这个函数谁在调」「改这个字段会影响哪」 |
 | `idea-backend` | 把本机 IDEA 当 agent 的语义后端：PSI 检索、inspection 门禁（含阿里 P3C）、审查 → 修复流水线，能力持续扩展 | 「用 IDEA 查这个符号」「按 P3C 审一遍」「让 IDEA 帮我重构」 |
+| `idea-ts-setup` | 把 TS 项目接进 IntelliJ IDEA：版本门禁（社区版 vs Ultimate）、Node 解释器与 TS 语言服务、tsconfig/eslint/prettier/vitest 关键项、共享运行配置与索引排除；清单每条带真跑的 verify 与官方出处 | 「IDEA 里怎么配 TS」「tsconfig 改了 IDE 不生效」「社区版能不能跑 TS」 |
 | `git-selective-branch-sync` | 两个分支差距大时只搬指定部分，保住目标分支已有改动 | 「把这个分支的功能并过来，文档不要」 |
 | `jenkins-cli` | 写/改/校验 Jenkinsfile，DooD 构建部署，接 GitLab | 「帮我写条流水线」「这个 Jenkinsfile 报错」 |
 | `jenkins-controller` | 控制器容器的部署、迁移、切流、口令轮换、体检 | 「Jenkins 容器起不来」「切回宿主机」 |
@@ -133,6 +139,14 @@ npx holy-agents-kits install jenkins-cli --force
 **用法**：说「用 IDEA 查一下这个符号」「按 P3C 规范审一遍，改完再验一遍」，agent 走 `scripts/audit-baseline.sh` 拿基线清单 → 分簇派发修复 → `scripts/inspect-diff.sh` 复检。
 
 **边界**：需要本机装好 IDEA 2026.2.5（社区版）与 MCP server、P3C / Lombok / Index 插件，机器事实由技能内 `setup-env.sh` 探测写入本地 `config.json`（不入库、不分发）；P3C 的 65 条规则里只有 11 条能经 MCP 驱动，其余需走 GUI 或 PMD CLI。后续 IDEA 能力（重构、运行配置、模板、VCS）一律往这个技能里加，不另起炉灶。
+
+### idea-ts-setup —— 把 TS 项目接进 IntelliJ IDEA
+
+**可观察行为**：给出一份 63 条的 IDEA×TS 配置清单，每条都带**真跑**的 `verify` 命令与官方文档出处：项目侧覆盖 tsconfig / package.json / eslint / prettier / vitest / Node 版本钉版，IDE 侧覆盖版本门禁、Node 解释器与包管理器、TS 语言服务与 TS 包版本、ESLint/Prettier 集成、运行与调试、测试、索引排除。另有 `inspect-project.mjs` 判已有项目的形态（node / web）并按形态筛出适用条目。
+
+**用法**：说「IDEA 里怎么配 TS」「tsconfig 改了 IDE 不生效」「社区版能不能跑 TS」，agent 跑 `scripts/inspect-project.mjs` 判形态 → 照 `references/setup-0to1.md` 落配置 → `bash scripts/verify-item.sh --all` 逐条自证。
+
+**边界**：**社区版（IdeaIC）只能做 TS 编写与静态检查，跑不了、调不了、测不了 TS**——Node.js 与 JavaScript Debugger 插件、JS/TS 测试执行都是 Ultimate 独占，且 JS/TS 语言插件根本不在 Marketplace 的社区版兼容列表里。要跑要调只能用 Ultimate 或 WebStorm。清单的 `verify` 验的是技能随附的模板，接用户项目时由 agent 对着用户的 tsconfig/package.json 逐条核对。
 
 ### git-selective-branch-sync —— 只搬该搬的那部分
 
@@ -213,6 +227,7 @@ holy-agents-kits/
 ├── skills/
 │   ├── analysis-codegraph/         SKILL.md + references/
 │   ├── idea-backend/               SKILL.md + references/ + rules/ + scripts/
+│   ├── idea-ts-setup/              SKILL.md + references/ + scripts/ + templates/
 │   ├── git-selective-branch-sync/  SKILL.md + references/ + scripts/
 │   ├── jenkins-cli/                SKILL.md + references/ + scripts/
 │   ├── jenkins-controller/         SKILL.md + references/ + scripts/
