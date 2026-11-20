@@ -12,3 +12,7 @@ skills/*/config.json
 # 技能本地密钥（运行时协议：只入库 .env.example；校验器见真实 .env 直接判错）
 skills/*/.env
 .agents/skills/*/.env
+
+# autoresearch 会话状态（不入库）
+.auto/
+autoresearch-dashboard.html
