@@ -7,7 +7,9 @@
     "verify": "T1=$(mktemp -d) && mkdir -p \"$T1/bin\" \"$T1/plugins/javascript-impl\" && : > \"$T1/bin/idea64.exe\" && printf '{\"productCode\":\"IU\",\"version\":\"2026.2.5\",\"buildNumber\":\"IU-262.1\",\"dataDirectoryName\":\"IdeaIU2026.2\"}' > \"$T1/product-info.json\" && U=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T1\") && T2=$(mktemp -d) && mkdir -p \"$T2/bin\" && : > \"$T2/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T2/product-info.json\" && C=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T2\") && rm -rf \"$T1\" \"$T2\" && echo \"$U\" | grep -q '^IDEA_EDITION=ultimate$' && echo \"$U\" | grep -q '^IDEA_TS_PLUGINS=present$' && echo \"$C\" | grep -q '^IDEA_EDITION=community$' && echo \"$C\" | grep -q '^IDEA_TS_PLUGINS=absent$'",
     "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-node-js.html",
     "quote": "The plugins are available only in IntelliJ IDEA with the Ultimate subscription.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-run-configs",
@@ -17,7 +19,9 @@
     "verify": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const dir=path.join(process.env.SKILL_DIR,\"templates/ts-project/.idea/runConfigurations\");const pkg=JSON.parse(fs.readFileSync(path.join(process.env.SKILL_DIR,\"templates/ts-project/package.json\"),\"utf8\"));const files=fs.readdirSync(dir).filter(f=>f.endsWith(\".xml\"));if(!files.length){console.error(\"no shared run configurations\");process.exit(1)}for(const f of files){const s=fs.readFileSync(path.join(dir,f),\"utf8\");if(!/^<\\?xml|^<component /.test(s.trim())){console.error(f+\" is not an IntelliJ run configuration component\");process.exit(1)}if(!/<configuration [^>]*>/.test(s)||!/<\\/component>/.test(s)){console.error(f+\" is missing the <configuration> element\");process.exit(1)}const m=s.match(/<script value=\"([^\"]+)\"\\/>/g)||[];for(const hit of m){const name=hit.match(/value=\"([^\"]+)\"/)[1];if(!pkg.scripts[name]){console.error(f+\" references missing npm script: \"+name);process.exit(1)}}}console.error(files.length+\" run configurations checked\")'",
     "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-npm.html",
     "quote": "In this field, specify the `package.json` file to run the scripts from.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-strict",
@@ -27,7 +31,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.strict!==true){console.error(\"compilerOptions.strict must be true\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "The strict flag enables a wide range of type checking behavior that results in stronger guarantees of program correctness. Turning this on is equivalent to enabling all of the strict mode family options",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-target",
@@ -37,7 +43,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const t=c.compilerOptions.target;if(!t||/^es5$/i.test(t)){console.error(\"target must be set explicitly and not es5, got: \"+t);process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/target.html",
     "quote": "The target setting changes which JS features are downleveled and which are left intact.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-lib",
@@ -47,7 +55,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const l=c.compilerOptions.lib;if(!Array.isArray(l)||!l.length){console.error(\"compilerOptions.lib must be an explicit non-empty array\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/lib.html",
     "quote": "TypeScript includes a default set of type definitions for built-in JS APIs (like Math), as well as type definitions for things found in browser environments (like document).",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-module",
@@ -57,7 +67,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const m=c.compilerOptions.module;if(![\"nodenext\",\"node20\",\"node18\",\"preserve\",\"esnext\"].includes(m)){console.error(\"module must be a modern module mode, got: \"+m);process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "You very likely want \"nodenext\" for modern Node.js projects and preserve or esnext for code that will be bundled.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-module-resolution",
@@ -67,7 +79,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const r=c.compilerOptions.moduleResolution;if(![\"nodenext\",\"node16\",\"bundler\"].includes(r)){console.error(\"moduleResolution must be nodenext/node16/bundler, got: \"+r);process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "'node16' or 'nodenext' for modern versions of Node.js. Node.js v12 and later supports both ECMAScript imports and CommonJS require, which resolve using different algorithms.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-es-module-interop",
@@ -77,7 +91,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.esModuleInterop!==true){console.error(\"esModuleInterop must be true\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/esModuleInterop.html",
     "quote": "By default (with esModuleInterop false or not set) TypeScript treats CommonJS/AMD/UMD modules similar to ES6 modules.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-verbatim-module-syntax",
@@ -87,7 +103,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.verbatimModuleSyntax!==true){console.error(\"verbatimModuleSyntax must be true\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/verbatimModuleSyntax.html",
     "quote": "With this new option, what you see is what you get.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-skip-lib-check",
@@ -97,7 +115,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.skipLibCheck!==true){console.error(\"skipLibCheck must be true\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/skipLibCheck.html",
     "quote": "This can save time during compilation at the expense of type-system accuracy. For example, two libraries could define two copies of the same type in an inconsistent way.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-out-dir",
@@ -107,7 +127,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.outDir!==\"./dist\"){console.error(\"outDir must be ./dist\");process.exit(1)}if(c.compilerOptions.rootDir!==\"./src\"){console.error(\"rootDir must be ./src\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "If specified, .js (as well as .d.ts, .js.map, etc.) files will be emitted into this directory. The directory structure of the original source files is preserved; see rootDir if the computed root is not what you intended.",
-    "applies_to": "any"
+    "applies_to": [
+      "tsc-build"
+    ]
   },
   {
     "id": "tsconfig-source-map",
@@ -117,7 +139,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.sourceMap!==true){console.error(\"sourceMap must be true\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "Enables the generation of sourcemap files. These files allow debuggers and other tools to display the original TypeScript source code when actually working with the emitted JavaScript files.",
-    "applies_to": "any"
+    "applies_to": [
+      "tsc-build"
+    ]
   },
   {
     "id": "tsconfig-include-exclude",
@@ -127,7 +151,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(!Array.isArray(c.include)||!c.include.length){console.error(\"include must be an explicit non-empty array\");process.exit(1)}if(!Array.isArray(c.exclude)||!c.exclude.length){console.error(\"exclude must be an explicit non-empty array\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "Important: exclude only changes which files are included as a result of the include setting.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-types",
@@ -137,7 +163,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const t=c.compilerOptions.types;if(!Array.isArray(t)||!t.length){console.error(\"compilerOptions.types must be an explicit array\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "If types is specified, only packages listed will be included in the global scope.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-json-schema",
@@ -147,7 +175,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(!c[\"$schema\"]){console.error(\"missing $schema in tsconfig.json\");process.exit(1)}'",
     "source": "https://github.com/tsconfig/bases",
     "quote": "\"$schema\": \"https://www.schemastore.org/tsconfig\"",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-build-excludes-tests",
@@ -157,7 +187,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const p=process.env.SKILL_DIR+\"/templates/ts-project/\";const main=JSON.parse(fs.readFileSync(p+\"tsconfig.json\",\"utf8\"));const build=JSON.parse(fs.readFileSync(p+\"tsconfig.build.json\",\"utf8\"));if(!build.extends){console.error(\"tsconfig.build.json must extend tsconfig.json\");process.exit(1)}if(!build.exclude||!build.exclude.some(e=>e.includes(\".test.ts\"))){console.error(\"build tsconfig must exclude *.test.ts\");process.exit(1)}if(!main.include||!main.include.length){console.error(\"main tsconfig must keep include\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "Important: exclude only changes which files are included as a result of the include setting.",
-    "applies_to": "any"
+    "applies_to": [
+      "tsc-build"
+    ]
   },
   {
     "id": "pkg-type-module",
@@ -167,7 +199,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));if(p.type!==\"module\"){console.error(\"package.json type must be \\\"module\\\"\");process.exit(1)}'",
     "source": "https://nodejs.org/api/packages.html",
     "quote": "The \"type\" field defines the module format that Node.js uses for all .js files that have that package.json file as their nearest parent.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "pkg-scripts",
@@ -177,7 +211,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));const need=[\"dev\",\"build\",\"start\",\"test\",\"lint\",\"typecheck\",\"format\"];const miss=need.filter(s=>!p.scripts||!p.scripts[s]);if(miss.length){console.error(\"missing npm scripts: \"+miss.join(\", \"));process.exit(1)}'",
     "source": "https://docs.npmjs.com/cli/v11/using-npm/scripts",
     "quote": "The \"scripts\" property in your package.json supports built-in lifecycle events and arbitrary scripts.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "pkg-dev-dependencies",
@@ -187,7 +223,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));const d=p.devDependencies||{};const need=[\"typescript\",\"eslint\",\"typescript-eslint\",\"prettier\",\"@types/node\"];const miss=need.filter(k=>!d[k]);if(miss.length){console.error(\"missing devDependencies: \"+miss.join(\", \"));process.exit(1)}'",
     "source": "https://docs.npmjs.com/cli/v11/configuring-npm/package-json",
     "quote": "These are development-only tools, such as test or documentation frameworks, rather than packages required by consumers at runtime.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "pkg-typescript-pinned",
@@ -197,7 +235,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));const v=(p.devDependencies||{}).typescript;if(!v||!/^\\d+\\.\\d+\\.\\d+$/.test(v)){console.error(\"typescript must be pinned to an exact version, got: \"+v);process.exit(1)}'",
     "source": "https://www.typescriptlang.org/download",
     "quote": "To do this, run `npm install -g typescript`. This will install the latest version (currently 7.0).",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "pkg-engines-node",
@@ -207,7 +247,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));if(!p.engines||!p.engines.node){console.error(\"engines.node is required\");process.exit(1)}'",
     "source": "https://docs.npmjs.com/cli/v11/configuring-npm/package-json",
     "quote": "You can specify the version of node that your stuff works on",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "eslint-config-file",
@@ -217,7 +259,9 @@
     "verify": "test -f \"$SKILL_DIR/templates/ts-project/eslint.config.mjs\"",
     "source": "https://eslint.org/docs/latest/use/configure/configuration-files",
     "quote": "It should be placed in the root directory of your project and export an array of configuration objects.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "eslint-ts-recommended",
@@ -227,7 +271,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/eslint.config.mjs\",\"utf8\");if(!/tseslint\\.configs\\.(recommended|recommendedTypeChecked)/.test(s)){console.error(\"tseslint.configs.recommended is not referenced\");process.exit(1)}'",
     "source": "https://typescript-eslint.io/getting-started/",
     "quote": "extends: [js.configs.recommended, tseslint.configs.recommended],",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "eslint-ignores",
@@ -237,7 +283,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/eslint.config.mjs\",\"utf8\");if(!/dist/.test(s)){console.error(\"no ignore entry for dist\");process.exit(1)}'",
     "source": "https://eslint.org/docs/latest/use/configure/configuration-files",
     "quote": "If ignores is used without any other keys (besides name) in the configuration object, then the patterns act as global ignores.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "eslint-gate",
@@ -247,7 +295,9 @@
     "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install eslint . --max-warnings 0",
     "source": "https://eslint.org/docs/latest/use/command-line-interface",
     "quote": "Linting was successful and there are no linting errors.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "prettier-config",
@@ -257,7 +307,9 @@
     "verify": "test -f \"$SKILL_DIR/templates/ts-project/.prettierrc.json\"",
     "source": "https://prettier.io/docs/configuration",
     "quote": "\"trailingComma\": \"es5\", \"tabWidth\": 4, \"semi\": false, \"singleQuote\": true",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "prettier-ignore",
@@ -267,7 +319,9 @@
     "verify": "test -f \"$SKILL_DIR/templates/ts-project/.prettierignore\" && grep -qE '^(dist|coverage|build|node_modules)' \"$SKILL_DIR/templates/ts-project/.prettierignore\"",
     "source": "https://prettier.io/docs/ignore",
     "quote": "Create .prettierignore in the root of your project. It uses gitignore syntax to exclude files and folders from formatting.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "prettier-gate",
@@ -277,7 +331,9 @@
     "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install prettier --check .",
     "source": "https://prettier.io/docs/cli",
     "quote": "When you want to check if your files are formatted, you can run Prettier with the --check flag (or -c).",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "node-nvmrc",
@@ -287,7 +343,9 @@
     "verify": "test -f \"$SKILL_DIR/templates/ts-project/.nvmrc\" && grep -qE '^(v)?(22|24|26)\\.[0-9]+\\.[0-9]+$' \"$SKILL_DIR/templates/ts-project/.nvmrc\"",
     "source": "https://github.com/nvm-sh/nvm#nvmrc",
     "quote": "nvm use, nvm install, and nvm which will use the version specified in the .nvmrc file",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "node-nvmrc-matches-runtime",
@@ -297,7 +355,9 @@
     "verify": "node -e 'const fs=require(\"fs\");const v=fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/.nvmrc\",\"utf8\").trim().replace(/^v/,\"\");const actual=process.versions.node;if(v!==actual){console.error(\".nvmrc pins \"+v+\" but the active node is \"+actual);process.exit(1)}console.error(\".nvmrc == active node \"+actual)'",
     "source": "https://github.com/nvm-sh/nvm#nvmrc",
     "quote": "nvm use, nvm install, and nvm which will use the version specified in the .nvmrc file",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsc-typecheck-gate",
@@ -307,7 +367,9 @@
     "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install tsc --noEmit -p tsconfig.json",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "Do not emit compiler output files like JavaScript source code, source-maps or declarations.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "build-gate",
@@ -317,7 +379,9 @@
     "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install tsc -p tsconfig.build.json && test -f dist/index.js && test -f dist/index.d.ts && test -f dist/index.js.map",
     "source": "https://www.typescriptlang.org/tsconfig/",
     "quote": "Enables the generation of sourcemap files. These files allow debuggers and other tools to display the original TypeScript source code when actually working with the emitted JavaScript files.",
-    "applies_to": "any"
+    "applies_to": [
+      "tsc-build"
+    ]
   },
   {
     "id": "vitest-config",
@@ -327,7 +391,9 @@
     "verify": "test -f \"$SKILL_DIR/templates/ts-project/vitest.config.ts\" && grep -q 'include' \"$SKILL_DIR/templates/ts-project/vitest.config.ts\"",
     "source": "https://vitest.dev/config/include",
     "quote": "A list of glob patterns that match your test files.",
-    "applies_to": "any"
+    "applies_to": [
+      "vitest"
+    ]
   },
   {
     "id": "vitest-gate",
@@ -337,7 +403,9 @@
     "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install vitest run",
     "source": "https://vitest.dev/config/include",
     "quote": "A list of glob patterns that match your test files.",
-    "applies_to": "any"
+    "applies_to": [
+      "vitest"
+    ]
   },
   {
     "id": "idea-node-modules-excluded",
@@ -347,7 +415,9 @@
     "verify": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const dir=process.env.SKILL_DIR+\"/templates/ts-project/.idea\";if(!fs.existsSync(path.join(dir,\"modules.xml\"))){console.error(\"missing .idea/modules.xml\");process.exit(1)}const imls=fs.readdirSync(dir).filter(f=>f.endsWith(\".iml\"));if(!imls.length){console.error(\"no .iml module file\");process.exit(1)}const s=fs.readFileSync(path.join(dir,imls[0]),\"utf8\");if(!/excludeFolder[^>]*node_modules/.test(s)){console.error(\"node_modules is not excluded from indexing\");process.exit(1)}if(!/excludeFolder[^>]*dist/.test(s)){console.error(\"dist is not excluded from indexing\");process.exit(1)}'",
     "source": "https://www.jetbrains.com/help/idea/content-roots.html",
     "quote": "Right-click a folder and select `Mark Directory As | Excluded`.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-ts-version-selection",
@@ -357,7 +427,9 @@
     "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules/typescript ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(\"package.json\",\"utf8\"));const inst=JSON.parse(fs.readFileSync(\"node_modules/typescript/package.json\",\"utf8\"));if(p.devDependencies.typescript!==inst.version){console.error(\"IDE would use TS \"+inst.version+\" but package.json pins \"+p.devDependencies.typescript);process.exit(1)}'",
     "source": "https://www.jetbrains.com/help/idea/typescript-support.html",
     "quote": "By default, the `typescript` package from the project's `node_modules` folder is used.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-ts-language-service",
@@ -367,7 +439,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-ts-language-service",
     "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
     "quote": "By default, the TypeScript Language Service checkbox is selected.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-node-runtime",
@@ -377,7 +451,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-node-runtime",
     "source": "https://www.jetbrains.com/help/idea/developing-node-js-applications.html",
     "quote": "select  Add Local from the context menu  and choose the installation of Node.js, then click OK.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-package-manager",
@@ -387,7 +463,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-package-manager",
     "source": "https://www.jetbrains.com/help/idea/javascript-runtime.html",
     "quote": "In this field,   choose the package manager (npm, Yarn, pnpm, bun) for the current project.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-eslint-automatic",
@@ -397,7 +475,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-eslint-automatic",
     "source": "https://www.jetbrains.com/help/idea/eslint.html",
     "quote": "go to `Languages & Frameworks | JavaScript | Code Quality Tools | ESLint`, and select the Automatic ESLint configuration option.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-prettier-run-on-save",
@@ -407,7 +487,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-prettier-run-on-save",
     "source": "https://www.jetbrains.com/help/idea/prettier.html",
     "quote": "To apply Prettier automatically to saved files, select the Run on save checkbox.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-file-type-associations",
@@ -417,7 +499,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-file-type-associations",
     "source": "https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html",
     "quote": "For language-specific features (such as syntax highlighting and code analysis) in files representing different languages and technologies, IntelliJ IDEA maintains a list of file types, each of which links a language service with one or more file name patterns.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-tsconfig-file-type-pattern",
@@ -427,7 +511,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-tsconfig-file-type-pattern",
     "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
     "quote": "go to `Editor | File Types`, and make sure the names of all these files match the patterns from the Typescript config file name pattern list.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-library-scopes",
@@ -437,7 +523,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-library-scopes",
     "source": "https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html",
     "quote": "IntelliJ IDEA lets you tune code completion by configuring scopes for libraries.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-ts-service-powered-engine",
@@ -447,7 +535,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-ts-service-powered-engine",
     "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
     "quote": "By default, the checkbox is cleared, so type evaluation, resolution, code inspections and refactorings are based on the type information from the IntelliJ IDEA internal TypeScript engine.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-node-interpreter-registry",
@@ -457,7 +547,9 @@
     "verify": "T1=$(mktemp -d) && mkdir -p \"$T1/bin\" \"$T1/plugins/javascript-impl\" \"$T1/appdata/JetBrains/IdeaIU2026.2/options\" && : > \"$T1/bin/idea64.exe\" && printf '{\"productCode\":\"IU\",\"version\":\"2026.2.5\",\"buildNumber\":\"IU-262.1\",\"dataDirectoryName\":\"IdeaIU2026.2\"}' > \"$T1/product-info.json\" && printf '<application><component name=\"NodeJsLocalInterpreterManager\"><local-interpreter path=\"C:/node/bin/node\" /></component></application>' > \"$T1/appdata/JetBrains/IdeaIU2026.2/options/nodejs.xml\" && U=$(APPDATA=\"$T1/appdata\" bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T1\") && T2=$(mktemp -d) && mkdir -p \"$T2/bin\" \"$T2/appdata/JetBrains/IdeaIC2026.2/options\" && : > \"$T2/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T2/product-info.json\" && C=$(APPDATA=\"$T2/appdata\" bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T2\") && rm -rf \"$T1\" \"$T2\" && echo \"$U\" | grep -q '^IDEA_NODE_REGISTRY=present$' && echo \"$C\" | grep -q '^IDEA_NODE_REGISTRY=absent$'",
     "source": "https://www.jetbrains.com/help/idea/javascript-runtime.html",
     "quote": "In this field,   choose the package manager (npm, Yarn, pnpm, bun) for the current project.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-run-ts-file",
@@ -467,7 +559,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-run-ts-file",
     "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
     "quote": "IntelliJ IDEA creates a temporary run/debug configuration of the type Node.js which you can save, edit, and reuse for running and debugging.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-source-map-debug",
@@ -477,7 +571,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-source-map-debug",
     "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
     "quote": "During compilation, there can also be generated source maps that set correspondence between your TypeScript code and the JavaScript code that is actually executed.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-vitest-run-config",
@@ -487,7 +583,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-vitest-run-config",
     "source": "https://www.jetbrains.com/help/idea/vitest.html",
     "quote": "You can run, debug, do snapshot testing, and measure test coverage both from the editor and via a run/debug configuration.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-jest-run-config",
@@ -497,7 +595,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-jest-run-config",
     "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-jest.html",
     "quote": "In this field, specify the `jest.config.js` or `jest.config.ts` file to use",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-file-watchers",
@@ -507,7 +607,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-file-watchers",
     "source": "https://www.jetbrains.com/help/idea/using-file-watchers.html",
     "quote": "The plugin is available only in IntelliJ IDEA with the Ultimate subscription.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-install-type-definitions",
@@ -517,7 +619,9 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-install-type-definitions",
     "source": "https://www.jetbrains.com/help/idea/typescript-support.html",
     "quote": "IntelliJ IDEA lets you get reference for symbols from your project and from its dependencies, for symbols defined in external libraries, and for standard JavaScript APIs because TypeScript implements all of them.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "idea-node-modules-library",
@@ -527,13 +631,17 @@
     "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-node-modules-library",
     "source": "https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html",
     "quote": "To provide code completion for project dependencies, IntelliJ IDEA creates a node_modules library automatically so Node.js modules are kept in your project but no inspections are run against them, which improves performance.",
-    "applies_to": "any"
+    "applies_to": [
+      "any"
+    ]
   },
   {
     "id": "tsconfig-jsx",
     "title": "前端项目 tsconfig 声明 jsx 模式（否则每个 .tsx 都报 implicit any）",
     "category": "tsconfig",
-    "applies_to": "web",
+    "applies_to": [
+      "web"
+    ],
     "action": "前端/React 项目的 compilerOptions.jsx = \"react-jsx\"（React 17+ 的自动运行时，产物不再需要 import React）或 \"preserve\"（留给 Vite/SWC 之类的打包器处理）。不写的话 IDE 会对每个组件报 \"JSX element implicitly has type 'any'\"。注意 JetBrains 文档给出的路径是 File | New | Project > React（npx create-vite 生成的 Vite + React + TypeScript 工程），通用 TS 网页模板已经不再提供。",
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-web/tsconfig.json\",\"utf8\"));if(![\"react-jsx\",\"react-jsxdev\",\"preserve\"].includes(c.compilerOptions?.jsx)){console.error(\"jsx must be react-jsx / react-jsxdev / preserve\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/jsx.html",
@@ -543,7 +651,9 @@
     "id": "tsconfig-paths",
     "title": "前端项目用 paths 声明路径别名（IDE 才认 @/ 导入）",
     "category": "tsconfig",
-    "applies_to": "web",
+    "applies_to": [
+      "web"
+    ],
     "action": "compilerOptions.paths = { \"@/*\": [\"./src/*\"] }。TypeScript 4.1 起不必再写 baseUrl，映射相对于 tsconfig 文件本身解析。要点：paths 只影响类型解析，**不会改写产物里的 import 路径**，所以打包器（Vite 的 resolve.alias）必须镜像同一份映射，否则运行时报模块找不到。少了 paths，IDE 会在每个 @/ 导入上报 unresolved symbol。",
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-web/tsconfig.json\",\"utf8\"));const p=c.compilerOptions?.paths;if(!p||!Object.keys(p).length){console.error(\"compilerOptions.paths must map at least one alias\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
@@ -553,7 +663,9 @@
     "id": "tsconfig-no-emit",
     "title": "打包器驱动的项目用 noEmit（tsc 只做类型检查，不产出 JS）",
     "category": "tsconfig",
-    "applies_to": "web",
+    "applies_to": [
+      "web"
+    ],
     "action": "compilerOptions.noEmit = true，同时 module = \"preserve\"（或 esnext）、moduleResolution = \"bundler\"。这样 tsc 只当类型检查器与编辑器集成层，转译交给 Vite/esbuild/swc——不会有过期的 dist/ 与 IDE 显示不一致。这类项目再配 paths 别名才安全，因为打包器负责解析别名。",
     "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-web/tsconfig.json\",\"utf8\"));if(c.compilerOptions?.noEmit!==true){console.error(\"noEmit must be true for a bundler-driven project\");process.exit(1)}if(![\"bundler\",\"preserve\",\"esnext\"].includes(c.compilerOptions?.moduleResolution)){console.error(\"moduleResolution must be bundler for a bundler-driven project\");process.exit(1)}'",
     "source": "https://www.typescriptlang.org/tsconfig/",
@@ -563,7 +675,9 @@
     "id": "web-alias-resolves",
     "title": "前端模板的 @/ 别名与 strict 必须真的能过类型检查",
     "category": "typecheck",
-    "applies_to": "web",
+    "applies_to": [
+      "web"
+    ],
     "action": "把前端的 tsconfig 拿真编译器跑一遍：`tsc --noEmit -p tsconfig.json`。这一步同时证明 paths 映射能解析、strict 没把代码逼出错、jsx 模式可用——只读 tsconfig 看键名是不够的，键写对了但映射写错（少了 ./*、指到了不存在的目录）只有编译器知道。",
     "verify": "if [ ! -f \"$SKILL_DIR/templates/ts-project/node_modules/typescript/bin/tsc\" ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && node \"$SKILL_DIR/templates/ts-project/node_modules/typescript/bin/tsc\" --noEmit -p \"$SKILL_DIR/templates/ts-web/tsconfig.json\"",
     "source": "https://www.typescriptlang.org/tsconfig/",
@@ -573,10 +687,36 @@
     "id": "web-react-types",
     "title": "React 项目必须装 @types/react（否则 .tsx 全红）",
     "category": "package",
-    "applies_to": "web",
+    "applies_to": [
+      "web"
+    ],
     "action": "package.json 里同时声明 react / react-dom 与 @types/react / @types/react-dom。类型来自 @types 包，运行时包不带类型；只装 react 不装 @types/react，IDE 里所有 JSX 与 props 都会是 any。JetBrains 给出的建项路径是 File | New | Project > React，由 npx create-vite 生成 Vite + React + TypeScript 工程。",
     "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-web/package.json\",\"utf8\"));const all=Object.assign({},p.dependencies||{},p.devDependencies||{});const miss=[\"react\",\"@types/react\"].filter(k=>!all[k]);if(miss.length){console.error(\"missing web dependencies: \"+miss.join(\", \"));process.exit(1)}'",
     "source": "https://www.jetbrains.com/help/idea/new-project-wizard.html",
     "quote": "your development environment is preconfigured to use Vite with React and TypeScript"
+  },
+  {
+    "id": "inspect-project-classifies-shape",
+    "title": "项目形态探测器必须能把 Node 服务与前端项目判对",
+    "category": "ide-intake",
+    "applies_to": [
+      "any"
+    ],
+    "action": "接入**已有**项目时，先跑 `node scripts/inspect-project.mjs <项目目录>`。它读 tsconfig*.json（容忍 JSONC 注释）、package.json、.nvmrc 与配置文件，输出形态与关键事实：SHAPE（node/web/unknown）、MODULE_MODE、MODULE_RESOLUTION、STRICT、JSX、PATHS、NO_EMIT、BUILD_MODE、TEST_RUNNER、NODE_MATCHES_PIN 等。判错形态就会选错模板、漏掉该做的配置项——所以这一条本身必须能被复核。",
+    "verify": "I=\"$SKILL_DIR/scripts/inspect-project.mjs\" && N=$(node \"$I\" \"$SKILL_DIR/templates/ts-project\") && W=$(node \"$I\" \"$SKILL_DIR/templates/ts-web\") && printf '%s\\n' \"$N\" | grep -q '^SHAPE=node$' && printf '%s\\n' \"$N\" | grep -q '^MODULE_MODE=nodenext$' && printf '%s\\n' \"$N\" | grep -q '^STRICT=true$' && printf '%s\\n' \"$N\" | grep -q '^TEST_RUNNER=vitest$' && printf '%s\\n' \"$N\" | grep -q '^BUILD_MODE=tsc-build$' && printf '%s\\n' \"$N\" | grep -q '^NODE_MATCHES_PIN=yes$' && printf '%s\\n' \"$W\" | grep -q '^SHAPE=web$' && printf '%s\\n' \"$W\" | grep -q '^MODULE_RESOLUTION=bundler$' && printf '%s\\n' \"$W\" | grep -q '^JSX=react-jsx$' && printf '%s\\n' \"$W\" | grep -q '^PATHS=yes$' && printf '%s\\n' \"$W\" | grep -q '^NO_EMIT=true$' && printf '%s\\n' \"$W\" | grep -q '^BUILD_MODE=bundler$'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "You can then use TypeScript as a tool for providing editor integration, and as a source code type-checker."
+  },
+  {
+    "id": "inspect-project-applicable-items",
+    "title": "探测器给出的适用清单条目必须按形态过滤，且不能返回不存在的 id",
+    "category": "ide-intake",
+    "applies_to": [
+      "any"
+    ],
+    "action": "`node scripts/inspect-project.mjs <目录> --ids` 输出该项目形态下适用的清单条目（按每条的 applies_to 过滤：any / node / web），`--check-ids` 会校验返回的每个 id 都真实存在于 references/checklist.json。前端专属项（jsx / paths / noEmit）不该出现在 Node 服务项目里，Node 专属项（outDir / sourceMap 构建）也不该出现在前端项目里——过滤错了就等于漏做或做无用功。",
+    "verify": "I=\"$SKILL_DIR/scripts/inspect-project.mjs\" && N=$(node \"$I\" \"$SKILL_DIR/templates/ts-project\" --ids) && W=$(node \"$I\" \"$SKILL_DIR/templates/ts-web\" --ids) && printf '%s\\n' \"$N\" | grep -qx 'tsconfig-strict' && ! printf '%s\\n' \"$N\" | grep -qx 'tsconfig-jsx' && printf '%s\\n' \"$W\" | grep -qx 'tsconfig-jsx' && ! printf '%s\\n' \"$W\" | grep -qx 'tsconfig-out-dir' && node \"$I\" \"$SKILL_DIR/templates/ts-project\" --ids --check-ids >/dev/null && node \"$I\" \"$SKILL_DIR/templates/ts-web\" --ids --check-ids >/dev/null",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "Important: exclude only changes which files are included as a result of the include setting."
   }
 ]

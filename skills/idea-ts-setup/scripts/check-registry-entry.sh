@@ -28,8 +28,8 @@ node -e '
       process.exit(1);
     }
   }
-  if(!["any","ultimate"].includes(e.applies_to)){
-    console.error("registry entry "+id+" has an invalid applies_to: "+e.applies_to);
+  if(!["any","ultimate"].includes(e.edition)){
+    console.error("registry entry "+id+" has an invalid edition: "+e.edition);
     process.exit(1);
   }
 ' "$ID"

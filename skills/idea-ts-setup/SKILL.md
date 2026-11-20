@@ -24,7 +24,10 @@ description: 把 TypeScript 项目接进 IntelliJ IDEA 的可执行配置清单�
 
 1. **探测机器**：`bash scripts/setup-env.sh roots` 看建议区域 → **问用户** IDEA 装在哪（本仓隐私规则：不全局扫描）→ `bash scripts/setup-env.sh detect <区域>` → `bash scripts/setup-env.sh init <安装根>` 写机器本地 `config.json`（不入库、不分发）。复查用 `bash scripts/setup-env.sh check`。
 2. **装工具链**：`bash scripts/setup-env.sh install-deps`。不装的话，与执行相关的清单条目无法自证。
-3. **接项目**：`bash scripts/init-ts-project.sh <目标项目目录> --template ts-project|ts-web --name <包名>`，然后照 [references/setup-0to1.md](references/setup-0to1.md) 在 IDE 里逐条勾选。
+3. **接项目**：
+   - **已有项目** → `node scripts/inspect-project.mjs <项目目录>` 判形态（SHAPE=node/web/unknown）、列关键事实，再按 `--ids` 输出该形态适用的清单条目；
+   - **新项目** → `bash scripts/init-ts-project.sh <目标项目目录> --template ts-project|ts-web --name <包名>`；
+   - 然后照 [references/setup-0to1.md](references/setup-0to1.md) 在 IDE 里逐条勾选。
 
 ## 模板即版本组合（别乱改）
 
@@ -39,12 +42,14 @@ description: 把 TypeScript 项目接进 IntelliJ IDEA 的可执行配置清单�
 
 ## 自证机制（本技能的核心）
 
-清单在 `references/checklist.json`（项目侧 + IDE 侧共 58 条），每条含 `id / title / category / action / verify / source / quote`：
+清单在 `references/checklist.json`（项目侧 + IDE 侧共 60 条），每条含 `id / title / category / action / verify / source / quote`：
 
 - `verify` 是**在本机真跑**的命令，退出 0 才算这一条配好了；
 - `source` + `quote` 必须能在 `references/sources.md` 的抓取快照里逐字命中——**引文不许凭记忆写**；
-- `applies_to` 标出适用形态（`any` / `web`），前端专属项不会污染 Node 项目的自检；
-- IDE 设置项另有一张表 `references/idea-settings.json`（路径 + 期望状态 + 怎么断言 + 出处），由 `scripts/check-registry-entry.sh` 逐条校验。
+- `applies_to` 是条件列表（`any` / `node` / `web` / `tsc-build` / `bundler` / `vitest`），探测器按项目事实过滤，前端专属项不会出现在 Node 项目里；
+- IDE 设置项另有一张表 `references/idea-settings.json`（路径 + 期望状态 + 怎么断言 + 出处 + `edition`），由 `scripts/check-registry-entry.sh` 逐条校验。
+
+**注意 verify 验的是本技能随附的模板，不是用户的项目。** 接到用户项目上时，`action` 说的是"这一项在目标项目里应该长什么样"，由 agent 对着用户的 tsconfig/package.json 逐条核对；`verify` 保证的是"这套要求本身是自洽且可执行的"。
 
 跑：`bash scripts/verify-item.sh <id>` 跑单条，`bash scripts/verify-item.sh --all` 跑全部。
 
