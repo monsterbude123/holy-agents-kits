@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   # "httpx>=0.27.0",  # uv 运行时按需取消注释；纯 python 运行时保持注释（零依赖）
+# ]
+# ///
+"""技能运行脚本模板（Python）。
+
+I/O 契约：stdout 只输出一行 JSON；日志走 stderr；成功退出 0、失败退出 1。
+纯标准库可直接 python 运行；需要第三方库时用 uv run（依赖写进上方 PEP 723 块）。
+完整规范：holy-agents-kits skills/skill-creator-v2/references/structure.md §5。
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+ENV_LINE_RE = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$")
+
+
+def load_env_file(path: Path) -> None:
+    """加载 .env：不覆盖已有环境变量；utf-8-sig 自动剥 UTF-8 BOM（Windows 记事本兼容）。"""
+    try:
+        lines = path.read_text(encoding="utf-8-sig").splitlines()
+    except OSError:
+        return  # .env 缺失不算错：宿主可能用系统环境变量注入
+    for line in lines:
+        m = ENV_LINE_RE.match(line)
+        if not m:
+            continue
+        value = m.group(2).strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]
+        os.environ.setdefault(m.group(1), value)
+
+
+# 优先级：系统环境变量 > <项目根>/.agents/.env（从 CWD 向上找，找不到不报错） > <技能目录>/.env
+_dir = Path.cwd().resolve()
+while True:
+    load_env_file(_dir / ".agents" / ".env")
+    if _dir.parent == _dir:
+        break
+    _dir = _dir.parent
+load_env_file(SCRIPT_DIR.parent / ".env")
+
+
+def reply(payload: dict, exit_code: int = 0) -> None:
+    sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    sys.exit(exit_code)
+
+
+def log(*args: object) -> None:
+    print("[__SKILL_NAME__]", *args, file=sys.stderr)
+
+
+def read_stdin() -> str:
+    if sys.stdin.isatty():
+        return ""
+    return sys.stdin.read()
+
+
+def main() -> None:
+    try:
+        api_key = os.environ.get("TARGET_API_KEY")
+        if not api_key:
+            reply({"ok": False, "error": "缺少 TARGET_API_KEY：在 <技能目录>/.env（参考 .env.example）、<项目根>/.agents/.env 或系统环境变量配置。"}, 1)
+
+        # 输入：CLI 参数优先，其次 stdin 管道（长文本/多行 JSON 用管道，避开跨平台引号转义）
+        input_arg = sys.argv[1] if len(sys.argv) > 1 else read_stdin().strip()
+        if not input_arg:
+            reply({"ok": False, "error": "缺少输入：传位置参数，或通过 stdin 管道传入。"}, 1)
+
+        log("处理输入：", input_arg)
+
+        # TODO: 核心业务逻辑
+        result = {"received": input_arg, "keyPrefix": api_key[:4] + "***"}
+
+        reply({"ok": True, "data": result}, 0)
+    except Exception as exc:  # 统一转成 JSON 错误，退出码 1（SystemExit 不是 Exception，不会被这里吞掉）
+        reply({"ok": False, "error": str(exc)}, 1)
+
+
+if __name__ == "__main__":
+    main()

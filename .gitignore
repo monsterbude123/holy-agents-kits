@@ -8,3 +8,7 @@ __pycache__/
 
 # 机器本地运行时配置（由 skills/*/scripts/setup-env.sh 生成，不入库不分发）
 skills/*/config.json
+
+# 技能本地密钥（运行时协议：只入库 .env.example；校验器见真实 .env 直接判错）
+skills/*/.env
+.agents/skills/*/.env

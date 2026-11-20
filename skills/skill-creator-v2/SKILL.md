@@ -50,7 +50,7 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 | 内容 | 去处 | 判据 |
 |---|---|---|
 | 主干步骤、判断依据、退出条件 | SKILL.md | 每次调用都要用到 |
-| 参数表、协议细节、错误码、示例集 | `references/` | 只在特定分支才需要 |
+| 参数表、协议细节、错误码、示例集、实战踩坑 | `references/` | 只在特定分支才需要 |
 | 长清单（模型名、字段名、映射表） | `references/` | 能被程序读到就不该占正文 |
 | 需要重复执行的程序 | `scripts/` | 只要会出现「第二次写同样的代码」 |
 
@@ -70,7 +70,7 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 - 解析有固定 schema（字段、枚举、必填项）——判定逻辑必须唯一，不能每次重新推导
 - 步骤有固定顺序且可机械检查
 
-脚本要求：只依赖标准库、有 `--help`、错误信息写清怎么修、**stdout 是结果，stderr 是过程日志**。
+脚本要求：技术栈与 I/O 契约见 `references/structure.md` §5 运行时协议（三选一、stdout 单行 JSON、stderr 日志、退出码 0/1、.env 三级查找）；有 `--help`，错误信息写清怎么修。
 
 ### 2.4 description 决定生死
 
@@ -126,11 +126,11 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 # 仓库门禁：校验全部技能，并检查每个 SKILL.md 末尾的反馈入口
 python .agents/skills/skill-creator-v2/scripts/validate_skill.py --all --root .
 
-# 生成骨架
-python .agents/skills/skill-creator/scripts/scaffold_skill.py skills new-skill --description "一句话说明"
+# 生成骨架（--runtime node|python|uv，默认 node）
+python .agents/skills/skill-creator-v2/scripts/scaffold_skill.py skills new-skill --description "一句话说明"
 
 # 超长时自动拆分
-python .agents/skills/skill-creator/scripts/split_skill.py skills/new-skill --max-lines 150
+python .agents/skills/skill-creator-v2/scripts/split_skill.py skills/new-skill --max-lines 150
 ```
 
 > **`claude` CLI 不可用时**（本机默认如此）：`run_eval.py` / `run_loop.py` / `improve_description.py`
@@ -140,7 +140,7 @@ python .agents/skills/skill-creator/scripts/split_skill.py skills/new-skill --ma
 
 ## §5 参考文件
 
-- `references/structure.md` —— 目录布局、frontmatter schema、命名与写作规范；**写技能前先读**。
+- `references/structure.md` —— 目录布局、frontmatter schema、命名规范与 scripts 运行时协议（§5）；**写技能前先读**。
 - `references/creating-skills.md` —— 立边界、访谈、写 SKILL.md、设计测试用例。
 - `references/evaluating.md` —— 跑用例、评分、生成评审视图、读反馈。
 - `references/improving.md` —— 从反馈里提炼改进项、迭代循环、盲测对比。

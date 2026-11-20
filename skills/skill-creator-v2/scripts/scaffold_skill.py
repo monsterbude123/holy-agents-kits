@@ -6,7 +6,7 @@
 
 用法：
     python scaffold_skill.py <skills 根目录> <skill-name> --description "一句话说明"
-    python scaffold_skill.py .agents/skills my-skill --description "..."
+    python scaffold_skill.py .agents/skills my-skill --description "..." --runtime node
 """
 
 from __future__ import annotations
@@ -19,6 +19,34 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skill_schema import FEEDBACK_URL  # noqa: E402
+
+# 运行时三选一（规范见 references/structure.md §5，此处只有映射，不复制规则）
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "assets" / "templates"
+RUNTIMES = {
+    "node": {
+        "script": "run.mjs",
+        "template": "run.mjs.tmpl",
+        "run_cmd": 'node "<skill_dir>/scripts/run.mjs" "hello"',
+        "run_note": "Node ESM ≥ 20.12，零依赖",
+    },
+    "python": {
+        "script": "run.py",
+        "template": "run.py.tmpl",
+        "run_cmd": 'python "<skill_dir>/scripts/run.py" "hello"',
+        "run_note": "Python 标准库，零依赖",
+    },
+    "uv": {
+        "script": "run.py",
+        "template": "run.py.tmpl",
+        "run_cmd": 'uv run "<skill_dir>/scripts/run.py" "hello"',
+        "run_note": "Python + uv，依赖写在脚本头 PEP 723 块",
+    },
+}
+
+ENV_EXAMPLE_TEMPLATE = """# 复制为 .env 后填写真实值；.env 不入库、不入分发包。
+# 优先级：系统环境变量 > <项目根>/.agents/.env > <技能目录>/.env（详见脚本模板头部注释）
+# TARGET_API_KEY=sk-xxx
+"""
 
 SKILL_MD_TEMPLATE = """---
 name: {name}
@@ -59,11 +87,14 @@ description 决定触发率：写清「做什么」+「什么时候用」，必�
 
 ## §4 脚本
 
-<!-- 可执行的确定性流程一律固化到 scripts/，正文只留调用方式。 -->
+<!-- 可执行的确定性流程一律固化到 scripts/，正文只留调用方式。
+     若报缺少环境变量：引导用户在 <技能目录>/.env 配置（对照 .env.example）。 -->
 
 ```bash
-python scripts/<name>.py --help
+{run_cmd}
 ```
+
+运行时：{run_note}；I/O 契约（stdout 单行 JSON / stderr 日志 / 退出码 0/1）已内置在脚本模板里。
 
 ## §5 参考文件
 
@@ -85,10 +116,10 @@ SCRIPTS_README_TEMPLATE = """# scripts
 
 本目录存放固化的可执行程序：把「每次都要重写一遍」的代码固定下来。
 
-要求：
-- 只依赖 Python 标准库（除非确实无法替代）
-- 提供 `--help`，错误信息写清怎么修
-- stdout 输出结果，stderr 输出过程日志
+要求（运行时协议全文见 skill-creator-v2 references/structure.md §5）：
+- 技术栈三选一：Node ESM（分发默认）/ Python 标准库 / Python + uv（PEP 723）
+- stdout 只输出一行 JSON（ok/错误信封），日志走 stderr，成功退出 0、失败退出 1
+- .env 定位基于脚本自身路径，不依赖 CWD；不覆盖已有环境变量
 """
 
 
@@ -103,6 +134,8 @@ def main(argv=None) -> int:
     parser.add_argument("name", help="技能名（kebab-case）")
     parser.add_argument("--description", default="", help="技能描述")
     parser.add_argument("--title", default="", help="技能中文标题（默认用 name）")
+    parser.add_argument("--runtime", choices=sorted(RUNTIMES), default="node",
+                        help="脚本运行时（默认 node，决策依据见 references/structure.md §5.1）")
     parser.add_argument("--force", action="store_true", help="目录已存在时覆盖 SKILL.md")
     args = parser.parse_args(argv)
 
@@ -117,6 +150,12 @@ def main(argv=None) -> int:
         print("错误：%s 已存在（加 --force 覆盖）。" % skill_md, file=sys.stderr)
         return 2
 
+    runtime = RUNTIMES[args.runtime]
+    template_path = TEMPLATES_DIR / runtime["template"]
+    if not template_path.is_file():
+        print("错误：缺少脚本模板 %s。" % template_path, file=sys.stderr)
+        return 2
+
     description = args.description or "<一句话说明：做什么 + 什么时候用>"
     title = args.title or name
 
@@ -126,16 +165,23 @@ def main(argv=None) -> int:
 
     skill_md.write_text(
         SKILL_MD_TEMPLATE.format(name=name, description=description, title=title,
-                                 feedback_url=FEEDBACK_URL),
+                                 feedback_url=FEEDBACK_URL,
+                                 run_cmd=runtime["run_cmd"], run_note=runtime["run_note"]),
         encoding="utf-8",
     )
     (skill_dir / "references" / "INDEX.md").write_text(REFERENCES_INDEX_TEMPLATE, encoding="utf-8")
     (skill_dir / "scripts" / "README.md").write_text(SCRIPTS_README_TEMPLATE, encoding="utf-8")
+    (skill_dir / ".env.example").write_text(ENV_EXAMPLE_TEMPLATE, encoding="utf-8")
+    (skill_dir / "scripts" / runtime["script"]).write_text(
+        template_path.read_text(encoding="utf-8").replace("__SKILL_NAME__", name),
+        encoding="utf-8",
+    )
 
-    print("已生成技能骨架：%s" % skill_dir)
-    print("  SKILL.md（%d 行）" % len(skill_md.read_text(encoding="utf-8").splitlines()))
+    print("已生成技能骨架：%s（runtime=%s）" % (skill_dir, args.runtime))
+    print("  SKILL.md（%d 行）、.env.example、scripts/%s" % (
+        len(skill_md.read_text(encoding="utf-8").splitlines()), runtime["script"]))
     print("  references/INDEX.md、scripts/README.md")
-    print("下一步：填 §1~§3，把细节写进 references/，把可执行流程写进 scripts/。")
+    print("下一步：填 §1~§3，把细节写进 references/，改 scripts/%s 的 TODO 业务逻辑。" % runtime["script"])
     return 0
 
 

@@ -41,7 +41,7 @@
 
 评测集质量决定优化质量，这一步别省。
 
-1. 读模板 `.agents/skills/skill-creator/assets/eval_review.html`。
+1. 读模板 `.agents/skills/skill-creator-v2/assets/eval_review.html`。
 2. 替换占位符：
    - `__EVAL_DATA_PLACEHOLDER__` → 评测项 JSON 数组（**不加引号**，它是 JS 变量赋值）
    - `__SKILL_NAME_PLACEHOLDER__` → 技能名

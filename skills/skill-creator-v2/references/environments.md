@@ -23,6 +23,10 @@
 2. **不要调用 `present_files`。** 打包完直接给 `.skill` 文件的路径。
 3. **技能别放错目录。** 新技能放 `skills/`；研发工具放 `.agents/skills/`。
    放错了会被当成交付物发出去。
+4. **全局 vs 项目按用途分流。** 跨项目、跨宿主要用的技能进 `skills/` 走发版（npx 同步到各宿主的全局技能目录）；
+   只服务本仓研发流程的元技能放 `.agents/skills/`，不进发版。
+5. **别改宿主本地副本。** 各宿主全局目录里的技能是发版的下游，本地改动会被下次 npx 同步覆盖；
+   要改就回仓库改源头，再发版。
 
 ### 路径示例
 
@@ -31,7 +35,7 @@
 skills/work-with-ai-gateway/SKILL.md
 
 # 研发期元技能（本技能自己）
-.agents/skills/skill-creator/SKILL.md
+.agents/skills/skill-creator-v2/SKILL.md
 ```
 
 ---
