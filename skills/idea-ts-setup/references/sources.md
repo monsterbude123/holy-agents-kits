@@ -183,12 +183,14 @@
 
 > Right-click a folder and select `Mark Directory As | Excluded`.
 
-## [S23] JetBrains — TypeScript 支持（TS 包来源）
+## [S23] JetBrains — TypeScript 支持（TS 包来源 / 类型定义）
 
 - URL: https://www.jetbrains.com/help/idea/typescript-support.html
-- 用于条目：`idea-ts-version-selection`
+- 用于条目：`idea-ts-version-selection`、`idea-install-type-definitions`
 
 > By default, the `typescript` package from the project's `node_modules` folder is used.
+
+> IntelliJ IDEA lets you get reference for symbols from your project and from its dependencies, for symbols defined in external libraries, and for standard JavaScript APIs because TypeScript implements all of them.
 
 ## [S24] JetBrains — TypeScript 设置页
 
@@ -234,19 +236,46 @@
 
 > For language-specific features (such as syntax highlighting and code analysis) in files representing different languages and technologies, IntelliJ IDEA maintains a list of file types, each of which links a language service with one or more file name patterns.
 
-## [S30] JetBrains — 运行与调试 TypeScript（tsconfig 文件类型）
+## [S30] JetBrains — 运行与调试 TypeScript（tsconfig 文件类型 / 运行与 sourcemap）
 
 - URL: https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html
-- 用于条目：`idea-tsconfig-file-type-pattern`
+- 用于条目：`idea-tsconfig-file-type-pattern`、`idea-run-ts-file`、`idea-source-map-debug`
 
 > go to `Editor | File Types`, and make sure the names of all these files match the patterns from the Typescript config file name pattern list.
 
-## [S31] JetBrains — 配置 JavaScript 库（作用域）
+> IntelliJ IDEA creates a temporary run/debug configuration of the type Node.js which you can save, edit, and reuse for running and debugging.
+
+> During compilation, there can also be generated source maps that set correspondence between your TypeScript code and the JavaScript code that is actually executed.
+
+## [S31] JetBrains — 配置 JavaScript 库（作用域 / node_modules 自动库）
 
 - URL: https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html
-- 用于条目：`idea-library-scopes`
+- 用于条目：`idea-library-scopes`、`idea-node-modules-library`
 
 > IntelliJ IDEA lets you tune code completion by configuring scopes for libraries.
+
+> To provide code completion for project dependencies, IntelliJ IDEA creates a node_modules library automatically so Node.js modules are kept in your project but no inspections are run against them, which improves performance.
+
+## [S32] JetBrains — Vitest
+
+- URL: https://www.jetbrains.com/help/idea/vitest.html
+- 用于条目：`idea-vitest-run-config`
+
+> You can run, debug, do snapshot testing, and measure test coverage both from the editor and via a run/debug configuration.
+
+## [S33] JetBrains — Jest 运行配置
+
+- URL: https://www.jetbrains.com/help/idea/run-debug-configuration-jest.html
+- 用于条目：`idea-jest-run-config`
+
+> In this field, specify the `jest.config.js` or `jest.config.ts` file to use
+
+## [S34] JetBrains — File Watchers
+
+- URL: https://www.jetbrains.com/help/idea/using-file-watchers.html
+- 用于条目：`idea-file-watchers`
+
+> The plugin is available only in IntelliJ IDEA with the Ultimate subscription.
 
 ---
 
@@ -258,6 +287,9 @@
   `nodejs` 等 JS/TS 插件栈——社区版不捆绑它们。
 - 配置目录 `%APPDATA%/JetBrains/IdeaIC2026.2/options/` 下**没有** `javascriptLanguageService.xml` /
   `typescriptLanguageService.xml` / `nodejs.xml`——TS 语言服务从未被启用过。
+  （`nodejs.xml` 是 IDEA 登记已知 Node 解释器的文件：`<component name="NodeJsLocalInterpreterManager">`
+  下每条 `<local-interpreter path="..." />`。它在 JS/TS 插件栈装上之后才会出现，所以「有没有这个文件」
+  本身就是一个可靠的版本门禁标记——技能用 `setup-env.sh probe` 的 `IDEA_NODE_REGISTRY=present|absent` 报出来。）
 - JetBrains Marketplace 上 JavaScript and TypeScript 插件（id 22069）的兼容产品为
   `["IDEA_PRO","PYCHARM_PRO"]`，**不含** 社区版的 `IDEA`；因此不要指望在社区版里从
   Marketplace 装上语言插件。社区版里可用的只有免费的 JavaScript Debugger 插件（id 17562）。

@@ -28,11 +28,11 @@ description: 把 TypeScript 项目接进 IntelliJ IDEA 的可执行配置清单�
 
 ## 自证机制（本技能的核心）
 
-清单在 `references/checklist.json`（项目侧 + IDE 侧共 45 条），每条含 `id / title / category / action / verify / source / quote`：
+清单在 `references/checklist.json`（项目侧 + IDE 侧共 53 条），每条含 `id / title / category / action / verify / source / quote`：
 
 - `verify` 是**在本机真跑**的命令，退出 0 才算这一条配好了；
 - `source` + `quote` 必须能在 `references/sources.md` 的抓取快照里逐字命中——**引文不许凭记忆写**；
-- IDE 设置项另有一张表 `references/idea-settings.json`（路径 + 期望状态 + 怎么断言 + 出处）。
+- IDE 设置项另有一张表 `references/idea-settings.json`（路径 + 期望状态 + 怎么断言 + 出处），由 `scripts/check-registry-entry.sh` 逐条校验。
 
 跑：`bash scripts/verify-item.sh <id>` 跑单条，`bash scripts/verify-item.sh --all` 跑全部。
 

@@ -328,7 +328,7 @@
     "title": "开启 TypeScript Language Service（IDE 的类型检查引擎）",
     "category": "ide-typescript",
     "action": "Settings > Languages & Frameworks > TypeScript > TypeScript language service：勾选 TypeScript Language Service（默认勾选）。勾上后语法/错误高亮来自 TS 服务，补全是「TS 服务结果 + IDEA 建议」的并集。大项目可取消 Show project errors，只检查打开的文件。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-ts-language-service\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-ts-language-service",
     "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
     "quote": "By default, the TypeScript Language Service checkbox is selected."
   },
@@ -337,7 +337,7 @@
     "title": "把本机 Node 解释器设为项目运行时",
     "category": "ide-runtime",
     "action": "Settings > Languages & Frameworks > JavaScript Runtime：Preferred runtime 选 Node.js，Browse (...) → Node.js Runtimes → Add (+) → Add Local 选安装目录 → OK，再在 Node.js runtime 字段选中它。勾上 Coding assistance for Node.js 才会把 Node 内置源码挂成 JavaScript 库（fs/path/http 的补全与校验）。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-node-runtime\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-node-runtime",
     "source": "https://www.jetbrains.com/help/idea/developing-node-js-applications.html",
     "quote": "select  Add Local from the context menu  and choose the installation of Node.js, then click OK."
   },
@@ -346,7 +346,7 @@
     "title": "设定项目包管理器（npm / yarn / pnpm / bun）",
     "category": "ide-runtime",
     "action": "Settings > Languages & Frameworks > JavaScript Runtime > Package manager：选系统别名（npm/yarn/pnpm/bun）或用 Select 指定安装目录。仓库里有 yarn.lock / pnpm-lock.yaml 时 IDEA 会自动切换。该设置同时决定 Run 'npm install' 与 NPM 运行配置用哪个包管理器。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-package-manager\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-package-manager",
     "source": "https://www.jetbrains.com/help/idea/javascript-runtime.html",
     "quote": "In this field,   choose the package manager (npm, Yarn, pnpm, bun) for the current project."
   },
@@ -355,7 +355,7 @@
     "title": "ESLint 开启 Automatic ESLint configuration",
     "category": "ide-lint",
     "action": "Settings > Languages & Frameworks | JavaScript | Code Quality Tools | ESLint：选 Automatic ESLint configuration。自动模式会用项目 node_modules 里的 eslint，并从当前文件所在目录逐级向上找配置文件；monorepo 里会按 package.json 分包各起一个 ESLint 进程。旧的 .eslintrc.* 属 ESLint 8 及更早的格式。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-eslint-automatic\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-eslint-automatic",
     "source": "https://www.jetbrains.com/help/idea/eslint.html",
     "quote": "go to `Languages & Frameworks | JavaScript | Code Quality Tools | ESLint`, and select the Automatic ESLint configuration option."
   },
@@ -364,7 +364,7 @@
     "title": "Prettier 开启自动配置并 Run on save",
     "category": "ide-format",
     "action": "Settings > Languages & Frameworks | JavaScript | Prettier：选 Automatic Prettier configuration 并勾选 Run on save。默认的 Run for files 覆盖 JavaScript、TypeScript、JSX、TSX、HTML、Vue、Astro。要让 Ctrl+Alt+L 也走 Prettier，则在 Manual Prettier configuration 里选 Prettier package 并勾上 Run on 'Reformat Code' action。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-prettier-run-on-save\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-prettier-run-on-save",
     "source": "https://www.jetbrains.com/help/idea/prettier.html",
     "quote": "To apply Prettier automatically to saved files, select the Run on save checkbox."
   },
@@ -373,7 +373,7 @@
     "title": ".ts / .tsx / .js / .jsx 绑定到正确的文件类型",
     "category": "ide-files",
     "action": "Settings > Editor > File Types：确认 TypeScript / TypeScript React (.tsx) / JavaScript / JavaScript React (.jsx) 条目存在且模式正确。任何 .ts/.tsx 被绑到 Plain text 都会让 TS 支持彻底失效；.mts/.cts/.d.ts 等变体用 Add file type associations 补上。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-file-type-associations\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-file-type-associations",
     "source": "https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html",
     "quote": "For language-specific features (such as syntax highlighting and code analysis) in files representing different languages and technologies, IntelliJ IDEA maintains a list of file types, each of which links a language service with one or more file name patterns."
   },
@@ -382,7 +382,7 @@
     "title": "把 tsconfig*.json 注册进 Typescript config 文件类型",
     "category": "ide-files",
     "action": "Settings > Editor > File Types > Typescript config：确认文件名模式覆盖项目用到的全部 tsconfig*.json。IDEA 解析「离文件最近的 tsconfig」时只认被登记为 Typescript config 的文件——没登记的会被当成普通文本，于是 per-directory 的 compilerOptions 全部失效。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-tsconfig-file-type-pattern\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-tsconfig-file-type-pattern",
     "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
     "quote": "go to `Editor | File Types`, and make sure the names of all these files match the patterns from the Typescript config file name pattern list."
   },
@@ -391,7 +391,7 @@
     "title": "收窄库的作用域（Node.js Core 只对后端目录生效）",
     "category": "ide-indexing",
     "action": "Settings > Languages & Frameworks | JavaScript | Libraries > Manage Scopes：库默认对全项目生效，所以 Node.js API 会渗进前端代码。取消库的 Enabled 后点 Manage Scopes，Add 选目录逐行分配。node_modules 自动库的 scope 同样在这里改。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-library-scopes\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-library-scopes",
     "source": "https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html",
     "quote": "IntelliJ IDEA lets you tune code completion by configuring scopes for libraries."
   },
@@ -400,8 +400,80 @@
     "title": "按需开启 service-powered type engine（用真 TS 编译器算类型）",
     "category": "ide-typescript",
     "action": "Settings > Languages & Frameworks > TypeScript > TypeScript language service：Enable service-powered type engine 默认不勾（用 IDEA 内置 TS 引擎）。只有内置引擎算错类型、解析错乱或性能异常时才勾上——勾上后类型求值、解析、inspection 与重构都改由 TypeScript 编译器算。改完在状态栏 TS 挂件上重启服务。",
-    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-ts-service-powered-engine\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-ts-service-powered-engine",
     "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
     "quote": "By default, the checkbox is cleared, so type evaluation, resolution, code inspections and refactorings are based on the type information from the IntelliJ IDEA internal TypeScript engine."
+  },
+  {
+    "id": "idea-node-interpreter-registry",
+    "title": "IDEA 把 Node 解释器登记在 options/nodejs.xml 里（该文件同时是版本门禁的标记）",
+    "category": "ide-runtime",
+    "action": "Ultimate/WebStorm 里，IDEA 认识哪些 Node 解释器记录在 <configDir>/options/nodejs.xml 的 NodeJsLocalInterpreterManager 组件下，每条是 <local-interpreter path=\"...\" />。这个文件只有 JS/TS 插件栈装上之后才会出现，所以「nodejs.xml 存在」等价于「IDEA 有能力跑 TS」。社区版里它必然不存在——那不是配置没做，是能力不存在。技能用 scripts/setup-env.sh probe <安装根> 直接报 IDEA_NODE_REGISTRY=present|absent。",
+    "verify": "T1=$(mktemp -d) && mkdir -p \"$T1/bin\" \"$T1/plugins/javascript-impl\" \"$T1/appdata/JetBrains/IdeaIU2026.2/options\" && : > \"$T1/bin/idea64.exe\" && printf '{\"productCode\":\"IU\",\"version\":\"2026.2.5\",\"buildNumber\":\"IU-262.1\",\"dataDirectoryName\":\"IdeaIU2026.2\"}' > \"$T1/product-info.json\" && printf '<application><component name=\"NodeJsLocalInterpreterManager\"><local-interpreter path=\"C:/node/bin/node\" /></component></application>' > \"$T1/appdata/JetBrains/IdeaIU2026.2/options/nodejs.xml\" && U=$(APPDATA=\"$T1/appdata\" bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T1\") && T2=$(mktemp -d) && mkdir -p \"$T2/bin\" \"$T2/appdata/JetBrains/IdeaIC2026.2/options\" && : > \"$T2/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T2/product-info.json\" && C=$(APPDATA=\"$T2/appdata\" bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T2\") && rm -rf \"$T1\" \"$T2\" && echo \"$U\" | grep -q '^IDEA_NODE_REGISTRY=present$' && echo \"$C\" | grep -q '^IDEA_NODE_REGISTRY=absent$'",
+    "source": "https://www.jetbrains.com/help/idea/javascript-runtime.html",
+    "quote": "In this field,   choose the package manager (npm, Yarn, pnpm, bun) for the current project."
+  },
+  {
+    "id": "idea-run-ts-file",
+    "title": "直接 Run/Debug 一个 .ts 文件（临时 Node.js 运行配置）",
+    "category": "ide-runtime",
+    "action": "在编辑器里右键 .ts 入口 → Run '<file>.ts' / Debug '<file>.ts'，或用 Run 挂件 → Current file。IDEA 会创建一个 Node.js 类型的临时运行配置，可以保存、编辑、复用——临时配置不保存就等于每次重设。从 Run 挂件把它存成常驻配置。",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-run-ts-file",
+    "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
+    "quote": "IntelliJ IDEA creates a temporary run/debug configuration of the type Node.js which you can save, edit, and reuse for running and debugging."
+  },
+  {
+    "id": "idea-source-map-debug",
+    "title": "用 sourcemap 调试 TypeScript（JavaScript Debug 运行配置）",
+    "category": "ide-runtime",
+    "action": "tsconfig 开 sourceMap 并用 tsc 编译；浏览器应用则加一个 JavaScript Debug 运行配置指向 dev server URL，Debug 工具窗就能在原始 .ts 上单步。Debug 工具窗的 Disable Source Maps 可切到真正执行的代码。",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-source-map-debug",
+    "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
+    "quote": "During compilation, there can also be generated source maps that set correspondence between your TypeScript code and the JavaScript code that is actually executed."
+  },
+  {
+    "id": "idea-vitest-run-config",
+    "title": "Vitest 运行配置（IDE 测试视图与命令行同源）",
+    "category": "ide-test",
+    "action": "Run | Edit Configurations > Add > Vitest（还需捆绑的 Vite 插件）。测试可以直接从编辑器行号槽运行，watch 模式在源码或被测对象变化后自动重跑受影响用例。",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-vitest-run-config",
+    "source": "https://www.jetbrains.com/help/idea/vitest.html",
+    "quote": "You can run, debug, do snapshot testing, and measure test coverage both from the editor and via a run/debug configuration."
+  },
+  {
+    "id": "idea-jest-run-config",
+    "title": "Jest 运行配置（用 Jest 而非 Vitest 时）",
+    "category": "ide-test",
+    "action": "Run | Edit Configurations > Add > Jest：Configuration file 指向 jest.config.js / jest.config.ts，Jest package 指向 node_modules 里的 jest，Working directory 与 Jest options 按需填。留空 Configuration file 时 IDEA 会去找 package.json 的 jest 字段，找不到就现场生成默认配置。ESM 项目需在 Node options 加 --experimental-vm-modules。",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-jest-run-config",
+    "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-jest.html",
+    "quote": "In this field, specify the `jest.config.js` or `jest.config.ts` file to use"
+  },
+  {
+    "id": "idea-file-watchers",
+    "title": "File Watchers：改动文件时自动跑编译器/格式化器/lint",
+    "category": "ide-tooling",
+    "action": "Settings | Plugins 启用 File Watchers 插件，再 Settings | Tools | File Watchers 建一个 watcher（如 tsc --noEmit -w、prettier --write）。插件只在 Ultimate 订阅下提供——社区版没有这个能力，只能靠 npm scripts 加 IDE 保存钩子。",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-file-watchers",
+    "source": "https://www.jetbrains.com/help/idea/using-file-watchers.html",
+    "quote": "The plugin is available only in IntelliJ IDEA with the Ultimate subscription."
+  },
+  {
+    "id": "idea-install-type-definitions",
+    "title": "给没有类型的第三方包装 @types 定义",
+    "category": "ide-typescript",
+    "action": "光标停在无类型的 import 上按 Alt+Enter，选 Install TypeScript definitions，IDEA 会装上 @types/<pkg> 并写进 package.json。标准 JS API 另有 Ctrl+Q 的 MDN 链接可查。",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-install-type-definitions",
+    "source": "https://www.jetbrains.com/help/idea/typescript-support.html",
+    "quote": "IntelliJ IDEA lets you get reference for symbols from your project and from its dependencies, for symbols defined in external libraries, and for standard JavaScript APIs because TypeScript implements all of them."
+  },
+  {
+    "id": "idea-node-modules-library",
+    "title": "node_modules 是自动库根，别当普通库手工添加",
+    "category": "ide-indexing",
+    "action": "Settings > Languages & Frameworks | JavaScript | Libraries 里能看到 IDEA 自动创建的 node_modules 库，Project 视图里该目录带库根图标。它只包含 package.json 的 dependencies 直接列出的模块（传递依赖不进项目），并且库内不跑 inspection 以保性能。",
+    "verify": "bash \"$SKILL_DIR/scripts/check-registry-entry.sh\" idea-node-modules-library",
+    "source": "https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html",
+    "quote": "To provide code completion for project dependencies, IntelliJ IDEA creates a node_modules library automatically so Node.js modules are kept in your project but no inspections are run against them, which improves performance."
   }
 ]

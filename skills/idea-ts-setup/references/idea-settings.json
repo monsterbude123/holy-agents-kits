@@ -98,5 +98,75 @@
     "applies_to": "ultimate",
     "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
     "quote": "By default, the checkbox is cleared, so type evaluation, resolution, code inspections and refactorings are based on the type information from the IntelliJ IDEA internal TypeScript engine."
+  },
+  {
+    "id": "idea-run-ts-file",
+    "title": "直接 Run/Debug 一个 .ts 文件（临时 Node.js 运行配置）",
+    "path": "编辑器右键 .ts 入口 / Run 挂件 > Current file",
+    "expected": "右键菜单出现 Run '<file>.ts' 与 Debug '<file>.ts'",
+    "assertion": "Run 工具窗里出现 Node 输出；把临时配置存下来就变成可复用的常驻配置",
+    "applies_to": "ultimate",
+    "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
+    "quote": "IntelliJ IDEA creates a temporary run/debug configuration of the type Node.js which you can save, edit, and reuse for running and debugging."
+  },
+  {
+    "id": "idea-source-map-debug",
+    "title": "用 sourcemap 调试 TypeScript（JavaScript Debug 运行配置）",
+    "path": "Run | Edit Configurations > Add > JavaScript Debug",
+    "expected": "tsconfig 的 sourceMap=true，且 JavaScript Debug 配置指向 dev server URL",
+    "assertion": "在 .ts 里打断点后能命中（而不是 unresolved）；Debug 工具窗的 Disable Source Maps 可切换到实际执行的代码",
+    "applies_to": "ultimate",
+    "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
+    "quote": "During compilation, there can also be generated source maps that set correspondence between your TypeScript code and the JavaScript code that is actually executed."
+  },
+  {
+    "id": "idea-vitest-run-config",
+    "title": "Vitest 运行配置（IDE 测试视图）",
+    "path": "Run | Edit Configurations > Add > Vitest",
+    "expected": "Vitest 配置存在，vitest.config.ts / vite.config.ts 可被识别",
+    "assertion": "测试能从编辑器行号槽直接跑；watch 模式在源码变化后自动重跑受影响的用例",
+    "applies_to": "ultimate",
+    "source": "https://www.jetbrains.com/help/idea/vitest.html",
+    "quote": "You can run, debug, do snapshot testing, and measure test coverage both from the editor and via a run/debug configuration."
+  },
+  {
+    "id": "idea-jest-run-config",
+    "title": "Jest 运行配置（用 Jest 而非 Vitest 时）",
+    "path": "Run | Edit Configurations > Add > Jest",
+    "expected": "Configuration file 指向 jest.config.js / jest.config.ts，Jest package 指向 node_modules 里的 jest",
+    "assertion": "留空 Configuration file 时 IDEA 会去找 package.json 的 jest 字段，找不到就现场生成默认配置；ESM 项目需在 Node options 加 --experimental-vm-modules",
+    "applies_to": "ultimate",
+    "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-jest.html",
+    "quote": "In this field, specify the `jest.config.js` or `jest.config.ts` file to use"
+  },
+  {
+    "id": "idea-file-watchers",
+    "title": "File Watchers：保存/改动时自动跑编译器、格式化器、lint",
+    "path": "Settings | Tools | File Watchers（需先在 Settings | Plugins 启用 File Watchers 插件）",
+    "expected": "为 TS 项目配置一个 watcher（如 tsc --noEmit -w 或 prettier --write）",
+    "assertion": "File Watchers 插件只在 Ultimate 订阅下提供；社区版拿不到这个能力，只能靠 npm scripts + IDE 的保存钩子",
+    "applies_to": "ultimate",
+    "source": "https://www.jetbrains.com/help/idea/using-file-watchers.html",
+    "quote": "The plugin is available only in IntelliJ IDEA with the Ultimate subscription."
+  },
+  {
+    "id": "idea-install-type-definitions",
+    "title": "给没类型的第三方包装 @types 定义",
+    "path": "编辑器里光标停在无类型的 import 上 → Alt+Enter → Install TypeScript definitions",
+    "expected": "IDEA 提示为缺失的包安装类型定义，并把 @types/<pkg> 写进 package.json",
+    "assertion": "装完后该 import 的符号能解析、有补全；标准 JS API 还能通过 Ctrl+Q 打开 MDN 链接",
+    "applies_to": "ultimate",
+    "source": "https://www.jetbrains.com/help/idea/typescript-support.html",
+    "quote": "IntelliJ IDEA lets you get reference for symbols from your project and from its dependencies, for symbols defined in external libraries, and for standard JavaScript APIs because TypeScript implements all of them."
+  },
+  {
+    "id": "idea-node-modules-library",
+    "title": "node_modules 是自动库根，不要当普通库手工添加",
+    "path": "Settings > Languages & Frameworks | JavaScript | Libraries",
+    "expected": "库列表里有 IDEA 自动创建的 node_modules 库，Project 视图里该目录带库根图标",
+    "assertion": "该库里只有 package.json 的 dependencies 直接列出的模块，传递依赖不进项目；库内不跑 inspection 以保性能",
+    "applies_to": "ultimate",
+    "source": "https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html",
+    "quote": "To provide code completion for project dependencies, IntelliJ IDEA creates a node_modules library automatically so Node.js modules are kept in your project but no inspections are run against them, which improves performance."
   }
 ]

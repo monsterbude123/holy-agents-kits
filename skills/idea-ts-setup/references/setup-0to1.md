@@ -86,6 +86,7 @@ IDEA 的 TS 能力分两层，别混：
 按 `references/idea-settings.json` 的顺序逐条做，那里有每一项的**路径 + 期望状态 + 怎么断言**。要点：
 
 1. **Settings > Languages & Frameworks > JavaScript Runtime**：Preferred runtime → Browse → Add Local → 选 Node 安装目录；Version 字段要和 `node -v` 一致；勾 "Coding assistance for Node.js" 才有 Node 内置类型。
+   （IDEA 认识哪些解释器会记在 `<configDir>/options/nodejs.xml` 的 `NodeJsLocalInterpreterManager` 组件下；这个文件只有 JS/TS 插件栈装上后才出现，`setup-env.sh probe` 报的 `IDEA_NODE_REGISTRY` 就是它。）
 2. **同页 > Package manager**：选 npm（或 yarn/pnpm）。
 3. **Settings > Languages & Frameworks > TypeScript > TypeScript**：TS 包指向项目的 `node_modules/typescript`（不要 Bundled），版本要和 `package.json` 里钉的一致。
 4. **同页 > TypeScript language service**：勾 "TypeScript Language Service"（默认勾）。内置引擎算错类型或卡顿时才勾 "Enable service-powered type engine"，改完在状态栏 TS 挂件上重启服务。
@@ -93,6 +94,9 @@ IDEA 的 TS 能力分两层，别混：
 6. **Settings > Languages & Frameworks | JavaScript | Code Quality Tools | ESLint**：选 **Automatic ESLint configuration**。
 7. **Settings > Languages & Frameworks | JavaScript | Prettier**：Automatic + **Run on save**；要让 Ctrl+Alt+L 也走 Prettier，就用 Manual 配置并勾 "Run on 'Reformat Code' action"。
 8. **Settings > Languages & Frameworks | JavaScript | Libraries > Manage Scopes**：收窄 Node.js Core 的作用域到后端目录。
+9. **运行与调试**：右键 `.ts` 入口 → Run/Debug（临时 Node.js 配置，记得存下来）；要断点调试就加 **JavaScript Debug** 配置指向 dev server URL，依赖 tsconfig 的 `sourceMap: true`。
+10. **测试**：Run | Edit Configurations → 加 **Vitest**（或 Jest）配置，让 IDE 的测试视图和 `npm test` 用同一套用例发现规则。
+11. **File Watchers**（Ultimate 独占）：Settings | Tools | File Watchers 建一个 watcher，比如 `tsc --noEmit -w`。
 
 ---
 

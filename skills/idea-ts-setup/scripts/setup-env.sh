@@ -97,6 +97,20 @@ ts_service_state() { # 1 if the running IDE has a TS language service configured
   fi
 }
 
+# IDEA registers the Node interpreters it knows about in
+# <configDir>/options/nodejs.xml, under the NodeJsLocalInterpreterManager
+# component. That file only exists once the (Ultimate-only) JS/TS plugin stack
+# is installed, so it doubles as an edition marker.
+node_registry_state() {
+  local cfgdir="$1"
+  [ -n "$cfgdir" ] && [ -f "$cfgdir/options/nodejs.xml" ] || { echo "absent"; return; }
+  if grep -q 'NodeJsLocalInterpreterManager' "$cfgdir/options/nodejs.xml" 2>/dev/null; then
+    echo "present"
+  else
+    echo "absent"
+  fi
+}
+
 detect_area() {
   local root="${1:-}"
   if [ -z "$root" ]; then
@@ -163,6 +177,7 @@ probe_root() {
   echo "IDEA_CONFIG_DIR=$cfgdir"
   echo "IDEA_TS_PLUGINS=$(ts_plugins_state "$root")"
   echo "IDEA_TS_SERVICE=$(ts_service_state "$cfgdir")"
+  echo "IDEA_NODE_REGISTRY=$(node_registry_state "$cfgdir")"
 }
 
 node_facts() {
