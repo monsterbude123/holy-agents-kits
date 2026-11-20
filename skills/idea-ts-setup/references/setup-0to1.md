@@ -54,7 +54,8 @@ IDEA 的 TS 能力分两层，别混：
 
 把模板落到项目里：
 
-- `bash scripts/init-ts-project.sh <目标项目目录> --name <包名>`
+- `bash scripts/init-ts-project.sh <目标项目目录> --template ts-project --name <包名>` —— Node ESM 服务（tsc 构建，nodenext + dist/ + sourcemap）
+- `bash scripts/init-ts-project.sh <目标项目目录> --template ts-web --name <包名>` —— 前端（Vite + React + TS，preserve + bundler 解析 + noEmit + `@/` 别名）
 
 它会做四件事：
 

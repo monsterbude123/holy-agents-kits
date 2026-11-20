@@ -12,7 +12,7 @@
 ## [S1] TypeScript — tsconfig 官方总览
 
 - URL: https://www.typescriptlang.org/tsconfig/
-- 用于条目：`tsconfig-strict`、`tsconfig-module`、`tsconfig-module-resolution`、`tsconfig-out-dir`、`tsconfig-source-map`、`tsconfig-include-exclude`、`tsconfig-types`、`tsconfig-build-excludes-tests`、`tsc-typecheck-gate`、`build-gate`
+- 用于条目：`tsconfig-strict`、`tsconfig-module`、`tsconfig-module-resolution`、`tsconfig-out-dir`、`tsconfig-source-map`、`tsconfig-include-exclude`、`tsconfig-types`、`tsconfig-build-excludes-tests`、`tsconfig-paths`、`tsconfig-no-emit`、`web-alias-resolves`、`tsc-typecheck-gate`、`build-gate`
 
 > The strict flag enables a wide range of type checking behavior that results in stronger guarantees of program correctness. Turning this on is equivalent to enabling all of the strict mode family options
 
@@ -29,6 +29,17 @@
 > If types is specified, only packages listed will be included in the global scope.
 
 > Do not emit compiler output files like JavaScript source code, source-maps or declarations.
+
+> A series of entries which re-map imports to lookup locations relative to the baseUrl if set, or to the tsconfig file itself otherwise.
+
+> You can then use TypeScript as a tool for providing editor integration, and as a source code type-checker.
+
+## [S1b] TypeScript — jsx
+
+- URL: https://www.typescriptlang.org/tsconfig/jsx.html
+- 用于条目：`tsconfig-jsx`
+
+> Controls how JSX constructs are emitted in JavaScript files. This only affects output of JS files that started in .tsx files.
 
 ## [S2] TypeScript — target
 
@@ -276,6 +287,13 @@
 - 用于条目：`idea-file-watchers`
 
 > The plugin is available only in IntelliJ IDEA with the Ultimate subscription.
+
+## [S35] JetBrains — 新建项目向导（React / Vite / TypeScript）
+
+- URL: https://www.jetbrains.com/help/idea/new-project-wizard.html
+- 用于条目：`web-react-types`
+
+> your development environment is preconfigured to use Vite with React and TypeScript
 
 ---
 
