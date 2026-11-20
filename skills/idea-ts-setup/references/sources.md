@@ -1,0 +1,265 @@
+# 来源快照（Sources）
+
+> 本文件是 `references/checklist.json` 的**溯源底账**：清单里每一条的 `source`（URL）与
+> `quote`（原句）都必须能在这里逐字命中，否则该条在 `scripts/verify-checklist` 的溯源门
+> 里判负——**不许凭记忆写引文**。
+>
+> 抓取时间：2026-11-20。JetBrains 文档对应 2026.3 文档构建；本仓实测的 IDEA 是
+> IdeaIC2026.2（社区版），文档版本比实测新一个次版本，涉及设置项时以实测为准。
+
+---
+
+## [S1] TypeScript — tsconfig 官方总览
+
+- URL: https://www.typescriptlang.org/tsconfig/
+- 用于条目：`tsconfig-strict`、`tsconfig-module`、`tsconfig-module-resolution`、`tsconfig-out-dir`、`tsconfig-source-map`、`tsconfig-include-exclude`、`tsconfig-types`、`tsconfig-build-excludes-tests`、`tsc-typecheck-gate`、`build-gate`
+
+> The strict flag enables a wide range of type checking behavior that results in stronger guarantees of program correctness. Turning this on is equivalent to enabling all of the strict mode family options
+
+> You very likely want "nodenext" for modern Node.js projects and preserve or esnext for code that will be bundled.
+
+> 'node16' or 'nodenext' for modern versions of Node.js. Node.js v12 and later supports both ECMAScript imports and CommonJS require, which resolve using different algorithms.
+
+> If specified, .js (as well as .d.ts, .js.map, etc.) files will be emitted into this directory. The directory structure of the original source files is preserved; see rootDir if the computed root is not what you intended.
+
+> Enables the generation of sourcemap files. These files allow debuggers and other tools to display the original TypeScript source code when actually working with the emitted JavaScript files.
+
+> Important: exclude only changes which files are included as a result of the include setting.
+
+> If types is specified, only packages listed will be included in the global scope.
+
+> Do not emit compiler output files like JavaScript source code, source-maps or declarations.
+
+## [S2] TypeScript — target
+
+- URL: https://www.typescriptlang.org/tsconfig/target.html
+- 用于条目：`tsconfig-target`
+
+> The target setting changes which JS features are downleveled and which are left intact.
+
+## [S3] TypeScript — lib
+
+- URL: https://www.typescriptlang.org/tsconfig/lib.html
+- 用于条目：`tsconfig-lib`
+
+> TypeScript includes a default set of type definitions for built-in JS APIs (like Math), as well as type definitions for things found in browser environments (like document).
+
+## [S4] TypeScript — esModuleInterop
+
+- URL: https://www.typescriptlang.org/tsconfig/esModuleInterop.html
+- 用于条目：`tsconfig-es-module-interop`
+
+> By default (with esModuleInterop false or not set) TypeScript treats CommonJS/AMD/UMD modules similar to ES6 modules.
+
+## [S5] TypeScript — verbatimModuleSyntax
+
+- URL: https://www.typescriptlang.org/tsconfig/verbatimModuleSyntax.html
+- 用于条目：`tsconfig-verbatim-module-syntax`
+
+> With this new option, what you see is what you get.
+
+## [S6] TypeScript — skipLibCheck
+
+- URL: https://www.typescriptlang.org/tsconfig/skipLibCheck.html
+- 用于条目：`tsconfig-skip-lib-check`
+
+> This can save time during compilation at the expense of type-system accuracy. For example, two libraries could define two copies of the same type in an inconsistent way.
+
+## [S7] tsconfig / bases（$schema 约定）
+
+- URL: https://github.com/tsconfig/bases
+- 用于条目：`tsconfig-json-schema`
+
+> "$schema": "https://www.schemastore.org/tsconfig"
+
+## [S8] Node.js — Packages（type 字段）
+
+- URL: https://nodejs.org/api/packages.html
+- 用于条目：`pkg-type-module`
+
+> The "type" field defines the module format that Node.js uses for all .js files that have that package.json file as their nearest parent.
+
+## [S9] npm — scripts
+
+- URL: https://docs.npmjs.com/cli/v11/using-npm/scripts
+- 用于条目：`pkg-scripts`
+
+> The "scripts" property in your package.json supports built-in lifecycle events and arbitrary scripts.
+
+## [S10] npm — package.json（devDependencies / engines）
+
+- URL: https://docs.npmjs.com/cli/v11/configuring-npm/package-json
+- 用于条目：`pkg-dev-dependencies`、`pkg-engines-node`
+
+> These are development-only tools, such as test or documentation frameworks, rather than packages required by consumers at runtime.
+
+> You can specify the version of node that your stuff works on
+
+## [S11] TypeScript — Download（版本钉死）
+
+- URL: https://www.typescriptlang.org/download
+- 用于条目：`pkg-typescript-pinned`
+
+> To do this, run `npm install -g typescript`. This will install the latest version (currently 7.0).
+
+## [S12] ESLint — Configuration Files（flat config）
+
+- URL: https://eslint.org/docs/latest/use/configure/configuration-files
+- 用于条目：`eslint-config-file`、`eslint-ignores`
+
+> It should be placed in the root directory of your project and export an array of configuration objects.
+
+> If ignores is used without any other keys (besides name) in the configuration object, then the patterns act as global ignores.
+
+## [S13] typescript-eslint — Getting Started
+
+- URL: https://typescript-eslint.io/getting-started/
+- 用于条目：`eslint-ts-recommended`
+
+> extends: [js.configs.recommended, tseslint.configs.recommended],
+
+## [S14] ESLint — Command Line Interface（退出码）
+
+- URL: https://eslint.org/docs/latest/use/command-line-interface
+- 用于条目：`eslint-gate`
+
+> Linting was successful and there are no linting errors.
+
+## [S15] Prettier — Configuration
+
+- URL: https://prettier.io/docs/configuration
+- 用于条目：`prettier-config`
+
+> "trailingComma": "es5", "tabWidth": 4, "semi": false, "singleQuote": true
+
+## [S16] Prettier — Ignoring Code
+
+- URL: https://prettier.io/docs/ignore
+- 用于条目：`prettier-ignore`
+
+> Create .prettierignore in the root of your project. It uses gitignore syntax to exclude files and folders from formatting.
+
+## [S17] Prettier — CLI
+
+- URL: https://prettier.io/docs/cli
+- 用于条目：`prettier-gate`
+
+> When you want to check if your files are formatted, you can run Prettier with the --check flag (or -c).
+
+## [S18] nvm — .nvmrc
+
+- URL: https://github.com/nvm-sh/nvm#nvmrc
+- 用于条目：`node-nvmrc`、`node-nvmrc-matches-runtime`
+
+> nvm use, nvm install, and nvm which will use the version specified in the .nvmrc file
+
+## [S19] Vitest — include
+
+- URL: https://vitest.dev/config/include
+- 用于条目：`vitest-config`、`vitest-gate`
+
+> A list of glob patterns that match your test files.
+
+---
+
+## [S20] JetBrains — Node.js 运行配置（版本门禁）
+
+- URL: https://www.jetbrains.com/help/idea/run-debug-configuration-node-js.html
+- 用于条目：`idea-edition-gate`
+
+> The plugins are available only in IntelliJ IDEA with the Ultimate subscription.
+
+## [S21] JetBrains — NPM 运行配置
+
+- URL: https://www.jetbrains.com/help/idea/run-debug-configuration-npm.html
+- 用于条目：`idea-run-configs`
+
+> In this field, specify the `package.json` file to run the scripts from.
+
+## [S22] JetBrains — Content Roots（排除目录）
+
+- URL: https://www.jetbrains.com/help/idea/content-roots.html
+- 用于条目：`idea-node-modules-excluded`
+
+> Right-click a folder and select `Mark Directory As | Excluded`.
+
+## [S23] JetBrains — TypeScript 支持（TS 包来源）
+
+- URL: https://www.jetbrains.com/help/idea/typescript-support.html
+- 用于条目：`idea-ts-version-selection`
+
+> By default, the `typescript` package from the project's `node_modules` folder is used.
+
+## [S24] JetBrains — TypeScript 设置页
+
+- URL: https://www.jetbrains.com/help/idea/settings-languages-typescript.html
+- 用于条目：`idea-ts-language-service`、`idea-ts-service-powered-engine`
+
+> By default, the TypeScript Language Service checkbox is selected.
+
+> By default, the checkbox is cleared, so type evaluation, resolution, code inspections and refactorings are based on the type information from the IntelliJ IDEA internal TypeScript engine.
+
+## [S25] JetBrains — 开发 Node.js 应用（添加本地解释器）
+
+- URL: https://www.jetbrains.com/help/idea/developing-node-js-applications.html
+- 用于条目：`idea-node-runtime`
+
+> select  Add Local from the context menu  and choose the installation of Node.js, then click OK.
+
+## [S26] JetBrains — JavaScript Runtime（包管理器）
+
+- URL: https://www.jetbrains.com/help/idea/javascript-runtime.html
+- 用于条目：`idea-package-manager`
+
+> In this field,   choose the package manager (npm, Yarn, pnpm, bun) for the current project.
+
+## [S27] JetBrains — ESLint 集成
+
+- URL: https://www.jetbrains.com/help/idea/eslint.html
+- 用于条目：`idea-eslint-automatic`
+
+> go to `Languages & Frameworks | JavaScript | Code Quality Tools | ESLint`, and select the Automatic ESLint configuration option.
+
+## [S28] JetBrains — Prettier 集成
+
+- URL: https://www.jetbrains.com/help/idea/prettier.html
+- 用于条目：`idea-prettier-run-on-save`
+
+> To apply Prettier automatically to saved files, select the Run on save checkbox.
+
+## [S29] JetBrains — 文件类型与文件关联
+
+- URL: https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html
+- 用于条目：`idea-file-type-associations`
+
+> For language-specific features (such as syntax highlighting and code analysis) in files representing different languages and technologies, IntelliJ IDEA maintains a list of file types, each of which links a language service with one or more file name patterns.
+
+## [S30] JetBrains — 运行与调试 TypeScript（tsconfig 文件类型）
+
+- URL: https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html
+- 用于条目：`idea-tsconfig-file-type-pattern`
+
+> go to `Editor | File Types`, and make sure the names of all these files match the patterns from the Typescript config file name pattern list.
+
+## [S31] JetBrains — 配置 JavaScript 库（作用域）
+
+- URL: https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html
+- 用于条目：`idea-library-scopes`
+
+> IntelliJ IDEA lets you tune code completion by configuring scopes for libraries.
+
+---
+
+## 附：版本门禁的机器事实（2026-11-20 实测，非文档）
+
+- 本机 IDEA：`D:/workplace/idea-2026.2.5`，`product-info.json` 的 `productCode` = **IC**（社区版），
+  `version` = 2026.2.5，`buildNumber` = 262.12573.28。
+- 该安装的 `plugins/` 共 62 个插件，**不含** `javascript-impl` / `javascript-frontend` /
+  `nodejs` 等 JS/TS 插件栈——社区版不捆绑它们。
+- 配置目录 `%APPDATA%/JetBrains/IdeaIC2026.2/options/` 下**没有** `javascriptLanguageService.xml` /
+  `typescriptLanguageService.xml` / `nodejs.xml`——TS 语言服务从未被启用过。
+- JetBrains Marketplace 上 JavaScript and TypeScript 插件（id 22069）的兼容产品为
+  `["IDEA_PRO","PYCHARM_PRO"]`，**不含** 社区版的 `IDEA`；因此不要指望在社区版里从
+  Marketplace 装上语言插件。社区版里可用的只有免费的 JavaScript Debugger 插件（id 17562）。
+- 结论：**社区版可以做 TS 代码编写与静态检查，但没有 TS 的运行/调试与测试执行**；
+  要跑要调，必须用 IntelliJ IDEA Ultimate 或 WebStorm（WebStorm 非商用免费）。

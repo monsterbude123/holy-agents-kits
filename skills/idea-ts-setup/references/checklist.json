@@ -1,0 +1,407 @@
+[
+  {
+    "id": "idea-edition-gate",
+    "title": "先判定 IDEA 版本门禁：社区版(IC)没有原生 TypeScript 能力",
+    "category": "ide-gate",
+    "action": "读安装根的 product-info.json：productCode=IC 是社区版、IU 是 Ultimate、WS 是 WebStorm。社区版不捆绑 JavaScript/TypeScript 插件栈（plugins/ 下没有 javascript-impl / javascript-frontend），原生 TS 能力不存在，必须换 Ultimate/WebStorm，或走 references/setup-0to1.md 的降级路径。本技能的 scripts/setup-env.sh probe <root> 会直接给出 IDEA_EDITION 与 IDEA_TS_PLUGINS。",
+    "verify": "T1=$(mktemp -d) && mkdir -p \"$T1/bin\" \"$T1/plugins/javascript-impl\" && : > \"$T1/bin/idea64.exe\" && printf '{\"productCode\":\"IU\",\"version\":\"2026.2.5\",\"buildNumber\":\"IU-262.1\",\"dataDirectoryName\":\"IdeaIU2026.2\"}' > \"$T1/product-info.json\" && U=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T1\") && T2=$(mktemp -d) && mkdir -p \"$T2/bin\" && : > \"$T2/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T2/product-info.json\" && C=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T2\") && rm -rf \"$T1\" \"$T2\" && echo \"$U\" | grep -q '^IDEA_EDITION=ultimate$' && echo \"$U\" | grep -q '^IDEA_TS_PLUGINS=present$' && echo \"$C\" | grep -q '^IDEA_EDITION=community$' && echo \"$C\" | grep -q '^IDEA_TS_PLUGINS=absent$'",
+    "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-node-js.html",
+    "quote": "The plugins are available only in IntelliJ IDEA with the Ultimate subscription."
+  },
+  {
+    "id": "idea-run-configs",
+    "title": "共享运行配置（.idea/runConfigurations/*.xml）必须能被 IDEA 导入且指向真实 npm 脚本",
+    "category": "ide-runtime",
+    "action": "把 run configuration 放进 .idea/runConfigurations/ 并提交到仓库，团队成员 clone 即可用。npm 型用 type=js-npm + <package-json value=\"$PROJECT_DIR$/package.json\"/> + <scripts><script value=\"...\"/></scripts>；Node 型用 type=NodeJsLocal + <entry key=\"mainFilePath\" value=\"$PROJECT_DIR$/dist/index.js\"/>。脚本名必须与 package.json 的 scripts 一一对应，否则 IDEA 会报找不到脚本。",
+    "verify": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const dir=path.join(process.env.SKILL_DIR,\"templates/ts-project/.idea/runConfigurations\");const pkg=JSON.parse(fs.readFileSync(path.join(process.env.SKILL_DIR,\"templates/ts-project/package.json\"),\"utf8\"));const files=fs.readdirSync(dir).filter(f=>f.endsWith(\".xml\"));if(!files.length){console.error(\"no shared run configurations\");process.exit(1)}for(const f of files){const s=fs.readFileSync(path.join(dir,f),\"utf8\");if(!/^<\\?xml|^<component /.test(s.trim())){console.error(f+\" is not an IntelliJ run configuration component\");process.exit(1)}if(!/<configuration [^>]*>/.test(s)||!/<\\/component>/.test(s)){console.error(f+\" is missing the <configuration> element\");process.exit(1)}const m=s.match(/<script value=\"([^\"]+)\"\\/>/g)||[];for(const hit of m){const name=hit.match(/value=\"([^\"]+)\"/)[1];if(!pkg.scripts[name]){console.error(f+\" references missing npm script: \"+name);process.exit(1)}}}console.error(files.length+\" run configurations checked\")'",
+    "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-npm.html",
+    "quote": "In this field, specify the `package.json` file to run the scripts from."
+  },
+  {
+    "id": "tsconfig-strict",
+    "title": "tsconfig.json 打开 strict 全家桶（IDE 与 CLI 才会给同一套报错）",
+    "category": "tsconfig",
+    "action": "compilerOptions.strict = true。它一次性打开 strictNullChecks / noImplicitAny / strictPropertyInitialization / useUnknownInCatchVariables 等一整族严格检查。IDE 与 tsc 读同一份 tsconfig，不开 strict 时 IDE 会把一切都当 any，两边诊断必然对不上。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.strict!==true){console.error(\"compilerOptions.strict must be true\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "The strict flag enables a wide range of type checking behavior that results in stronger guarantees of program correctness. Turning this on is equivalent to enabling all of the strict mode family options"
+  },
+  {
+    "id": "tsconfig-target",
+    "title": "tsconfig.json 显式设置 target（决定降级方式与默认 lib）",
+    "category": "tsconfig",
+    "action": "compilerOptions.target = \"ES2023\"（Node 22+/现代浏览器）或 \"ESNext\"（全新项目）。不写就回落到过时默认值，既改变哪些 JS 特性被降级，也悄悄改变 IDE 自动补全所依据的默认 lib 集合。TypeScript 6.0 起 ES5 已废弃。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const t=c.compilerOptions.target;if(!t||/^es5$/i.test(t)){console.error(\"target must be set explicitly and not es5, got: \"+t);process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/target.html",
+    "quote": "The target setting changes which JS features are downleveled and which are left intact."
+  },
+  {
+    "id": "tsconfig-lib",
+    "title": "tsconfig.json 显式钉住 lib（服务端项目不注入 DOM 全局）",
+    "category": "tsconfig",
+    "action": "compilerOptions.lib = [\"ES2023\"]（Node/后端）；只有浏览器代码才加 \"DOM\" / \"DOM.Iterable\"。不写时 TypeScript 会按 target 推导 lib，把 document / window 等浏览器定义塞进服务端项目，让 IntelliSense 同时误报和漏报。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const l=c.compilerOptions.lib;if(!Array.isArray(l)||!l.length){console.error(\"compilerOptions.lib must be an explicit non-empty array\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/lib.html",
+    "quote": "TypeScript includes a default set of type definitions for built-in JS APIs (like Math), as well as type definitions for things found in browser environments (like document)."
+  },
+  {
+    "id": "tsconfig-module",
+    "title": "tsconfig.json 的 module 与 package.json 的 type 对齐",
+    "category": "tsconfig",
+    "action": "package.json 有 \"type\": \"module\" 时用 compilerOptions.module = \"nodenext\"；由 Vite/webpack/esbuild 打包的代码用 \"preserve\" 或 \"esnext\"。不写时 TypeScript 6.0+ 默认 esnext，会破坏 CommonJS 互操作，也让 IDE 对运行时模块格式的判断与实际不符。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const m=c.compilerOptions.module;if(![\"nodenext\",\"node20\",\"node18\",\"preserve\",\"esnext\"].includes(m)){console.error(\"module must be a modern module mode, got: \"+m);process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "You very likely want \"nodenext\" for modern Node.js projects and preserve or esnext for code that will be bundled."
+  },
+  {
+    "id": "tsconfig-module-resolution",
+    "title": "tsconfig.json 设 moduleResolution，让 IDE 与运行时解析同一份文件",
+    "category": "tsconfig",
+    "action": "compilerOptions.moduleResolution = \"nodenext\"（Node ESM/CJS，尊重 package.json 的 exports/imports）或 \"bundler\"（Vite/webpack，允许无扩展名相对导入）。不写时按 module 推断，历史默认值是 node10，IDE 会解析到与运行时不同的文件，报出根本不存在的 \"cannot find module\"。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const r=c.compilerOptions.moduleResolution;if(![\"nodenext\",\"node16\",\"bundler\"].includes(r)){console.error(\"moduleResolution must be nodenext/node16/bundler, got: \"+r);process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "'node16' or 'nodenext' for modern versions of Node.js. Node.js v12 and later supports both ECMAScript imports and CommonJS require, which resolve using different algorithms."
+  },
+  {
+    "id": "tsconfig-es-module-interop",
+    "title": "tsconfig.json 开 esModuleInterop（CommonJS 默认导入才不报错）",
+    "category": "tsconfig",
+    "action": "compilerOptions.esModuleInterop = true。不开时 `import fs from \"fs\"` 在 IDE 里就是类型错误，CommonJS 包的命名空间导入类型也是错的。它同时隐含打开 allowSyntheticDefaultImports。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.esModuleInterop!==true){console.error(\"esModuleInterop must be true\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/esModuleInterop.html",
+    "quote": "By default (with esModuleInterop false or not set) TypeScript treats CommonJS/AMD/UMD modules similar to ES6 modules."
+  },
+  {
+    "id": "tsconfig-verbatim-module-syntax",
+    "title": "tsconfig.json 开 verbatimModuleSyntax（类型导入必须显式 import type）",
+    "category": "tsconfig",
+    "action": "compilerOptions.verbatimModuleSyntax = true。开启后纯类型导入必须写成 `import type { X } from \"x\"`，IDE 不会再悄悄删掉运行时仍需要的导入，tsx/ts-node/swc 单文件转译也与类型检查器保持一致。它取代了已废弃的 importsNotUsedAsValues / preserveValueImports 组合。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.verbatimModuleSyntax!==true){console.error(\"verbatimModuleSyntax must be true\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/verbatimModuleSyntax.html",
+    "quote": "With this new option, what you see is what you get."
+  },
+  {
+    "id": "tsconfig-skip-lib-check",
+    "title": "tsconfig.json 开 skipLibCheck（第三方 .d.ts 的噪音不阻塞 IDE）",
+    "category": "tsconfig",
+    "action": "compilerOptions.skipLibCheck = true，只检查你的代码真正引用到的 .d.ts。代价是依赖之间类型不一致的重复定义不再被查出——那属于依赖层的问题，应当在依赖层解决，而不是靠 skipLibCheck 掩盖。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.skipLibCheck!==true){console.error(\"skipLibCheck must be true\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/skipLibCheck.html",
+    "quote": "This can save time during compilation at the expense of type-system accuracy. For example, two libraries could define two copies of the same type in an inconsistent way."
+  },
+  {
+    "id": "tsconfig-out-dir",
+    "title": "tsconfig.json 声明 rootDir + outDir（构建产物结构才可控）",
+    "category": "tsconfig",
+    "action": "compilerOptions.rootDir = \"./src\"、outDir = \"./dist\"。只要项目要产出 JS 就必须写；TypeScript 6.0 起 rootDir 默认取 tsconfig 所在目录，不显式写就会产出 dist/src/...，破坏包入口和 IDE 的 sourcemap 跳转。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.outDir!==\"./dist\"){console.error(\"outDir must be ./dist\");process.exit(1)}if(c.compilerOptions.rootDir!==\"./src\"){console.error(\"rootDir must be ./src\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "If specified, .js (as well as .d.ts, .js.map, etc.) files will be emitted into this directory. The directory structure of the original source files is preserved; see rootDir if the computed root is not what you intended."
+  },
+  {
+    "id": "tsconfig-source-map",
+    "title": "tsconfig.json 开 sourceMap（IDE 调试能跳回 .ts）",
+    "category": "tsconfig",
+    "action": "compilerOptions.sourceMap = true，需要把源码内容打进 map 时再加 inlineSources = true。没有 sourcemap，IDE 的 \"run with debugger\" 会停在编译后的 JS 上，跳不回原始 TypeScript。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(c.compilerOptions.sourceMap!==true){console.error(\"sourceMap must be true\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "Enables the generation of sourcemap files. These files allow debuggers and other tools to display the original TypeScript source code when actually working with the emitted JavaScript files."
+  },
+  {
+    "id": "tsconfig-include-exclude",
+    "title": "tsconfig.json 显式声明 include / exclude（IDE 的项目范围才不含输出目录）",
+    "category": "tsconfig",
+    "action": "include = [\"src/**/*\"]，exclude = [\"node_modules\", \"dist\", \"coverage\"]。默认 include 是 **/*（全仓），默认 exclude 只有 node_modules 等少数几个——不显式排除，IDE 就会索引 dist/、coverage/，污染自动补全并拖慢类型检查。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(!Array.isArray(c.include)||!c.include.length){console.error(\"include must be an explicit non-empty array\");process.exit(1)}if(!Array.isArray(c.exclude)||!c.exclude.length){console.error(\"exclude must be an explicit non-empty array\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "Important: exclude only changes which files are included as a result of the include setting."
+  },
+  {
+    "id": "tsconfig-types",
+    "title": "tsconfig.json 显式钉住 types（全局命名空间不被隐式污染）",
+    "category": "tsconfig",
+    "action": "compilerOptions.types = [\"node\"]（用 vitest 全局变量再加 \"vitest/globals\"）。TypeScript 6.0 起 types 默认是 []，什么都不隐式引入；5.x 则会把所有可见的 @types 包全局拉进来。显式写死可以让 IDE 的自动导入建议与 CLI 行为完全一致。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));const t=c.compilerOptions.types;if(!Array.isArray(t)||!t.length){console.error(\"compilerOptions.types must be an explicit array\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "If types is specified, only packages listed will be included in the global scope."
+  },
+  {
+    "id": "tsconfig-json-schema",
+    "title": "tsconfig.json 带 $schema（IDE 能校验键名并补全选项）",
+    "category": "tsconfig",
+    "action": "第一个键写 \"$schema\": \"https://www.schemastore.org/tsconfig\"。编辑器用这份 JSON Schema 校验 compilerOptions、标出拼错的键并提供补全——像 \"moduleResoultion\" 这种拼写错误，缺了 $schema 会被 tsc 和 IDE 双双静默忽略。",
+    "verify": "node -e 'const fs=require(\"fs\");const c=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/tsconfig.json\",\"utf8\"));if(!c[\"$schema\"]){console.error(\"missing $schema in tsconfig.json\");process.exit(1)}'",
+    "source": "https://github.com/tsconfig/bases",
+    "quote": "\"$schema\": \"https://www.schemastore.org/tsconfig\""
+  },
+  {
+    "id": "tsconfig-build-excludes-tests",
+    "title": "构建用 tsconfig 与 IDE 用 tsconfig 分开（测试代码不进产物、但仍被 IDE 检查）",
+    "category": "tsconfig",
+    "action": "tsconfig.json 是 IDE 与 typecheck 用的（含 **/*.test.ts），tsconfig.build.json extends 它并把 exclude 追加 \"**/*.test.ts\"，npm run build 指向后者。否则测试代码会被编译进 dist/，产物结构和 sourcemap 都会被污染。",
+    "verify": "node -e 'const fs=require(\"fs\");const p=process.env.SKILL_DIR+\"/templates/ts-project/\";const main=JSON.parse(fs.readFileSync(p+\"tsconfig.json\",\"utf8\"));const build=JSON.parse(fs.readFileSync(p+\"tsconfig.build.json\",\"utf8\"));if(!build.extends){console.error(\"tsconfig.build.json must extend tsconfig.json\");process.exit(1)}if(!build.exclude||!build.exclude.some(e=>e.includes(\".test.ts\"))){console.error(\"build tsconfig must exclude *.test.ts\");process.exit(1)}if(!main.include||!main.include.length){console.error(\"main tsconfig must keep include\");process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "Important: exclude only changes which files are included as a result of the include setting."
+  },
+  {
+    "id": "pkg-type-module",
+    "title": "package.json 设 \"type\": \"module\"（Node 与 TypeScript 对模块格式达成一致）",
+    "category": "package",
+    "action": "package.json 写 \"type\": \"module\"。Node 会把该包下所有 .js 当 ES module 加载，TypeScript 在 module/moduleResolution: nodenext 下对 .ts 的处理也一致，IDE 与运行时才对得上。CJS 包则用 \"type\": \"commonjs\"，个别文件用 .cjs/.mjs 单独退出。",
+    "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));if(p.type!==\"module\"){console.error(\"package.json type must be \\\"module\\\"\");process.exit(1)}'",
+    "source": "https://nodejs.org/api/packages.html",
+    "quote": "The \"type\" field defines the module format that Node.js uses for all .js files that have that package.json file as their nearest parent."
+  },
+  {
+    "id": "pkg-scripts",
+    "title": "package.json 备齐 dev/build/start/test/lint/typecheck/format 脚本",
+    "category": "package",
+    "action": "scripts = { dev, build, start, test, lint, typecheck, format, format:check }。IDEA 的运行配置、CI 任务和人工调用全部按名字引用这些脚本——缺一个 \"typecheck\"，CI 的类型检查门禁就没法复现。",
+    "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));const need=[\"dev\",\"build\",\"start\",\"test\",\"lint\",\"typecheck\",\"format\"];const miss=need.filter(s=>!p.scripts||!p.scripts[s]);if(miss.length){console.error(\"missing npm scripts: \"+miss.join(\", \"));process.exit(1)}'",
+    "source": "https://docs.npmjs.com/cli/v11/using-npm/scripts",
+    "quote": "The \"scripts\" property in your package.json supports built-in lifecycle events and arbitrary scripts."
+  },
+  {
+    "id": "pkg-dev-dependencies",
+    "title": "package.json 把工具链声明为 devDependencies",
+    "category": "package",
+    "action": "devDependencies 至少含 typescript / eslint / @eslint/js / typescript-eslint / prettier / @types/node / tsx / 测试运行器。它们既是 CLI 调用的对象，也是 IDE 要解析的类型来源；缺了它们 IDE 的 JS/TS 支持就无处附着。",
+    "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));const d=p.devDependencies||{};const need=[\"typescript\",\"eslint\",\"typescript-eslint\",\"prettier\",\"@types/node\"];const miss=need.filter(k=>!d[k]);if(miss.length){console.error(\"missing devDependencies: \"+miss.join(\", \"));process.exit(1)}'",
+    "source": "https://docs.npmjs.com/cli/v11/configuring-npm/package-json",
+    "quote": "These are development-only tools, such as test or documentation frameworks, rather than packages required by consumers at runtime."
+  },
+  {
+    "id": "pkg-typescript-pinned",
+    "title": "typescript 钉死精确版本（IDE 语言服务与 CLI 用同一个编译器）",
+    "category": "package",
+    "action": "devDependencies.typescript 写精确版本（如 \"6.0.3\"，不带 ^）。IDE 的 TypeScript 支持与库版本是分开发布的，会优先用自带编译器；只有精确钉版本 + 在 IDE 里显式指定 TypeScript 版本，才能保证两台机器给出一致的诊断。注意 typescript-eslint 8.x 要求 typescript < 6.1，选 7.x 会装不上。",
+    "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));const v=(p.devDependencies||{}).typescript;if(!v||!/^\\d+\\.\\d+\\.\\d+$/.test(v)){console.error(\"typescript must be pinned to an exact version, got: \"+v);process.exit(1)}'",
+    "source": "https://www.typescriptlang.org/download",
+    "quote": "To do this, run `npm install -g typescript`. This will install the latest version (currently 7.0)."
+  },
+  {
+    "id": "pkg-engines-node",
+    "title": "package.json 声明 engines.node（运行时的机器可读契约）",
+    "category": "package",
+    "action": "engines = { \"node\": \">=22.0.0\" }。npm 在 Node 不满足时打印警告；配合 .npmrc 的 engine-strict=true 会变成硬失败。engines 是声明式的，真正的解释器选择靠 .nvmrc / volta。",
+    "verify": "node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/package.json\",\"utf8\"));if(!p.engines||!p.engines.node){console.error(\"engines.node is required\");process.exit(1)}'",
+    "source": "https://docs.npmjs.com/cli/v11/configuring-npm/package-json",
+    "quote": "You can specify the version of node that your stuff works on"
+  },
+  {
+    "id": "eslint-config-file",
+    "title": "根目录放 eslint.config.mjs（flat config，IDE 与 CLI 共用）",
+    "category": "lint",
+    "action": "根目录放 eslint.config.mjs（也可 .js/.cjs/.ts），导出一个配置数组。这是 IDE 的 ESLint 集成与 npx eslint . 唯一都会去找的文件；旧的 .eslintrc.* 格式默认不再被发现。",
+    "verify": "test -f \"$SKILL_DIR/templates/ts-project/eslint.config.mjs\"",
+    "source": "https://eslint.org/docs/latest/use/configure/configuration-files",
+    "quote": "It should be placed in the root directory of your project and export an array of configuration objects."
+  },
+  {
+    "id": "eslint-ts-recommended",
+    "title": "eslint.config.mjs 通过 tseslint.configs.recommended 接入类型感知规则集",
+    "category": "lint",
+    "action": "import tseslint from \"typescript-eslint\" 后 extends: [js.configs.recommended, tseslint.configs.recommended]。typescript-eslint v8 的 flat config 名字是 tseslint.configs.recommended / .strict / .stylistic / .recommendedTypeChecked；旧字符串 \"plugin:@typescript-eslint/recommended\" 已失效。",
+    "verify": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/eslint.config.mjs\",\"utf8\");if(!/tseslint\\.configs\\.(recommended|recommendedTypeChecked)/.test(s)){console.error(\"tseslint.configs.recommended is not referenced\");process.exit(1)}'",
+    "source": "https://typescript-eslint.io/getting-started/",
+    "quote": "extends: [js.configs.recommended, tseslint.configs.recommended],"
+  },
+  {
+    "id": "eslint-ignores",
+    "title": "eslint.config.mjs 全局忽略 dist/ 与 coverage/",
+    "category": "lint",
+    "action": "导出数组的第一个元素写 { ignores: [\"dist/**\", \"coverage/**\", \"build/**\"] }。只有 ignores 一个键（可带 name）的配置对象才是全局忽略；把 ignores 和其它键混在一起就只作用于那个对象。ESLint 内置默认已忽略 node_modules 与 .git。",
+    "verify": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/eslint.config.mjs\",\"utf8\");if(!/dist/.test(s)){console.error(\"no ignore entry for dist\");process.exit(1)}'",
+    "source": "https://eslint.org/docs/latest/use/configure/configuration-files",
+    "quote": "If ignores is used without any other keys (besides name) in the configuration object, then the patterns act as global ignores."
+  },
+  {
+    "id": "eslint-gate",
+    "title": "npx eslint . --max-warnings 0 退出 0（IDE 与 CI 共用的 lint 门禁）",
+    "category": "lint",
+    "action": "跑 npx eslint . --max-warnings 0。退出码含义：0 无错；1 有 lint 错误（或警告数超过 --max-warnings，其默认 -1 表示不设阈值）；2 配置有问题或内部错误。IDE 的 ESLint 集成用的是同一份配置、同一套退出语义。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install eslint . --max-warnings 0",
+    "source": "https://eslint.org/docs/latest/use/command-line-interface",
+    "quote": "Linting was successful and there are no linting errors."
+  },
+  {
+    "id": "prettier-config",
+    "title": ".prettierrc 存在（IDE 格式化器与 CLI 读同一份配置）",
+    "category": "format",
+    "action": ".prettierrc.json 写 { printWidth: 100, tabWidth: 2, semi: true, singleQuote: true, trailingComma: \"all\", arrowParens: \"always\", endOfLine: \"lf\" }。可识别的文件名包括 .prettierrc、.prettierrc.json/.yml/.json5、.prettierrc.js/.ts/.mjs/.cjs、prettier.config.*，或 package.json 里的 prettier 字段。",
+    "verify": "test -f \"$SKILL_DIR/templates/ts-project/.prettierrc.json\"",
+    "source": "https://prettier.io/docs/configuration",
+    "quote": "\"trailingComma\": \"es5\", \"tabWidth\": 4, \"semi\": false, \"singleQuote\": true"
+  },
+  {
+    "id": "prettier-ignore",
+    "title": ".prettierignore 排除构建产物（否则 prettier --check 必然失败）",
+    "category": "format",
+    "action": "根目录 .prettierignore 写 dist、coverage、build、node_modules、package-lock.json。Prettier 用 gitignore 语法读这个文件；node_modules 与版本控制目录默认跳过，但 dist/ 和 coverage/ 不跳过——没有这个文件，npx prettier --check . 会在生成文件上失败。",
+    "verify": "test -f \"$SKILL_DIR/templates/ts-project/.prettierignore\" && grep -qE '^(dist|coverage|build|node_modules)' \"$SKILL_DIR/templates/ts-project/.prettierignore\"",
+    "source": "https://prettier.io/docs/ignore",
+    "quote": "Create .prettierignore in the root of your project. It uses gitignore syntax to exclude files and folders from formatting."
+  },
+  {
+    "id": "prettier-gate",
+    "title": "npx prettier --check . 退出 0（IDE 保存时格式化与 CI 同源）",
+    "category": "format",
+    "action": "跑 npx prettier --check .（别名 -c）。它只报告与 Prettier 输出不一致的文件并以退出码 1 结束，不会改写文件；--write（-w）才会原地改写。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install prettier --check .",
+    "source": "https://prettier.io/docs/cli",
+    "quote": "When you want to check if your files are formatted, you can run Prettier with the --check flag (or -c)."
+  },
+  {
+    "id": "node-nvmrc",
+    "title": ".nvmrc 钉住 Node 版本（nvm、CI、IDE 解释器共读）",
+    "category": "runtime",
+    "action": ".nvmrc 单行写版本号（如 v22.14.0）。nvm use / nvm install / nvm which 在不带版本参数时都读它，且会向上逐级目录查找。这个文件就是 IDE 选 Node 解释器时该读的文件——engines.node 只是声明，不会真的切换解释器。",
+    "verify": "test -f \"$SKILL_DIR/templates/ts-project/.nvmrc\" && grep -qE '^(v)?(22|24|26)\\.[0-9]+\\.[0-9]+$' \"$SKILL_DIR/templates/ts-project/.nvmrc\"",
+    "source": "https://github.com/nvm-sh/nvm#nvmrc",
+    "quote": "nvm use, nvm install, and nvm which will use the version specified in the .nvmrc file"
+  },
+  {
+    "id": "node-nvmrc-matches-runtime",
+    "title": "IDE 选用的 Node 解释器必须与 .nvmrc 一致",
+    "category": "runtime",
+    "action": "IDEA → Settings → Languages & Frameworks → Node.js 选中的解释器版本，必须与项目 .nvmrc 声明的版本一致。IDEA 不会自动读 .nvmrc；不手动对齐就会出现「IDE 里没有类型、命令行里正常」的经典错觉。校验方式：node -v 的输出应与 .nvmrc 一致。",
+    "verify": "node -e 'const fs=require(\"fs\");const v=fs.readFileSync(process.env.SKILL_DIR+\"/templates/ts-project/.nvmrc\",\"utf8\").trim().replace(/^v/,\"\");const actual=process.versions.node;if(v!==actual){console.error(\".nvmrc pins \"+v+\" but the active node is \"+actual);process.exit(1)}console.error(\".nvmrc == active node \"+actual)'",
+    "source": "https://github.com/nvm-sh/nvm#nvmrc",
+    "quote": "nvm use, nvm install, and nvm which will use the version specified in the .nvmrc file"
+  },
+  {
+    "id": "tsc-typecheck-gate",
+    "title": "npx tsc --noEmit 退出 0（IDE 与 CLI 的诊断一致性门禁）",
+    "category": "typecheck",
+    "action": "跑 npx tsc --noEmit -p tsconfig.json。只做类型检查、不产出文件，这是验证「IDE 的逐文件诊断与编译器的全程序结果一致」的权威手段。它同时是 npm run typecheck 脚本与 IDE 运行配置的 Before launch 任务。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install tsc --noEmit -p tsconfig.json",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "Do not emit compiler output files like JavaScript source code, source-maps or declarations."
+  },
+  {
+    "id": "build-gate",
+    "title": "npm run build 产出 dist/ 且带 .d.ts 与 .js.map",
+    "category": "typecheck",
+    "action": "npm run build 走 tsconfig.build.json，产出 dist/index.js + dist/index.d.ts + dist/index.js.map。d.ts 是给下游消费者用的，sourceMap 是给调试器和 IDE 断点回跳用的——两者都缺，TypeScript 项目对 IDE 就等于半个残废。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install tsc -p tsconfig.build.json && test -f dist/index.js && test -f dist/index.d.ts && test -f dist/index.js.map",
+    "source": "https://www.typescriptlang.org/tsconfig/",
+    "quote": "Enables the generation of sourcemap files. These files allow debuggers and other tools to display the original TypeScript source code when actually working with the emitted JavaScript files."
+  },
+  {
+    "id": "vitest-config",
+    "title": "vitest.config.ts 存在（IDE 测试运行器按同一套 glob 发现用例）",
+    "category": "test",
+    "action": "vitest.config.ts 里 defineConfig({ test: { environment: \"node\", include: [\"src/**/*.test.ts\"] } })。Vitest 默认也会读 vite.config.*，只有需要测试专属设置时才单独建 vitest.config.*。默认发现规则是文件名含 .test. 或 .spec.。",
+    "verify": "test -f \"$SKILL_DIR/templates/ts-project/vitest.config.ts\" && grep -q 'include' \"$SKILL_DIR/templates/ts-project/vitest.config.ts\"",
+    "source": "https://vitest.dev/config/include",
+    "quote": "A list of glob patterns that match your test files."
+  },
+  {
+    "id": "vitest-gate",
+    "title": "npx vitest run 全绿（IDE 测试视图与 CI 同源）",
+    "category": "test",
+    "action": "跑 npx vitest run（CI 用一次性模式，交互默认是 watch）。IDE 的测试运行器用同一份 glob 发现用例，所以本地绿灯与 CI 绿灯指的是同一批文件。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && npx --no-install vitest run",
+    "source": "https://vitest.dev/config/include",
+    "quote": "A list of glob patterns that match your test files."
+  },
+  {
+    "id": "idea-node-modules-excluded",
+    "title": "把 node_modules 与构建输出排除出索引（.iml 里的 excludeFolder）",
+    "category": "ide-indexing",
+    "action": "在项目里提交 .idea/modules.xml 与 .idea/<module>.iml，内容里用 <excludeFolder url=\"file://$MODULE_DIR$/node_modules\"/> 把 node_modules 标成 Excluded。被排除的目录不参与补全、导航与 inspection，是控制索引时间最有效的一根杠杆；dist/、coverage/ 同理。恢复时在 Project 视图里右键 Mark Directory As > Cancel Exclusion。",
+    "verify": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const dir=process.env.SKILL_DIR+\"/templates/ts-project/.idea\";if(!fs.existsSync(path.join(dir,\"modules.xml\"))){console.error(\"missing .idea/modules.xml\");process.exit(1)}const imls=fs.readdirSync(dir).filter(f=>f.endsWith(\".iml\"));if(!imls.length){console.error(\"no .iml module file\");process.exit(1)}const s=fs.readFileSync(path.join(dir,imls[0]),\"utf8\");if(!/excludeFolder[^>]*node_modules/.test(s)){console.error(\"node_modules is not excluded from indexing\");process.exit(1)}if(!/excludeFolder[^>]*dist/.test(s)){console.error(\"dist is not excluded from indexing\");process.exit(1)}'",
+    "source": "https://www.jetbrains.com/help/idea/content-roots.html",
+    "quote": "Right-click a folder and select `Mark Directory As | Excluded`."
+  },
+  {
+    "id": "idea-ts-version-selection",
+    "title": "IDE 选用的 TypeScript 包必须与 package.json 钉的版本一致",
+    "category": "ide-typescript",
+    "action": "IDEA → Settings → Languages & Frameworks → TypeScript → TypeScript 里选项目 node_modules/typescript（不要选 Bundled），并且 package.json 的 devDependencies.typescript 必须钉死精确版本。三者对不上时，IDE 的诊断来自自带编译器、CLI 的诊断来自 npm 装的编译器，两边错误信息会分叉。",
+    "verify": "cd \"$SKILL_DIR/templates/ts-project\" && if [ ! -d node_modules/typescript ]; then echo \"toolchain not installed: run scripts/setup-env.sh install-deps\" >&2; exit 1; fi && node -e 'const fs=require(\"fs\");const p=JSON.parse(fs.readFileSync(\"package.json\",\"utf8\"));const inst=JSON.parse(fs.readFileSync(\"node_modules/typescript/package.json\",\"utf8\"));if(p.devDependencies.typescript!==inst.version){console.error(\"IDE would use TS \"+inst.version+\" but package.json pins \"+p.devDependencies.typescript);process.exit(1)}'",
+    "source": "https://www.jetbrains.com/help/idea/typescript-support.html",
+    "quote": "By default, the `typescript` package from the project's `node_modules` folder is used."
+  },
+  {
+    "id": "idea-ts-language-service",
+    "title": "开启 TypeScript Language Service（IDE 的类型检查引擎）",
+    "category": "ide-typescript",
+    "action": "Settings > Languages & Frameworks > TypeScript > TypeScript language service：勾选 TypeScript Language Service（默认勾选）。勾上后语法/错误高亮来自 TS 服务，补全是「TS 服务结果 + IDEA 建议」的并集。大项目可取消 Show project errors，只检查打开的文件。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-ts-language-service\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
+    "quote": "By default, the TypeScript Language Service checkbox is selected."
+  },
+  {
+    "id": "idea-node-runtime",
+    "title": "把本机 Node 解释器设为项目运行时",
+    "category": "ide-runtime",
+    "action": "Settings > Languages & Frameworks > JavaScript Runtime：Preferred runtime 选 Node.js，Browse (...) → Node.js Runtimes → Add (+) → Add Local 选安装目录 → OK，再在 Node.js runtime 字段选中它。勾上 Coding assistance for Node.js 才会把 Node 内置源码挂成 JavaScript 库（fs/path/http 的补全与校验）。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-node-runtime\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/developing-node-js-applications.html",
+    "quote": "select  Add Local from the context menu  and choose the installation of Node.js, then click OK."
+  },
+  {
+    "id": "idea-package-manager",
+    "title": "设定项目包管理器（npm / yarn / pnpm / bun）",
+    "category": "ide-runtime",
+    "action": "Settings > Languages & Frameworks > JavaScript Runtime > Package manager：选系统别名（npm/yarn/pnpm/bun）或用 Select 指定安装目录。仓库里有 yarn.lock / pnpm-lock.yaml 时 IDEA 会自动切换。该设置同时决定 Run 'npm install' 与 NPM 运行配置用哪个包管理器。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-package-manager\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/javascript-runtime.html",
+    "quote": "In this field,   choose the package manager (npm, Yarn, pnpm, bun) for the current project."
+  },
+  {
+    "id": "idea-eslint-automatic",
+    "title": "ESLint 开启 Automatic ESLint configuration",
+    "category": "ide-lint",
+    "action": "Settings > Languages & Frameworks | JavaScript | Code Quality Tools | ESLint：选 Automatic ESLint configuration。自动模式会用项目 node_modules 里的 eslint，并从当前文件所在目录逐级向上找配置文件；monorepo 里会按 package.json 分包各起一个 ESLint 进程。旧的 .eslintrc.* 属 ESLint 8 及更早的格式。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-eslint-automatic\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/eslint.html",
+    "quote": "go to `Languages & Frameworks | JavaScript | Code Quality Tools | ESLint`, and select the Automatic ESLint configuration option."
+  },
+  {
+    "id": "idea-prettier-run-on-save",
+    "title": "Prettier 开启自动配置并 Run on save",
+    "category": "ide-format",
+    "action": "Settings > Languages & Frameworks | JavaScript | Prettier：选 Automatic Prettier configuration 并勾选 Run on save。默认的 Run for files 覆盖 JavaScript、TypeScript、JSX、TSX、HTML、Vue、Astro。要让 Ctrl+Alt+L 也走 Prettier，则在 Manual Prettier configuration 里选 Prettier package 并勾上 Run on 'Reformat Code' action。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-prettier-run-on-save\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/prettier.html",
+    "quote": "To apply Prettier automatically to saved files, select the Run on save checkbox."
+  },
+  {
+    "id": "idea-file-type-associations",
+    "title": ".ts / .tsx / .js / .jsx 绑定到正确的文件类型",
+    "category": "ide-files",
+    "action": "Settings > Editor > File Types：确认 TypeScript / TypeScript React (.tsx) / JavaScript / JavaScript React (.jsx) 条目存在且模式正确。任何 .ts/.tsx 被绑到 Plain text 都会让 TS 支持彻底失效；.mts/.cts/.d.ts 等变体用 Add file type associations 补上。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-file-type-associations\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html",
+    "quote": "For language-specific features (such as syntax highlighting and code analysis) in files representing different languages and technologies, IntelliJ IDEA maintains a list of file types, each of which links a language service with one or more file name patterns."
+  },
+  {
+    "id": "idea-tsconfig-file-type-pattern",
+    "title": "把 tsconfig*.json 注册进 Typescript config 文件类型",
+    "category": "ide-files",
+    "action": "Settings > Editor > File Types > Typescript config：确认文件名模式覆盖项目用到的全部 tsconfig*.json。IDEA 解析「离文件最近的 tsconfig」时只认被登记为 Typescript config 的文件——没登记的会被当成普通文本，于是 per-directory 的 compilerOptions 全部失效。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-tsconfig-file-type-pattern\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
+    "quote": "go to `Editor | File Types`, and make sure the names of all these files match the patterns from the Typescript config file name pattern list."
+  },
+  {
+    "id": "idea-library-scopes",
+    "title": "收窄库的作用域（Node.js Core 只对后端目录生效）",
+    "category": "ide-indexing",
+    "action": "Settings > Languages & Frameworks | JavaScript | Libraries > Manage Scopes：库默认对全项目生效，所以 Node.js API 会渗进前端代码。取消库的 Enabled 后点 Manage Scopes，Add 选目录逐行分配。node_modules 自动库的 scope 同样在这里改。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-library-scopes\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html",
+    "quote": "IntelliJ IDEA lets you tune code completion by configuring scopes for libraries."
+  },
+  {
+    "id": "idea-ts-service-powered-engine",
+    "title": "按需开启 service-powered type engine（用真 TS 编译器算类型）",
+    "category": "ide-typescript",
+    "action": "Settings > Languages & Frameworks > TypeScript > TypeScript language service：Enable service-powered type engine 默认不勾（用 IDEA 内置 TS 引擎）。只有内置引擎算错类型、解析错乱或性能异常时才勾上——勾上后类型求值、解析、inspection 与重构都改由 TypeScript 编译器算。改完在状态栏 TS 挂件上重启服务。",
+    "verify": "node -e 'const fs=require(\"fs\");const r=JSON.parse(fs.readFileSync(process.env.SKILL_DIR+\"/references/idea-settings.json\",\"utf8\"));const e=r.find(x=>x.id===\"idea-ts-service-powered-engine\");if(!e){console.error(\"missing registry entry\");process.exit(1)}for(const k of [\"title\",\"path\",\"expected\",\"assertion\",\"source\",\"quote\"]){if(!e[k]||!String(e[k]).trim()){console.error(\"registry entry missing \"+k);process.exit(1)}}'",
+    "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
+    "quote": "By default, the checkbox is cleared, so type evaluation, resolution, code inspections and refactorings are based on the type information from the IntelliJ IDEA internal TypeScript engine."
+  }
+]

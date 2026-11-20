@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="node: dist/index.js" type="NodeJsLocal" factoryName="Node.js">
+    <entry key="mainFilePath" value="$PROJECT_DIR$/dist/index.js" />
+    <entry key="workingDir" value="$PROJECT_DIR$" />
+    <method v="2" />
+  </configuration>
+</component>

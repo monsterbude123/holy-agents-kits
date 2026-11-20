@@ -14,5 +14,7 @@ skills/*/.env
 .agents/skills/*/.env
 
 # autoresearch 会话状态（不入库）
-.auto/
+# 用 `.auto/*` 而不是 `.auto/`：后者会让 git 把 .auto 判为"被忽略的目录"，
+# 于是 `git add -A -- . ':(exclude).auto'` 直接以 exit 1 报错，实验提交全部失败。
+.auto/*
 autoresearch-dashboard.html
