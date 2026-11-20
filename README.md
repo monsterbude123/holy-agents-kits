@@ -142,7 +142,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 ### idea-ts-setup —— 把 TS 项目接进 IntelliJ IDEA
 
-**可观察行为**：给出一份 63 条的 IDEA×TS 配置清单，每条都带**真跑**的 `verify` 命令与官方文档出处：项目侧覆盖 tsconfig / package.json / eslint / prettier / vitest / Node 版本钉版，IDE 侧覆盖版本门禁、Node 解释器与包管理器、TS 语言服务与 TS 包版本、ESLint/Prettier 集成、运行与调试、测试、索引排除。另有 `inspect-project.mjs` 判已有项目的形态（node / web）并按形态筛出适用条目。
+**可观察行为**：给出一份 64 条的 IDEA×TS 配置清单，每条都带**真跑**的 `verify` 命令与官方文档出处：项目侧覆盖 tsconfig / package.json / eslint / prettier / vitest / Node 版本钉版，IDE 侧覆盖版本门禁、Node 解释器与包管理器、TS 语言服务与 TS 包版本、ESLint/Prettier 集成、运行与调试、测试、索引排除。另有 `inspect-project.mjs` 判已有项目的形态（node / web）与包管理器/工作区/多 tsconfig 事实，并按形态筛出适用条目。清单在真实大型 Next.js + pnpm 仓库上跑过一轮并据此改掉 6 条误报（回归记录见 `references/field-test.md`）。
 
 **用法**：说「IDEA 里怎么配 TS」「tsconfig 改了 IDE 不生效」「社区版能不能跑 TS」，agent 跑 `scripts/inspect-project.mjs` 判形态 → 照 `references/setup-0to1.md` 落配置 → `bash scripts/verify-item.sh --all` 逐条自证。
 
