@@ -55,9 +55,12 @@ if (!javaVersion && gradleToolchain) javaVersion = gradleToolchain[1];
 set('JAVA_VERSION', javaVersion);
 
 // ---- source layout ---------------------------------------------------------
-const srcDirs = ['src/main/java', 'src/main/kotlin', 'src/test/java', 'src/test/kotlin']
-  .filter((d) => existsSync(join(DIR, d)));
+// 多模块工程里约定目录在**各模块下**，不在根上 → 根 + 模块一起扫，报告"工程里存在哪些约定目录"
+const CONVENTION_DIRS = ['src/main/java', 'src/main/kotlin', 'src/test/java', 'src/test/kotlin'];
+const layoutRoots = [DIR, ...modules];
+const srcDirs = CONVENTION_DIRS.filter((d) => layoutRoots.some((r) => existsSync(join(r, d))));
 set('SOURCE_DIRS', srcDirs.join(',') || '');
+set('SOURCE_DIRS_IN_ROOT', CONVENTION_DIRS.filter((d) => existsSync(join(DIR, d))).join(',') || '');
 set('HAS_JAVA_SRC', srcDirs.some((d) => d.endsWith('java')) ? 'yes' : 'no');
 set('HAS_KOTLIN_SRC', srcDirs.some((d) => d.endsWith('kotlin')) ? 'yes' : 'no');
 

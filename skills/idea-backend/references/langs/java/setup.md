@@ -61,17 +61,51 @@ bash scripts/setup-env.sh probe  <IDEA安装根>   # 机器事实
 | `.idea/runConfigurations/*.xml` | Application + JUnit 共享运行配置，clone 即用 |
 | `.idea/inspectionProfiles/Project_Default.xml` | 团队共用一份检视口径 |
 
-版本组合的来路（不靠记忆）：插件版本取 Maven Central 镜像的 `maven-metadata.xml`
-（maven-compiler-plugin 3.16.0 / maven-surefire-plugin 3.6.1 / junit-jupiter 5.14.4）；
-JDK 版本取 Oracle 官方 GA 包 OpenJDK 25.0.5.1 LTS。
+**`templates/java-gradle`** —— Gradle + JDK 25 的同构工程：`build.gradle.kts` 里
+`java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }` 钉住 **JDK**（Gradle 自动下载管理，
+编译与执行都用它），`options.release = 25` 钉住**字节码目标**——两者分工不同，别只写一个。
+`gradle/wrapper/gradle-wrapper.properties` 钉死构建器版本（9.9.2），**版本事实源只有这一份**；
+本模板只声明版本、不内嵌第三方 jar，首次用 `gradle wrapper --gradle-version 9.9.2` 生成脚本与 jar。
 
-## 本分册的判据口径（与其他语言不同）
+版本组合的来路（不靠记忆）：Maven 插件版本取 Central 镜像的 `maven-metadata.xml`
+（maven-compiler-plugin 3.16.0 / maven-surefire-plugin 3.6.1 / junit-jupiter 5.14.4），
+Gradle 版本取 `services.gradle.org/versions/current`（9.9.2），JDK 取 Oracle 官方 GA 包 OpenJDK 25.0.5.1 LTS。
 
-**JVM 分册的清单判据全部是离线可跑的**：JDK 工具链事实 + 文件/状态断言。刻意**不**把
+## 判据口径（与其他语言不同）：**被检工程 = 当前工作目录**
+
+清单里的 `verify` 命令以**当前工作目录**为被检工程（相对路径读 `pom.xml` / `.idea/…` / `build.gradle.kts`），
+所以同一套命令既能自证模板，也能直接拿去查用户的工程：
+
+```bash
+bash scripts/verify-item.sh --lang java --all                          # 自证：切到分册模板（java-project）
+bash scripts/verify-item.sh --lang java --all --dir templates/java-gradle   # 自证另一个模板
+bash scripts/verify-item.sh --lang java --all --dir /path/to/real/repo    # 查真实工程
+```
+
+真实工程上跑时，**IDE 侧条目在工程没被 IDEA 开过时判 SKIP 而不是 FAIL**（`.idea/` 由 IDEA 生成，
+"还没接入"和"配置错了"必须分得开）。其余条目照常判。
+
+## 回归记录（2026-11-22，两个真实工程）
+
+| 工程 | 形态 | 结果 |
+| --- | --- | --- |
+| `ai-dev/api-examples/java` | 单模块 Maven | 6 过 / 3 失败 / 12 跳过 |
+| `ai-dev/qData` | 多模块 Maven（40 模块，Spring Boot） | 6 过 / 3 失败 / 12 跳过 |
+
+两个工程暴露的**同款真问题**：
+
+1. **用 `maven.compiler.source`/`target` 而不是 `release`** —— 前者只改字节码版本、API 仍按当前 JDK 的库解析；
+   后者还常常对不上本机 JDK（api-examples 声明 24 而本机是 25；qData 锁在 **Java 8**）。
+2. **没有 `.editorconfig`** —— 格式约定没有单一事实源，IDE / spotless / checkstyle 三方各行其是。
+
+回归还**改掉了清单自己的两条误报**：多模块工程的约定目录在**各模块下**不在根上（原来的 `SOURCE_DIRS`
+只看根 → 把 qData 判成"没有源码目录"），以及 `<source>${java.version}</source>` 这种属性引用形式原来识别不出。
+
+## 本分册的判据口径（与构建器的差别）
+
+清单判据全部是**离线可跑**的：JDK 工具链事实 + 文件/状态断言。刻意**不**把
 `mvn package` / `gradle build` 这类需要依赖仓库的动作放进逐条自证——那会让清单在离线机器上恒红，
-也分不清「配置错了」与「网络不通」。
-
-需要联网的那部分留给 CI 与本地构建（`npm run typecheck` / `mvn -v` 之类由 agent 按需手动跑）。
+也分不清「配置错了」与「网络不通」。需要联网的那部分留给 CI 与本地构建。
 
 ## Gradle 侧怎么对齐（清单外补充）
 

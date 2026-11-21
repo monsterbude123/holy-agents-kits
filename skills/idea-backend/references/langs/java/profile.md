@@ -71,14 +71,19 @@ bash scripts/mcp-call.sh index ide_call_hierarchy '{"language":"java","symbol":"
 
 ## §6 本分册的现状与仍缺的部分（诚实标注）
 
-**已建册（2026-11-22）**：配置侧清单 [checklist.json](checklist.json) **20 条**、IDE 侧设置清单
+**已建册（2026-11-22）**：配置侧清单 [checklist.json](checklist.json) **21 条**、IDE 侧设置清单
 [idea-settings.json](idea-settings.json) **6 条**，逐条真跑自证（`bash scripts/verify-item.sh --lang java --all`），
-引文底账在 [sources.md](sources.md)；探测器 `scripts/langs/java/detect.mjs` 在位并被通用分发器调用；
-脚手架模板 `templates/java-project`（Maven + JDK 25）在位；操作正文在 [setup.md](setup.md)。
+引文底账在 [sources.md](sources.md)；探测器 `scripts/langs/java/detect.mjs` 与字节码目标解析器
+`scripts/langs/java/declared-release.mjs` 在位并被通用分发器调用；脚手架模板 `templates/java-project`（Maven）
+与 `templates/java-gradle`（Gradle）在位；操作正文在 [setup.md](setup.md)。
+
+**已回归（2026-11-22）**：在两个真实工程上跑过一轮（`ai-dev/api-examples/java` 单模块 Maven、
+`ai-dev/qData` 多模块 Maven 40 模块），并据此改掉了清单自己的两条误报（多模块的源码目录在模块下不在根上、
+`<source>${java.version}</source>` 属性引用形式识别不出）。回归记录见 [setup.md](setup.md) §回归记录。
 
 | 仍缺什么 | 影响 | 补法 |
 |---|---|---|
 | 运行期档位回归 | §1 的档位是 2026-11-20 的一次快照 | 每半年按 [../../capability-matrix.md](../../capability-matrix.md) §2 重探 |
-| 真实 JVM 项目的清单回归 | 本册的清单是在**模板**上逐条自证的，尚未在真实仓库上跑过一轮 | 拿一个真实 Maven/Gradle 工程做一次回归（TS 分册那次回归改掉了 6 条自己的误报，见 [../../capability-matrix.md](../../capability-matrix.md) §5 纪律 3） |
 | Maven / Gradle 的联网构建判据 | 清单刻意不含 `mvn package` 这类需依赖仓库的动作，离线恒红且分不清「配置错」与「网络不通」 | 留给 CI 与本地手动跑；要入册需先解决依赖仓库可达性 |
-| Gradle 变体的清单条目 | 清单以 Maven 形态为骨架（模板即 Maven），Gradle 的 toolchain/wrapper 只写进了 [setup.md](setup.md) 正文 | 补一份 Gradle 模板与对应条目 |
+| Gradle 模板的 wrapper 脚本与 jar | 模板只声明构建器版本事实（gradle-wrapper.properties），不含第三方 jar 与生成的脚本 | 首次用 `gradle wrapper --gradle-version 9.9.2` 生成；模板刻意不内嵌第三方二进制 |
+| 更多真实工程回归 | 只在两个工程上回归过；Spring Boot / Gradle 多模块 / Kotlin 混合工程等形态未覆盖 | 每接一个新形态的工程就跑一轮 `--dir <工程>` |

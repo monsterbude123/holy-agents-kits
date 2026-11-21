@@ -1,38 +1,41 @@
 [
   {
     "id": "jdk-present",
-    "title": "JDK 工具链在位，且是受支持的版本（本机 OpenJDK 25.0.5.1 LTS）",
+    "title": "JDK 工具链在位，且能报出主版本",
     "category": "toolchain",
     "applies_to": [
       "java"
     ],
-    "action": "JDK 25 是 LTS（2025-09-16 GA，多数发行商按 LTS 支持），也是 IDEA 2026.x 的 LTS 对齐版本：IDEA 2026.2 支持的项目语言级别上探到 Java 27，Java 25 这一档带稳定特性（Compact source files / Module imports）。JDK 是**机器级**事实，不随模板走：探测走通用入口 `bash scripts/setup-env.sh toolchain jdk`，按 JAVA_HOME（env → config.json 的 toolchains.java.home → PATH）的顺序找。只看 PATH 会误报——setx 之后老 shell 继承不到新 PATH。**不要改 IDE 的 boot 运行时**（那是 JetBrains Runtime 的事，改了 IDEA 官方不支持），只设项目 SDK。",
-    "verify": "bash \"$SKILL_DIR/scripts/setup-env.sh\" toolchain jdk | grep -qE '^JDK_RELEASE=25$'",
+    "action": "JDK 是**机器级**事实，不随模板走：探测走通用入口 `bash scripts/setup-env.sh toolchain jdk`，按 JAVA_HOME（env → config.json 的 toolchains.java.home → PATH）的顺序找。只看 PATH 会误报——setx 之后老 shell 继承不到新 PATH。**不要改 IDE 的 boot 运行时**（那是 JetBrains Runtime 的事，改了 IDEA 官方不支持），只设项目 SDK。选 25 的依据：JDK 25 是 LTS（2025-09-16 GA，多数发行商按 LTS 支持），也是 IDEA 2026.x 的 LTS 对齐档——IDEA 2026.2 支持的项目语言级别上探 Java 27，Java 25 这一档带稳定特性（Compact source files / Module imports）。",
+    "verify": "bash \"$SKILL_DIR/scripts/setup-env.sh\" toolchain jdk | grep -qE '^JDK_RELEASE=[0-9]+$'",
     "source": "https://openjdk.org/projects/jdk/25/",
     "quote": "JDK 25 reached General Availability on 16 September 2025."
   },
   {
     "id": "jdk-release-matches-project",
-    "title": "pom.xml 的 maven.compiler.release 必须等于本机 JDK 主版本",
+    "title": "工程声明的字节码目标必须用 release，且等于本机 JDK 主版本",
     "category": "toolchain",
     "applies_to": [
       "java",
-      "maven"
+      "maven",
+      "gradle"
     ],
-    "action": "Maven 侧由 maven.compiler.release 属性承载它（maven-compiler-plugin 的 release 参数，user property 就是 maven.compiler.release，见 https://maven.apache.org/plugins/maven-compiler-plugin/compile-mojo.html）。它与本机 JDK 主版本不一致时，IDE 按自己的 languageLevel 编译、Maven 按 release 编译，两边产出的 class 文件版本不同，报错行号与堆栈全对不上。改 pom 的 release 要同步改 .idea/misc.xml 的 languageLevel（见 idea-language-level-matches-release 一条）。",
-    "verify": "R=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" toolchain jdk | sed -n 's/^JDK_RELEASE=//p') && P=$(node -e 'const fs=require(\"fs\");const m=fs.readFileSync(process.argv[1],\"utf8\").match(/<maven\\.compiler\\.release>(\\d+)<\\/maven\\.compiler\\.release>/);process.stdout.write(m?m[1]:\"\")' \"$SKILL_DIR/templates/java-project/pom.xml\") && [ -n \"$R\" ] && [ \"$R\" = \"$P\" ]",
+    "action": "Maven 用 `maven.compiler.release`（或 compiler 插件的 `<release>`），Gradle 用 `options.release = N` 或 `java { toolchain { languageVersion = JavaLanguageVersion.of(N) } }`。**不要用 `maven.compiler.source`/`target`**：source/target 只改字节码版本，API 仍按当前 JDK 的库解析 → 能编出「用高版本 API 却声明低版本字节码」的产物，运行时才炸（NoSuchMethodError）。而且它与本机 JDK 主版本不一致时，IDE 按自己的 languageLevel 编译、Maven 按自己的配置编译，两边产出的 class 文件版本不同，报错行号与堆栈全对不上。声明值必须等于本机 JDK 主版本（`scripts/langs/java/declared-release.mjs` 给出判定值：release=N / source=N,target=N / 空）。",
+    "verify": "R=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" toolchain jdk | sed -n 's/^JDK_RELEASE=//p') && P=$(node \"$SKILL_DIR/scripts/langs/java/declared-release.mjs\" . | sed -n 's/^release=//p') && [ -n \"$R\" ] && [ -n \"$P\" ] && [ \"$R\" = \"$P\" ]",
     "source": "https://docs.oracle.com/en/java/javase/25/docs/specs/man/javac.html",
     "quote": "--release release Compiles source code according to the rules of the Java programming language for the specified Java SE release, generating class files which target that release. Source code is compiled against the combined Java SE and JDK API for the specified release."
   },
   {
     "id": "javac-release-compiles",
-    "title": "javac --release <n> 必须真能编译主类（离线自证字节码目标）",
+    "title": "声明的 release 必须真被本机 JDK 接受（探针编译）",
     "category": "toolchain",
     "applies_to": [
-      "java"
+      "java",
+      "maven",
+      "gradle"
     ],
-    "action": "用 JDK 自带的 javac 按 pom 声明的 release 真编译一次模板主类：javac --release <release> -d <临时目录> src/main/java/.../App.java。这一步离线、秒级、不碰依赖仓库，却能证明「声明的字节码目标」在本机 JDK 上真的成立（release 高于本机 JDK 主版本时 javac 会直接拒绝）。它替代「跑 mvn package」作为清单级自证——后者要联网取依赖。注意 --release 与 --source/--target 互斥，且 --release 同时约束字节码版本与可见的标准库 API；只写 -source/-target 会编出「用高版本 API 却声明低版本字节码」的产物，运行时才炸。",
-    "verify": "H=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" toolchain jdk | sed -n 's/^JAVA_HOME=//p') && P=$(node -e 'const fs=require(\"fs\");const m=fs.readFileSync(process.argv[1],\"utf8\").match(/<maven\\.compiler\\.release>(\\d+)<\\/maven\\.compiler\\.release>/);process.stdout.write(m?m[1]:\"\")' \"$SKILL_DIR/templates/java-project/pom.xml\") && O=$(mktemp -d) && \"$H/bin/javac\" --release \"$P\" -d \"$O\" \"$SKILL_DIR/templates/java-project/src/main/java/com/example/demo/App.java\" && rm -rf \"$O\"",
+    "action": "用一个**不依赖任何三方库**的探针类按工程声明的 release 真编译一次：`javac --release <release> -d <临时目录> ReleaseProbe.java`。这一步离线、秒级、不碰依赖仓库，却能证明「声明的字节码目标」在本机 JDK 上真的成立——release 高于本机 JDK 支持的最高版本时，javac 直接报 `release version N not supported`（而 `javac --release N -version` **不会**报，退出码仍是 0，别拿它当判据）。它替代「跑 mvn package」作为清单级自证——后者要联网取依赖。",
+    "verify": "H=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" toolchain jdk | sed -n 's/^JAVA_HOME=//p') && P=$(node \"$SKILL_DIR/scripts/langs/java/declared-release.mjs\" . | sed -n 's/^release=//p') && [ -n \"$P\" ] && O=$(mktemp -d) && printf 'public class ReleaseProbe { public static void main(String[] a) {} }\\n' > \"$O/ReleaseProbe.java\" && \"$H/bin/javac\" --release \"$P\" -d \"$O\" \"$O/ReleaseProbe.java\" && { [ ! -f src/main/java/com/example/demo/App.java ] || \"$H/bin/javac\" --release \"$P\" -d \"$O\" src/main/java/com/example/demo/App.java; } ; rc=$?; rm -rf \"$O\"; exit $rc",
     "source": "https://docs.oracle.com/en/java/javase/25/docs/specs/man/javac.html",
     "quote": "--release release Compiles source code according to the rules of the Java programming language for the specified Java SE release, generating class files which target that release. Source code is compiled against the combined Java SE and JDK API for the specified release."
   },
@@ -43,23 +46,26 @@
     "applies_to": [
       "java"
     ],
-    "action": "项目结构设置（SDK、编译输出路径、项目库）与其它项目配置一起存在 .idea 目录里，落在 .idea/misc.xml 的 <component name=\"ProjectRootManager\"> 上：属性 languageLevel（JDK_8 / JDK_11 / JDK_17 / JDK_21 / JDK_25 …）、project-jdk-name、project-jdk-type=\"JavaSDK\"、default。注意 project-jdk-name 只是**名字**，必须能在全局 SDK 表（IDE 配置目录的 jdk.table.xml）里解析到；把工程拷到另一台机器时，这个名字往往不存在 → SDK 失效，而项目路径里并没有 SDK 路径。",
-    "verify": "grep -q 'name=\"ProjectRootManager\"' \"$SKILL_DIR/templates/java-project/.idea/misc.xml\" && grep -qE 'languageLevel=\"JDK_[0-9_]+\"' \"$SKILL_DIR/templates/java-project/.idea/misc.xml\" && grep -qE 'project-jdk-name=\"[^\"]+\"' \"$SKILL_DIR/templates/java-project/.idea/misc.xml\" && grep -q 'project-jdk-type=\"JavaSDK\"' \"$SKILL_DIR/templates/java-project/.idea/misc.xml\"",
+    "action": "项目结构设置（SDK、编译输出路径、项目库）与其它项目配置一起存在 .idea 目录里，落在 .idea/misc.xml 的 <component name=\"ProjectRootManager\"> 上：属性 languageLevel（JDK_8 / JDK_11 / JDK_17 / JDK_21 / JDK_25 …）、project-jdk-name、project-jdk-type=\"JavaSDK\"、default。注意 project-jdk-name 只是**名字**，必须能在全局 SDK 表（IDE 配置目录的 jdk.table.xml）里解析到；把工程拷到另一台机器时这个名字往往不存在 → SDK 失效，而项目路径里并没有 SDK 路径。**这份文件是 IDEA 打开工程时生成的**：工程还没在 IDEA 里开过时它不存在，属于「还没接入」，不是配置缺陷。",
+    "verify": "test -f .idea/misc.xml && grep -q 'name=\"ProjectRootManager\"' .idea/misc.xml && grep -qE 'languageLevel=\"JDK_[0-9_]+\"' .idea/misc.xml && grep -qE 'project-jdk-name=\"[^\"]+\"' .idea/misc.xml && grep -q 'project-jdk-type=\"JavaSDK\"' .idea/misc.xml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/project-settings-and-structure.html",
-    "quote": "Project structure settings include the SDK, project compiler output paths, and project libraries. These settings are stored together with other project configuration files in the `.idea` directory."
+    "quote": "Project structure settings include the SDK, project compiler output paths, and project libraries. These settings are stored together with other project configuration files in the `.idea` directory.",
+    "requiresIdeaProject": true
   },
   {
     "id": "idea-language-level-matches-release",
-    "title": "IDE 的 language level 必须与 pom 的 release 对齐",
+    "title": "IDE 的 language level 必须与工程声明的 release 对齐",
     "category": "ide-project",
     "applies_to": [
       "java",
-      "maven"
+      "maven",
+      "gradle"
     ],
-    "action": "language level 决定编辑器提供哪些编码辅助，它**同时影响编译**：不手工配编译器的目标字节码版本时，目标字节码版本就等于项目语言级别。语言级别可以合法地低于 SDK（用 JDK 25 但语言级别设 17：字节码保持 Java 17 兼容，检视同时拦住你用 Java 18+ 的构造）。但**两边必须同源**：pom 的 release 与 misc.xml 的 languageLevel 不一致时，IDE 与构建各按各的来，症状是「IDE 里一片绿、构建时一片红」。",
-    "verify": "P=$(node -e 'const fs=require(\"fs\");const m=fs.readFileSync(process.argv[1],\"utf8\").match(/<maven\\.compiler\\.release>(\\d+)<\\/maven\\.compiler\\.release>/);process.stdout.write(m?m[1]:\"\")' \"$SKILL_DIR/templates/java-project/pom.xml\") && grep -q \"languageLevel=\\\"JDK_$P\\\"\" \"$SKILL_DIR/templates/java-project/.idea/misc.xml\"",
+    "action": "language level 决定编辑器提供哪些编码辅助，它**同时影响编译**：不手工配编译器的目标字节码版本时，目标字节码版本就等于项目语言级别。语言级别可以合法地低于 SDK（用 JDK 25 但语言级别设 17：字节码保持 Java 17 兼容，检视同时拦住你用 Java 18+ 的构造）。但**两边必须同源**：pom/gradle 的 release 与 misc.xml 的 languageLevel 不一致时，IDE 与构建各按各的来，症状是「IDE 里一片绿、构建时一片红」。",
+    "verify": "P=$(node \"$SKILL_DIR/scripts/langs/java/declared-release.mjs\" . | sed -n 's/^release=//p') && [ -n \"$P\" ] && grep -q \"languageLevel=\\\"JDK_$P\\\"\" .idea/misc.xml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/project-settings-and-structure.html",
-    "quote": "Language level also affects compilation. If you don't manually configure the target bytecode version for your compiler (`Settings | Build, Execution, Deployment | Compiler | Java Compiler`), it will be the same as the project language level."
+    "quote": "Language level also affects compilation. If you don't manually configure the target bytecode version for your compiler (`Settings | Build, Execution, Deployment | Compiler | Java Compiler`), it will be the same as the project language level.",
+    "requiresIdeaProject": true
   },
   {
     "id": "idea-module-inherits-sdk",
@@ -69,9 +75,10 @@
       "java"
     ],
     "action": "模块设置只作用于一个模块，存在 .iml 文件里；模块可以有与项目不同的 SDK 与语言级别，以及自己的库。手工加模块时优先用 <orderEntry type=\"inheritedJdk\" />（继承项目 SDK）：显式写 jdkName 会悄悄把某个旧 JDK 钉死，换机器就失效——而项目 SDK 是单一事实源。多模块用不同 JDK 时 IDEA 会用其中最新的那个编译，并按各模块自己的 JDK 库交叉编译。",
-    "verify": "grep -q 'type=\"inheritedJdk\"' \"$SKILL_DIR/templates/java-project/.idea/demo.iml\" && ! grep -q 'type=\"jdk\"' \"$SKILL_DIR/templates/java-project/.idea/demo.iml\"",
+    "verify": "ls .idea/*.iml >/dev/null 2>&1 && grep -q 'type=\"inheritedJdk\"' .idea/*.iml && ! grep -q 'type=\"jdk\"' .idea/*.iml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/configure-modules.html",
-    "quote": "Module settings apply only to one module and are stored in the `.iml` file. A module can have an SDK and a language level that are different from those configured for a project, and their own libraries."
+    "quote": "Module settings apply only to one module and are stored in the `.iml` file. A module can have an SDK and a language level that are different from those configured for a project, and their own libraries.",
+    "requiresIdeaProject": true
   },
   {
     "id": "idea-source-roots",
@@ -79,12 +86,14 @@
     "category": "ide-project",
     "applies_to": [
       "java",
-      "maven"
+      "maven",
+      "gradle"
     ],
     "action": "在 Project 视图里右键目录 → Mark Directory As → Sources（要编译的生产代码）/ Test Sources / Resources / Excluded；在 .iml 里表现为 <content url=\"file://$MODULE_DIR$\"> 下的 <sourceFolder url=\"...src/main/java\" isTestSource=\"false\" /> 与 <sourceFolder url=\"...src/test/java\" isTestSource=\"true\" />。标错的后果：包结构不被识别（代码像普通文本）、测试类不进测试运行器、覆盖率不统计。还有一条硬规矩：IDEA 编译 Sources 里的代码，所以**绝不能**把配置目录（.idea 目录及其内容、.iml 文件）放进源根。",
-    "verify": "grep -q 'sourceFolder url=\"file://\\$MODULE_DIR\\$/src/main/java\"' \"$SKILL_DIR/templates/java-project/.idea/demo.iml\" && grep -q 'sourceFolder url=\"file://\\$MODULE_DIR\\$/src/test/java\" isTestSource=\"true\"' \"$SKILL_DIR/templates/java-project/.idea/demo.iml\" && ! grep -qE 'sourceFolder url=\"file://\\$MODULE_DIR\\$/\\.idea' \"$SKILL_DIR/templates/java-project/.idea/demo.iml\"",
+    "verify": "ls .idea/*.iml >/dev/null 2>&1 && grep -q 'sourceFolder url=\"file://\\$MODULE_DIR\\$/src/main/java\"' .idea/*.iml && grep -q 'src/test/java\" isTestSource=\"true\"' .idea/*.iml && ! grep -qE 'sourceFolder url=\"file://\\$MODULE_DIR\\$/\\.idea' .idea/*.iml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/content-roots.html",
-    "quote": "Sources This folder contains production code that should be compiled. ... Note: IntelliJ IDEA compiles the code within the Sources folder. Do not place configuration files (the `.idea` folder or its content and the `.iml` file) to this folder."
+    "quote": "Sources This folder contains production code that should be compiled. ... Note: IntelliJ IDEA compiles the code within the Sources folder. Do not place configuration files (the `.idea` folder or its content and the `.iml` file) to this folder.",
+    "requiresIdeaProject": true
   },
   {
     "id": "idea-exclude-build-output",
@@ -95,9 +104,10 @@
       "maven"
     ],
     "action": "模块输出路径在 Modules | Paths：Output path、Test output path，以及「Inherit project compile output path」（继承项目级路径）。勾上「Exclude output path」就会把输出目录从补全、导航、检视里剔除——这正是写进 .iml 的 <exclude-output />，作用是提升 IDE 整体性能；内容根里再加 <excludeFolder url=\"file://$MODULE_DIR$/target\" /> 把构建产物彻底挡在索引之外。Maven 的产物在 target/（Gradle 在 build/）。注意别和 Compiler | Excludes 混淆：那是「不编译」，不是「不索引」。",
-    "verify": "grep -q '<exclude-output />' \"$SKILL_DIR/templates/java-project/.idea/demo.iml\" && grep -q 'excludeFolder url=\"file://\\$MODULE_DIR\\$/target\"' \"$SKILL_DIR/templates/java-project/.idea/demo.iml\"",
+    "verify": "ls .idea/*.iml >/dev/null 2>&1 && grep -q '<exclude-output />' .idea/*.iml && grep -qE 'excludeFolder url=\"file://\\$MODULE_DIR\\$/(target|build)\"' .idea/*.iml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/configure-modules.html",
-    "quote": "Select the Exclude output path checkbox to exclude the output folders from code completion, navigation, and inspections. This helps increase overall IDE performance."
+    "quote": "Select the Exclude output path checkbox to exclude the output folders from code completion, navigation, and inspections. This helps increase overall IDE performance.",
+    "requiresIdeaProject": true
   },
   {
     "id": "idea-excluded-folder-semantics",
@@ -107,9 +117,10 @@
       "java"
     ],
     "action": "排除目录的语义是「文件不再被补全、导航、检视看到」，因此排除构建产物是提升 IDE 性能最直接的一招——通常编译输出目录就是默认被标记为排除的。Maven 侧还有一个应用级开关「Exclude build directory PROJECT_ROOT/target」专门加速导入。排除**不影响部署**。注意：JetBrains 文档没有「.gitignore 里的文件自动不进索引」这一说，别把它当既有事实写进清单——排除要么用 Mark Directory As → Excluded，要么用 .iml 里的 excludeFolder。",
-    "verify": "grep -q 'excludeFolder url=\"file://\\$MODULE_DIR\\$/target\"' \"$SKILL_DIR/templates/java-project/.idea/demo.iml\"",
+    "verify": "ls .idea/*.iml >/dev/null 2>&1 && grep -qE 'excludeFolder url=\"file://\\$MODULE_DIR\\$/(target|build)\"' .idea/*.iml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/content-roots.html",
-    "quote": "Files in excluded folders are ignored by code completion, navigation and inspection. That is why when you exclude a folder that you don't need at the moment, you can increase the IDE performance. Normally, compilation output folders are marked as excluded."
+    "quote": "Files in excluded folders are ignored by code completion, navigation and inspection. That is why when you exclude a folder that you don't need at the moment, you can increase the IDE performance. Normally, compilation output folders are marked as excluded.",
+    "requiresIdeaProject": true
   },
   {
     "id": "encoding-properties-utf8",
@@ -119,10 +130,11 @@
       "java",
       "maven"
     ],
-    "action": "IDEA 对 .properties 的默认编码是 ISO-8859-1：非 Latin-1 字符在显示与回写时会被改写，症状是「IDE 里看着是乱码、构建产物里中文变成问号」这类只在构建后暴露的问题。中文/UTF-8 资源包项目必须在 Settings | Editor | File Encodings 里把 properties 的默认编码定为 UTF-8（.idea/encodings.xml 的 defaultCharsetForPropertiesFiles 属性），并与 pom 的 project.build.sourceEncoding 一致。三处不同源就是三套答案。",
-    "verify": "grep -q 'defaultCharsetForPropertiesFiles=\"UTF-8\"' \"$SKILL_DIR/templates/java-project/.idea/encodings.xml\" && grep -q '<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>' \"$SKILL_DIR/templates/java-project/pom.xml\"",
+    "action": "IDEA 对 .properties 的默认编码是 ISO-8859-1：非 Latin-1 字符在显示与回写时会被改写，症状是「IDE 里看着是乱码、构建产物里中文变成问号」这类只在构建后暴露的问题。中文/UTF-8 资源包项目必须在 .idea/encodings.xml 的 defaultCharsetForPropertiesFiles 属性上定成 UTF-8（与 Maven 侧的 project.build.sourceEncoding 保持同源，见 maven-source-encoding-declared 一条）。",
+    "verify": "test -f .idea/encodings.xml && grep -q 'defaultCharsetForPropertiesFiles=\"UTF-8\"' .idea/encodings.xml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/properties-files.html",
-    "quote": "In IntelliJ IDEA, the default encoding for properties files is ISO-8859-1. You can also use escape sequences for characters not defined by the selected encoding. Alternatively, you may choose to define a different default encoding for properties files on the project level."
+    "quote": "In IntelliJ IDEA, the default encoding for properties files is ISO-8859-1. You can also use escape sequences for characters not defined by the selected encoding. Alternatively, you may choose to define a different default encoding for properties files on the project level.",
+    "requiresIdeaProject": true
   },
   {
     "id": "encoding-project-utf8",
@@ -133,9 +145,10 @@
       "maven"
     ],
     "action": "IDEA 的编码回退链是：BOM > 显式声明 > 单文件/目录编码 > 父目录编码 > 项目编码 > 全局编码。链上任何一环缺位，最后都落到项目编码——所以项目编码必须是明确的 UTF-8，而不是靠全局默认（跟机器 locale 走）。.idea/encodings.xml 里 <file url=\"PROJECT\" charset=\"UTF-8\" /> 就是这一环。",
-    "verify": "grep -q 'charset=\"UTF-8\"' \"$SKILL_DIR/templates/java-project/.idea/encodings.xml\" && grep -q '<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>' \"$SKILL_DIR/templates/java-project/pom.xml\"",
+    "verify": "test -f .idea/encodings.xml && grep -q 'charset=\"UTF-8\"' .idea/encodings.xml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/file-encodings.html",
-    "quote": "If encoding is not configured for the file or directory, IntelliJ IDEA will use the encoding of the parent directory. If the parent directory encoding is also not configured, IntelliJ IDEA will fall back to the Project Encoding , and if there is no project, to Global Encoding ."
+    "quote": "If encoding is not configured for the file or directory, IntelliJ IDEA will use the encoding of the parent directory. If the parent directory encoding is also not configured, IntelliJ IDEA will fall back to the Project Encoding , and if there is no project, to Global Encoding .",
+    "requiresIdeaProject": true
   },
   {
     "id": "editorconfig-present",
@@ -143,10 +156,11 @@
     "category": "style",
     "applies_to": [
       "java",
-      "maven"
+      "maven",
+      "gradle"
     ],
     "action": "EditorConfig 插件在 IDEA 里捆绑且默认启用：.editorconfig 放在项目根（子目录可放不同风格），里面的选项会叠加在当前项目代码风格之上。除了标准键（indent_size / indent_style / charset / end_of_line / max_line_length …），IDEA 还认自己的 ij_ 前缀键（ij_visual_guides、ij_formatter_off_tag / ij_formatter_on_tag、ij_continuation_indent_size、ij_smart_tabs …）。.editorconfig 没定义的键回落到 Settings | Editor | Code Style | Java 的当前方案——所以两边要一致，否则格式化工具（spotless/checkstyle）与 IDE 会互相拉扯。离被编辑文件最近的 .editorconfig 优先，其余从父目录合并进来。",
-    "verify": "test -f \"$SKILL_DIR/templates/java-project/.editorconfig\" && grep -q '^root = true' \"$SKILL_DIR/templates/java-project/.editorconfig\" && grep -qE '^indent_size' \"$SKILL_DIR/templates/java-project/.editorconfig\" && grep -qE '^charset' \"$SKILL_DIR/templates/java-project/.editorconfig\"",
+    "verify": "test -f .editorconfig && grep -q '^root = true' .editorconfig && grep -qE '^indent_size' .editorconfig && grep -qE '^charset' .editorconfig",
     "source": "https://www.jetbrains.com/help/idea/2026.2/editorconfig.html",
     "quote": "This functionality relies on the EditorConfig plugin, which is bundled and enabled in IntelliJ IDEA by default. ... All options from the `.editorconfig` file are applied to the directory where it resides as well as all of its sub-directories on top of the current project code style."
   },
@@ -156,12 +170,14 @@
     "category": "build",
     "applies_to": [
       "java",
-      "maven"
+      "maven",
+      "gradle"
     ],
     "action": "注解处理器是**编译期**的东西：只有构建真的跑了它，生成的方法/字段才存在。用构建脚本声明（Maven 的 annotationProcessorPaths / Gradle 的 annotationProcessor 依赖）时，IDEA 会自动打开注解处理并填好处理器路径——但那是**导入时**的事，改完 pom.xml / build.gradle 必须重新 Sync，设置才会出现。手工在 Settings | Build, Execution, Deployment | Compiler | Annotation Processors 里勾「Enable annotation processing」也可以，处理器随项目依赖走就保持「Obtain processors from project classpath」勾选。Lombok 是不是 2026.2 起不再捆绑并不影响这条：它能不能工作取决于**构建跑没跑注解处理**。",
-    "verify": "grep -q 'annotationProcessing' \"$SKILL_DIR/templates/java-project/.idea/compiler.xml\"",
+    "verify": "test -f .idea/compiler.xml && grep -q 'annotationProcessing' .idea/compiler.xml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/annotation-processors-support.html",
-    "quote": "When you add annotation processors through the build scripts in Maven or Gradle projects, IntelliJ IDEA automatically enables the annotation processing and adds the appropriate paths in the annotation processor settings."
+    "quote": "When you add annotation processors through the build scripts in Maven or Gradle projects, IntelliJ IDEA automatically enables the annotation processing and adds the appropriate paths in the annotation processor settings.",
+    "requiresIdeaProject": true
   },
   {
     "id": "run-config-application",
@@ -169,12 +185,14 @@
     "category": "ide-runtime",
     "applies_to": [
       "java",
-      "maven"
+      "maven",
+      "gradle"
     ],
     "action": "Application 运行配置放在 .idea/runConfigurations/ 并入库，clone 即用。要写全：Main class（全限定类名）、Use classpath of module（决定 classpath 的模块）、JRE（运行用的运行时；默认取模块依赖里最新的 JDK）、Working directory（所有相对输入输出路径的起点，默认项目根）。**模块选错是「运行时报 class not found」的头号原因**——classpath 是模块给的。",
-    "verify": "grep -q 'type=\"Application\"' \"$SKILL_DIR/templates/java-project/.idea/runConfigurations/App.xml\" && grep -q 'value=\"com.example.demo.App\"' \"$SKILL_DIR/templates/java-project/.idea/runConfigurations/App.xml\" && grep -q '<module name=\"demo\" />' \"$SKILL_DIR/templates/java-project/.idea/runConfigurations/App.xml\" && grep -q 'WORKING_DIRECTORY' \"$SKILL_DIR/templates/java-project/.idea/runConfigurations/App.xml\"",
+    "verify": "ls .idea/runConfigurations/*.xml >/dev/null 2>&1 && grep -q 'type=\"Application\"' .idea/runConfigurations/*.xml && grep -q 'MAIN_CLASS_NAME' .idea/runConfigurations/*.xml && grep -qE 'MODULE_NAME|<module name=' .idea/runConfigurations/*.xml && grep -q 'WORKING_DIRECTORY' .idea/runConfigurations/*.xml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/run-debug-configuration-java-application.html",
-    "quote": "JRE | Specify the runtime environment that IntelliJ IDEA should use to run the application. By default, IntelliJ IDEA uses the latest available JDK from the module dependencies. ... Working directory | Specify the working directory to be used for running the application. This directory is the starting point for all relative input and output paths. By default, the working directory is the project root."
+    "quote": "JRE | Specify the runtime environment that IntelliJ IDEA should use to run the application. By default, IntelliJ IDEA uses the latest available JDK from the module dependencies. ... Working directory | Specify the working directory to be used for running the application. This directory is the starting point for all relative input and output paths. By default, the working directory is the project root.",
+    "requiresIdeaProject": true
   },
   {
     "id": "run-config-junit",
@@ -183,12 +201,14 @@
     "applies_to": [
       "java",
       "maven",
+      "gradle",
       "junit5"
     ],
     "action": "JUnit 运行配置要写：测试类（MAIN_CLASS_NAME）、Use classpath of module（决定跑测试用的 classpath 的模块——Maven/Gradle 工程里要选**拥有测试源根**的那个模块）、JRE、工作目录、测试范围（All in package / All in directory / Pattern / Class / Method / Tags / Category）。JUnit 4 与 JUnit 5 可选项不同（Tags / UniqueId 是 JUnit 5 才有），IDEA 新建的 Gradle 工程默认用 JUnit 5——所以构建脚本里的测试框架要和 IDE 的 runner 对得上（JUnit 4 runner 跑不了 JUnit Platform）。",
-    "verify": "grep -q 'type=\"JUnit\"' \"$SKILL_DIR/templates/java-project/.idea/runConfigurations/AppTest.xml\" && grep -q 'value=\"com.example.demo.AppTest\"' \"$SKILL_DIR/templates/java-project/.idea/runConfigurations/AppTest.xml\" && grep -q '<module name=\"demo\" />' \"$SKILL_DIR/templates/java-project/.idea/runConfigurations/AppTest.xml\" && grep -q 'junit-jupiter' \"$SKILL_DIR/templates/java-project/pom.xml\"",
+    "verify": "ls .idea/runConfigurations/*.xml >/dev/null 2>&1 && grep -q 'type=\"JUnit\"' .idea/runConfigurations/*.xml && grep -q 'MAIN_CLASS_NAME' .idea/runConfigurations/*.xml && grep -qE 'MODULE_NAME|<module name=' .idea/runConfigurations/*.xml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/run-debug-configuration-junit.html",
-    "quote": "Use classpath of module | Select the module whose classpath should be used to run the application."
+    "quote": "Use classpath of module | Select the module whose classpath should be used to run the application.",
+    "requiresIdeaProject": true
   },
   {
     "id": "build-tool-declared",
@@ -198,7 +218,7 @@
       "java"
     ],
     "action": "Maven 工程用 File | Open 选中 pom.xml 打开，IDEA 会打开并 sync 这个 Maven 工程；Gradle 工程直接打开含 build.gradle(.kts) 的目录，IDEA 打开并 sync 并自动关联 Gradle 工程。Maven 侧的导入还会**生成标准 Maven 布局**（含 src 目录），所以 attach 之后目录结构大概率已被改造——断言磁盘上的事实，别相信 IDE 的记忆。缺构建文件时 IDEA 只能当纯文件夹打开：没有 classpath、没有依赖解析、没有测试运行器。",
-    "verify": "test -f \"$SKILL_DIR/templates/java-project/pom.xml\" && node \"$SKILL_DIR/scripts/langs/java/detect.mjs\" \"$SKILL_DIR/templates/java-project\" | grep -qE '^BUILD_TOOL=(maven|gradle)$'",
+    "verify": "node \"$SKILL_DIR/scripts/langs/java/detect.mjs\" . | grep -qE '^BUILD_TOOL=(maven|gradle)$'",
     "source": "https://www.jetbrains.com/help/idea/2026.2/maven-support.html",
     "quote": "2. In the dialog that opens, select the `pom.xml` file of the project you want to open. ... IntelliJ IDEA opens and syncs the Maven project in the IDE."
   },
@@ -208,10 +228,11 @@
     "category": "build",
     "applies_to": [
       "java",
-      "maven"
+      "maven",
+      "gradle"
     ],
     "action": "Maven 约定布局是 src/main/java 与 src/test/java（Kotlin 是 src/main/kotlin / src/test/kotlin），资源在 src/main/resources。IDEA attach 时按这套目录推断源根；目录一改，源根就推断不出来（代码像普通文本、测试类不进运行器）。通用探测器 scripts/langs/java/detect.mjs 出的 SOURCE_DIRS / MODULE_COUNT / TEST_FRAMEWORK 就是这套约定，偏离它要么改目录，要么在 pom 里用 build-helper 显式声明。",
-    "verify": "node \"$SKILL_DIR/scripts/langs/java/detect.mjs\" \"$SKILL_DIR/templates/java-project\" | grep -qE '^SOURCE_DIRS=.*src/main/java.*src/test/java' && node \"$SKILL_DIR/scripts/langs/java/detect.mjs\" \"$SKILL_DIR/templates/java-project\" | grep -qE '^TEST_FRAMEWORK=junit'",
+    "verify": "node \"$SKILL_DIR/scripts/langs/java/detect.mjs\" . | grep -qE '^SOURCE_DIRS=.*src/main/java'",
     "source": "https://www.jetbrains.com/help/idea/2026.2/content-roots.html",
     "quote": "Sources This folder contains production code that should be compiled."
   },
@@ -222,10 +243,11 @@
     "applies_to": [
       "java"
     ],
-    "action": "检视规则集放在 .idea/inspectionProfiles/Project_Default.xml，随项目入库；IDE 里勾一次规则后 IDEA 会自动更新该文件，调优完把新版本拷回技能包的 references/langs/java/rules/ 即可，规则随技能包演进。不入库的后果是每个人的检视口径不同，同一份代码在两个人机器上结论相反。注意 P3C 的 65 条 Ali* 规则里只有 11 条能经 MCP 驱动（其余是 PMD 动态规则），别把「规则没报」当「代码没问题」。",
-    "verify": "test -f \"$SKILL_DIR/templates/java-project/.idea/inspectionProfiles/Project_Default.xml\" && grep -q 'InspectionProjectProfileManager' \"$SKILL_DIR/templates/java-project/.idea/inspectionProfiles/Project_Default.xml\"",
+    "action": "检视规则集放在 .idea/inspectionProfiles/ 下随项目入库；IDE 里勾一次规则后 IDEA 会自动更新该文件，调优完把新版本拷回技能包的 references/langs/java/rules/ 即可，规则随技能包演进。不入库的后果是每个人的检视口径不同，同一份代码在两个人机器上结论相反。注意 P3C 的 65 条 Ali* 规则里只有 11 条能经 MCP 驱动（其余是 PMD 动态规则），别把「规则没报」当「代码没问题」。",
+    "verify": "ls .idea/inspectionProfiles/*.xml >/dev/null 2>&1 && grep -q 'InspectionProjectProfileManager' .idea/inspectionProfiles/*.xml",
     "source": "https://www.jetbrains.com/help/idea/2026.2/code-inspection.html",
-    "quote": "Share the same inspection profile, both within the IDE and the CI tool."
+    "quote": "Share the same inspection profile, both within the IDE and the CI tool.",
+    "requiresIdeaProject": true
   },
   {
     "id": "idea-edition-gate-jvm",
@@ -234,7 +256,7 @@
     "applies_to": [
       "java"
     ],
-    "action": "通用门禁入口：bash scripts/setup-env.sh plugins <IDEA安装根>。JVM 语言栈在 IC/IU/WS 全版本捆绑（edition-gate=community），java 与 kotlin 插件都在位；TS 与 Python 的**语言插件**社区版装不了，所以那两门语言的门禁是 ultimate。门禁是「每个插件一行」，不是「一门语言一行」——同一门语言里，语言插件与工具插件（如 Ruff）可能落在不同门禁上。本机 IDEA 2026.2.5 支持的项目语言级别上探到 Java 27，Java 25 为 LTS 档。",
+    "action": "通用门禁入口：bash scripts/setup-env.sh plugins <IDEA安装根>。JVM 语言栈在 IC/IU/WS 全版本捆绑（edition-gate=community），java 与 kotlin 插件都在位；TS 与 Python 的**语言插件**社区版装不了，所以那两门语言的门禁是 ultimate。门禁是「每个插件一行」，不是「一门语言一行」——同一门语言里，语言插件与工具插件（如 Ruff）可能落在不同门禁上。本机 IDEA 2026.2 支持的项目语言级别上探 Java 27，Java 25 为 LTS 档。",
     "verify": "R=$(node -e 'try{const c=require(process.env.SKILL_DIR+\"/config.json\");process.stdout.write(c.idea.installRoot)}catch(e){}' 2>/dev/null) && [ -n \"$R\" ] && bash \"$SKILL_DIR/scripts/setup-env.sh\" plugins \"$R\" | grep -qE '^LANG_PLUGIN java edition-gate=community .*java=present'",
     "source": "https://www.jetbrains.com/help/idea/2026.2/supported-java-versions.html",
     "quote": "Java 25: Compact source files, Module imports"
@@ -246,9 +268,22 @@
     "applies_to": [
       "java"
     ],
-    "action": "Gradle 官方口径：执行任何 Gradle 构建的**推荐方式**就是用 Wrapper（gradlew / gradlew.bat），它调用声明好的 Gradle 版本，必要时先下载；用 wrapper 就意味着各处（IDE、CI）用的是同一个 Gradle 版本。Maven 侧同理（mvnw 保证「使用你的构建的人拥有跑起来所需的一切」）。所以 IDE 侧要把 Maven home path 指向 wrapper、Gradle Distribution 指向 gradle-wrapper.properties。两边版本不一致时的症状是「IDE 里过、CI 里不过」或反过来。",
-    "verify": "grep -q '^distributionUrl=' \"$SKILL_DIR/templates/java-project/.mvn/wrapper/maven-wrapper.properties\" 2>/dev/null || echo 'no maven wrapper pinned (template ships pom only)'; node \"$SKILL_DIR/scripts/langs/java/detect.mjs\" \"$SKILL_DIR/templates/java-project\" | grep -qE '^BUILD_TOOL=maven$'",
+    "action": "Gradle 官方口径：执行任何 Gradle 构建的**推荐方式**就是用 Wrapper（gradlew / gradlew.bat），它调用声明好的 Gradle 版本，必要时先下载；用 wrapper 就意味着各处（IDE、CI）用的是同一个 Gradle 版本。Maven 侧同理（mvnw 保证「使用你的构建的人拥有跑起来所需的一切」）。所以 IDE 侧要把 Maven home path 指向 wrapper、Gradle Distribution 指向 gradle-wrapper.properties；wrapper 自己的 distributionUrl 必须钉死版本。两边版本不一致时的症状是「IDE 里过、CI 里不过」或反过来。",
+    "verify": "node \"$SKILL_DIR/scripts/langs/java/detect.mjs\" . | grep -qE '^BUILD_TOOL=(maven|gradle)$' && { W=0; [ -f .mvn/wrapper/maven-wrapper.properties ] && W=1; [ -f gradle/wrapper/gradle-wrapper.properties ] && W=1; if [ \"$W\" = \"1\" ]; then grep -q '^distributionUrl=' .mvn/wrapper/maven-wrapper.properties gradle/wrapper/gradle-wrapper.properties 2>/dev/null; fi; }",
     "source": "https://www.jetbrains.com/help/idea/2026.2/gradle.html",
     "quote": "In the Distribution list select one of the following options: Wrapper: this is a recommended default option that uses Gradle wrapper. In this case you delegate the update of Gradle versions to Gradle and get an automatic Gradle download for the build. This option also lets you build with a precise Gradle version."
+  },
+  {
+    "id": "maven-source-encoding-declared",
+    "title": "Maven 必须声明 UTF-8 源编码（构建侧的编码事实源）",
+    "category": "build",
+    "applies_to": [
+      "java",
+      "maven"
+    ],
+    "action": "pom.xml 的 <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>（建议同时声明 <project.reporting.outputEncoding>，否则测试报告里的中文会按平台默认编码出）决定 Maven 传给 javac 的编码。平台默认值随机器 locale 变，同一份代码在英文机和中文机上编出不同字节——中文注释乱码或报错，典型症状只在 CI 上出现。不声明就没有跨机器一致性，IDE 侧也失去与构建对齐的锚点（IDE 的编码回退链终点是「项目编码」，见 encoding-project-utf8）。Gradle 工程没有这个属性：JDK 18 起 file.encoding 默认即 UTF-8，且 Gradle 用 toolchain 钉住 JDK 后由该 JDK 的默认值兜底。",
+    "verify": "{ [ ! -f pom.xml ] || { grep -q \"<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\" pom.xml; }; }",
+    "source": "https://www.jetbrains.com/help/idea/2026.2/file-encodings.html",
+    "quote": "If encoding is not configured for the file or directory, IntelliJ IDEA will use the encoding of the parent directory. If the parent directory encoding is also not configured, IntelliJ IDEA will fall back to the Project Encoding , and if there is no project, to Global Encoding ."
   }
 ]

@@ -21,7 +21,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 
 | 语言 | 分册 | edition 门禁 | 配置侧清单 | 运行期档位（L0 文件→L5 重构） |
 |---|---|---|---|---|
-| JVM（Java/Kotlin） | [references/langs/java/setup.md](references/langs/java/setup.md) | community（捆绑） | 26 条 ✅ 全自证 | L0-L3 ✅ · L4 ⚠️需 monster 插件 · L5 ✅ |
+| JVM（Java/Kotlin） | [references/langs/java/setup.md](references/langs/java/setup.md) | community（捆绑） | 27 条 ✅ 全自证 | L0-L3 ✅ · L4 ⚠️需 monster 插件 · L5 ✅ |
 | TS / JavaScript | [references/langs/ts/setup.md](references/langs/ts/setup.md) | **ultimate**（社区版装不了 JS/TS 插件栈） | 64 条 ✅ 全自证 | L0-L1 ✅ · L2 静默失效 · L3 恒空 → [档位实测](references/langs/ts/runtime.md) |
 | Python | [references/langs/python/setup.md](references/langs/python/setup.md) | **ultimate**（社区版没有 Python 语言插件；Ruff 这类工具插件社区版可装） | 16 条 ✅ 全自证 | L0-L1 ✅ · L2 静默失效 · L3+ 未实测 |
 
@@ -121,7 +121,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 | `scripts/inspect-diff.sh` | 改动集门禁：自动取 `git diff HEAD + untracked` 代码文件 → 检视 → 问题清单（无 `ide_inspect` 时自动降级） |
 | `scripts/audit-baseline.sh` | **审查基线一条命令**：门禁 → 分批检视 → 归一化清单（MAIN/TEST/NOISE；无 `ide_inspect` 时自动降级） |
 | `scripts/audit-parse.js` | 把检视原始输出 + XML 解析成 `file:line | tool | desc` 清单（去重、剔噪、主/测试分流；兼容 `ide_diagnostics` 降级输出） |
-| `scripts/verify-item.sh` | **分册清单自证**：`--lang <lang> --all` 逐条真跑 `verify`，退出 0 才算这条配好了 |
+| `scripts/verify-item.sh` | **分册清单自证**：`--lang <lang> --all` 逐条真跑 `verify`（被检工程 = 当前工作目录；默认切到分册模板，`--dir <工程>` 可查真实工程） |
 | `scripts/verify-quotes.mjs` | **溯源门禁**：每条清单/设置条目的 `quote` 必须能在该分册 `sources.md` 里逐字命中（`--lang <lang>` 可限分册） |
 | `scripts/check-registry-entry.sh` | IDE 侧设置条目结构校验（`--lang <lang> <id>`：路径/期望/断言/出处/引文齐全） |
 | `scripts/init-project.sh` | 按分册脚手架建新项目（`--lang <lang> [--template <name>]`） |
