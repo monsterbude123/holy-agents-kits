@@ -52,6 +52,14 @@
       "version": "<如 3.13.5>",
       "pipBin": "<pip 可执行文件路径>",
       "uvBin": "<uv 可执行文件路径>"
+    },
+    "java": {
+      "home": "<JAVA_HOME，如 D:/workplace/jdk-25/jdk-25.0.5.1>",
+      "bin": "<java 可执行文件路径>",
+      "version": "<java -version 首行>",
+      "javacBin": "<javac 可执行文件路径>",
+      "javacVersion": "<如 javac 25.0.5.1>",
+      "release": "<JDK 主版本号，如 25>"
     }
   }
 }

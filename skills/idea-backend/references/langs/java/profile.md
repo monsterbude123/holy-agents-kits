@@ -23,7 +23,7 @@
 | 插件 | id | 来源 | 缺了会怎样 |
 |---|---|---|---|
 | Alibaba Java Coding Guidelines（P3C） | `com.alibaba.p3c.xenoamess` | Marketplace | 检视里没有阿里规范；**且 P3C 的 65 条 `Ali*` 规则只有 11 条能经 MCP 驱动**（其余 54 条是 PMD 动态规则，daemon-core 与批处理管线都不执行）→ 经 MCP 能跑到的"阿里规范"= 直连 Ali 规则 + IDEA 平台检视 |
-| Lombok | `Lombok` | Marketplace | 2026.2+ 不再捆绑 → 大面积误报 `Cannot resolve symbol 'log'` / getter 不可解析 |
+| Lombok | `Lombok` | **IDEA 捆绑**（平台源码树 `plugins/lombok`，vendor = JetBrains，自 2020.3 起集成） | 插件在位但**构建没跑注解处理**时，仍会大面积误报 `Cannot resolve symbol 'log'` / getter 不可解析 —— 真正的开关是构建侧（声明 lombok 依赖 + 委派构建/开启注解处理），不是装不装插件 |
 
 inspection profile（项目当前生效的那份）在 [rules/Project_Default.xml](rules/Project_Default.xml)，用法与必装插件清单见 [rules/README.md](rules/README.md)。
 
@@ -69,11 +69,16 @@ bash scripts/mcp-call.sh index ide_call_hierarchy '{"language":"java","symbol":"
 
 ---
 
-## §6 未建册的部分（诚实标注）
+## §6 本分册的现状与仍缺的部分（诚实标注）
 
-| 缺什么 | 影响 | 补法 |
+**已建册（2026-11-22）**：配置侧清单 [checklist.json](checklist.json) **20 条**、IDE 侧设置清单
+[idea-settings.json](idea-settings.json) **6 条**，逐条真跑自证（`bash scripts/verify-item.sh --lang java --all`），
+引文底账在 [sources.md](sources.md)；探测器 `scripts/langs/java/detect.mjs` 在位并被通用分发器调用；
+脚手架模板 `templates/java-project`（Maven + JDK 25）在位；操作正文在 [setup.md](setup.md)。
+
+| 仍缺什么 | 影响 | 补法 |
 |---|---|---|
-| 配置侧清单（`checklist.json`） | JDK 版本、Maven/Gradle、代码风格、.idea 索引排除等没有"每条可自证"的要求 | 照 TS 分册的 schema 补（64 条的量级是 TS 独有的） |
-| IDE 侧设置清单（`idea-settings.json`） | 没有 IDE 设置项的出处/断言台账 | 同上 |
-| 探测器（`detect.mjs`） | 分发器对 JVM 项目只能靠 marker 判语言，出不了项目形态事实（多模块/构建工具/测试框架） | 补 `scripts/langs/java/detect.mjs` |
 | 运行期档位回归 | §1 的档位是 2026-11-20 的一次快照 | 每半年按 [../../capability-matrix.md](../../capability-matrix.md) §2 重探 |
+| 真实 JVM 项目的清单回归 | 本册的清单是在**模板**上逐条自证的，尚未在真实仓库上跑过一轮 | 拿一个真实 Maven/Gradle 工程做一次回归（TS 分册那次回归改掉了 6 条自己的误报，见 [../../capability-matrix.md](../../capability-matrix.md) §5 纪律 3） |
+| Maven / Gradle 的联网构建判据 | 清单刻意不含 `mvn package` 这类需依赖仓库的动作，离线恒红且分不清「配置错」与「网络不通」 | 留给 CI 与本地手动跑；要入册需先解决依赖仓库可达性 |
+| Gradle 变体的清单条目 | 清单以 Maven 形态为骨架（模板即 Maven），Gradle 的 toolchain/wrapper 只写进了 [setup.md](setup.md) 正文 | 补一份 Gradle 模板与对应条目 |

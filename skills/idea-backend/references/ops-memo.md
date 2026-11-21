@@ -107,7 +107,7 @@ bash scripts/mcp-call.sh index ide_project_status '{}'   # 看 open project 的 
 
 - **⚠️ `problems` 文本清单会被截断**（实测 60 文件 `total=403` 只回 68 行）—— 权威清单 = 返回的 `xmlDir` 目录下的 XML 报告 + summary 的 `byTool` 计数；`scope=files` 的每一批都产 `xmlDir`，分批即可拼出全量 global 项，不必额外跑 whole。
 - **⚠️ P3C 的 54 条 PMD 规则经 ide_inspect 不可驱动**（实测 2026-11-18）：插件 jar 里只有 11 个直连 `Ali*Inspection` class；profile 里的 `Alibaba*` 条目是 PMD 动态规则，daemon-core 与批处理管线**都不执行**。经 MCP 能跑到的「阿里规范」= 直连 Ali 规则 + IDEA 平台检视；全量 PMD 规则只能在 GUI Analyze 手动跑，或用 p3c-pmd jar 配 PMD CLI（PMD 6.55 解析器对 Java 22+ 语法会碎）。项目 profile 绑定（workspace.xml 的 `PROJECT_PROFILE`）外部编辑需重启 IDEA 才生效。
-- **Lombok 缺口**：2026.2.5 不捆绑 Lombok，缺它会误报 `Cannot resolve symbol 'log'`/getter 不可解析 —— 检查结果大面积此类错误时先装 Lombok 插件（见 [setup-0to1.md](setup-0to1.md) §10）再下结论。
+- **Lombok 误报**（2026-11-22 更正）：此前记的「2026.2.5 不捆绑 Lombok」是**错的** —— Lombok 仍在 IDEA 平台源码树里（`plugins/lombok`，vendor = JetBrains，自 2020.3 起集成），IDEA 2026.2 文档里也从未提到它。大面积 `Cannot resolve symbol 'log'`/getter 不可解析的**真正根因是构建没跑注解处理**（构建脚本没声明 lombok 处理器，或 IDE 没委派构建/没开注解处理）—— 先查这两处，再谈插件。
 - 内置 2026 工具普遍要求显式 `projectPath`（单项目打开也要求），漏传会报 "Unable to determine the target project"。
 - MCP server 在**项目成功打开后**才启动；项目打不开先查 `idea.log`（`%LOCALAPPDATA%\JetBrains\IdeaIC<ver>\log\`）。
 - IDEA 运行中锁定 `<ide>\lib\*.jar`，离线反编译分析需先关 IDE 并拷贝 jar。

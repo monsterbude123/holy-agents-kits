@@ -21,7 +21,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 
 | 语言 | 分册 | edition 门禁 | 配置侧清单 | 运行期档位（L0 文件→L5 重构） |
 |---|---|---|---|---|
-| JVM（Java/Kotlin） | [references/langs/java/profile.md](references/langs/java/profile.md) | community（捆绑） | 未建册 | L0-L3 ✅ · L4 ⚠️需 monster 插件 · L5 ✅ |
+| JVM（Java/Kotlin） | [references/langs/java/setup.md](references/langs/java/setup.md) | community（捆绑） | 26 条 ✅ 全自证 | L0-L3 ✅ · L4 ⚠️需 monster 插件 · L5 ✅ |
 | TS / JavaScript | [references/langs/ts/setup.md](references/langs/ts/setup.md) | **ultimate**（社区版装不了 JS/TS 插件栈） | 64 条 ✅ 全自证 | L0-L1 ✅ · L2 静默失效 · L3 恒空 → [档位实测](references/langs/ts/runtime.md) |
 | Python | [references/langs/python/setup.md](references/langs/python/setup.md) | **ultimate**（社区版没有 Python 语言插件；Ruff 这类工具插件社区版可装） | 16 条 ✅ 全自证 | L0-L1 ✅ · L2 静默失效 · L3+ 未实测 |
 
@@ -131,7 +131,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 ## 八、参考
 
 - **语言 × 能力档位矩阵（档位定义 / 探测判据 / 升档动作 / 新增分册契约）** → [references/capability-matrix.md](references/capability-matrix.md)
-- **分册内部件**：TS 分册的引文快照 [references/langs/ts/sources.md](references/langs/ts/sources.md)、真实仓库回归记录 [references/langs/ts/field-test.md](references/langs/ts/field-test.md)；Python 分册的引文快照 [references/langs/python/sources.md](references/langs/python/sources.md)；分册探测器 `scripts/langs/ts/detect.mjs`（通用分发器按语言调用，新增语言照它的形状写）
+- **分册内部件**：TS 分册的引文快照 [references/langs/ts/sources.md](references/langs/ts/sources.md)、真实仓库回归记录 [references/langs/ts/field-test.md](references/langs/ts/field-test.md)、逐步操作手册 [references/langs/ts/setup-manual.md](references/langs/ts/setup-manual.md)；Python 分册的引文快照 [references/langs/python/sources.md](references/langs/python/sources.md)；JVM 分册的引文快照 [references/langs/java/sources.md](references/langs/java/sources.md)、档位与检视噪声 [references/langs/java/profile.md](references/langs/java/profile.md)；分册探测器 `scripts/langs/ts/detect.mjs`（通用分发器按语言调用，新增语言照它的形状写）
 - **审查→修复流水线（方法论 + 时间预算 + 反例集 + 子代理模板 + MCP 授权清单）** → [references/audit-fix-playbook.md](references/audit-fix-playbook.md)
 - **运维备忘（工具面实测、降级能力差距、终端真实语义、路径坑、索引归属）** → [references/ops-memo.md](references/ops-memo.md)
 - **IDEA 安装与部署（版本事实、目录、踩坑实录）** → [references/setup-0to1.md](references/setup-0to1.md)

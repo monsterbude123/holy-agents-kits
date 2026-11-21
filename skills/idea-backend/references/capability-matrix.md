@@ -37,11 +37,15 @@
 
 | 语言 | edition 门禁 | L0 | L1 | L2 | L3 | L4 | L5 | 分册 |
 |---|---|---|---|---|---|---|---|---|
-| JVM（Java/Kotlin） | community（捆绑） | ✅ | ✅ | ✅ | ✅ | ⚠️ 需 monster 插件 | ✅ | [langs/java/profile.md](langs/java/profile.md) |
+| JVM（Java/Kotlin） | community（捆绑） | ✅ | ✅ | ✅ | ✅ | ⚠️ 需 monster 插件 | ✅ | [langs/java/setup.md](langs/java/setup.md) |
 | TS / JavaScript | **ultimate**（社区版装不了 JS/TS 插件栈） | ✅ | ✅ | ⚠️ **静默失效** | ⚠️ **恒空** | ⚠️ | ⚠️ | [langs/ts/runtime.md](langs/ts/runtime.md) |
 | Python | **ultimate**（社区版没有 Python 语言插件） | ✅ | ✅ | ⚠️ **静默失效** | 未实测（预期恒空） | 未实测 | 未实测 | [langs/python/setup.md](langs/python/setup.md) |
 
 > Python 那行是**本机实测**（IC 2026.2.5，**没装** Python 插件）：L0 `ide_find_file` 能找到 .py 文件 ✅；L1 `ide_search_text` 命中 5 处真实引用、零假命中 ✅；L2 位置法解析到**目录符号**（`resolvedSymbol.kind = directory`）→ 0 引用 → 与 TS 一样是**静默失效**。L3/L4/L5 需要 Python 插件在位才能测。
+>
+> **JVM 行的分册现状（2026-11-22）**：配置侧清单已建册（`references/langs/java/checklist.json` 20 条 + `idea-settings.json` 6 条，逐条真跑自证），脚手架模板 `templates/java-project` 在位。JVM 是三门语言里**唯一不受 edition 门禁限制**的（社区版捆绑），也是「审查→修复流水线」唯一成立的场景。
+>
+> **L2/L3 的上游阻塞**：TS 与 Python 的 L2/L3 失效不是配置问题，而是 Index 插件（5.20.7）的 server 端只放行 Java 符号解析、`ide_diagnostics` 对非 Java 文件恒空。升档要等插件支持，判据见 §2。
 
 ### §3.1 门禁是"每个插件一行"（2026-11-20 取自 JetBrains 官方 Marketplace API）
 

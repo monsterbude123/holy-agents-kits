@@ -258,8 +258,34 @@ toolchain_facts() { # <lang>
       echo "UV_VERSION=$(uv --version 2>/dev/null | awk '{print $2}')"
       ;;
     jdk)
-      echo "JAVA_BIN=$(command -v java 2>/dev/null || echo none)"
-      echo "JAVA_VERSION=$(java -version 2>&1 | head -1)"
+      # 优先 JAVA_HOME（env → config.json → PATH），与「机器事实一律读 config.json」一致：
+      # 本机 PATH 是从已运行的父进程继承的，setx 之后老 shell 看不到新 PATH，
+      # 只认 env/PATH 会让「已装 JDK」在脚本里显示成 none。
+      local jhome="${JAVA_HOME:-}"
+      if [ -z "$jhome" ] && [ -f "$CONFIG" ]; then
+        jhome="$(node -e 'try{const c=require(process.argv[1]);process.stdout.write(c.toolchains?.java?.home||"")}catch(e){}' "$CONFIG" 2>/dev/null)"
+      fi
+      local jbin=""
+      if [ -n "$jhome" ] && [ -x "$jhome/bin/java" ]; then jbin="$jhome/bin/java"; fi
+      [ -n "$jbin" ] || jbin="$(command -v java 2>/dev/null || echo none)"
+      local jcbin=""
+      if [ -n "$jhome" ] && [ -x "$jhome/bin/javac" ]; then jcbin="$jhome/bin/javac"; fi
+      [ -n "$jcbin" ] || jcbin="$(command -v javac 2>/dev/null || echo none)"
+      echo "JAVA_HOME=${jhome:-none}"
+      echo "JAVA_BIN=$jbin"
+      if [ "$jbin" = "none" ]; then
+        echo "JAVA_VERSION=none"
+        echo "JDK_RELEASE=none"
+      else
+        echo "JAVA_VERSION=$("$jbin" -version 2>&1 | head -1)"
+        echo "JDK_RELEASE=$("$jbin" -version 2>&1 | head -1 | sed -E 's/.*version "([0-9]+).*/\1/')"
+      fi
+      echo "JAVAC_BIN=$jcbin"
+      if [ "$jcbin" = "none" ]; then
+        echo "JAVAC_VERSION=none"
+      else
+        echo "JAVAC_VERSION=$("$jcbin" -version 2>&1 | head -1)"
+      fi
       ;;
     *) ;;
   esac
@@ -325,7 +351,8 @@ init_config() {
   },
   "toolchains": {
     "node": { "bin": "$(command -v node 2>/dev/null || echo none)", "version": "$(node -v 2>/dev/null || echo none)", "npmBin": "$(command -v npm 2>/dev/null || echo none)", "npmVersion": "$(npm -v 2>/dev/null || echo none)" },
-    "python": { "bin": "$(command -v python 2>/dev/null || echo none)", "version": "$(python --version 2>&1 | awk '{print $2}')", "pipBin": "$(command -v pip 2>/dev/null || echo none)", "uvBin": "$(command -v uv 2>/dev/null || echo none)" }
+    "python": { "bin": "$(command -v python 2>/dev/null || echo none)", "version": "$(python --version 2>&1 | awk '{print $2}')", "pipBin": "$(command -v pip 2>/dev/null || echo none)", "uvBin": "$(command -v uv 2>/dev/null || echo none)" },
+    "java": { "home": "${JAVA_HOME:-none}", "bin": "$(command -v java 2>/dev/null || echo none)", "version": "$(java -version 2>&1 | head -1)", "javacBin": "$(command -v javac 2>/dev/null || echo none)", "javacVersion": "$(javac -version 2>&1 | head -1)", "release": "$(java -version 2>&1 | head -1 | sed -E 's/.*version \"([0-9]+).*/\1/')" }
   }
 }
 EOF
@@ -367,6 +394,31 @@ install_deps() {
         (cd "$tpl" && python -m pip install --quiet ruff mypy pytest)
       fi
       ;;
+    java)
+      # JVM 的「模板工具链」分两层：JDK 是**机器级**的（装在机器上，不随模板走），
+      # 构建器是**项目级**的（靠项目自带 wrapper）。所以这 recipe 不下载任何东西，
+      # 只确认 JDK 在位并把构建器的首次联网行为说清楚。
+      local jhome="${JAVA_HOME:-}"
+      if [ -z "$jhome" ] && [ -f "$CONFIG" ]; then
+        jhome="$(node -e 'try{const c=require(process.argv[1]);process.stdout.write(c.toolchains?.java?.home||"")}catch(e){}' "$CONFIG" 2>/dev/null)"
+      fi
+      if [ -n "$jhome" ] && [ -x "$jhome/bin/javac" ]; then
+        echo "  JDK: $jhome ($("$jhome/bin/javac" -version 2>&1))"
+      elif command -v javac >/dev/null 2>&1; then
+        echo "  JDK: $(command -v javac) ($(javac -version 2>&1))"
+      else
+        echo "ERROR: 没有可用的 JDK（javac）" >&2
+        echo "  处置: 装一个受支持的 JDK 并设 JAVA_HOME；机器事实记在 config.json 的 toolchains.java" >&2
+        exit 1
+      fi
+      if [ -f "$tpl/mvnw" ]; then
+        echo "  构建器: Maven wrapper（首次运行会联网取 Maven 发行版）"
+      elif [ -f "$tpl/gradlew" ]; then
+        echo "  构建器: Gradle wrapper（首次运行会联网取 Gradle 发行版）"
+      else
+        echo "  构建器: 未配 wrapper —— Maven/Gradle 相关条目按声明检查，不做联网构建"
+      fi
+      ;;
     *) echo "ERROR: no install-deps recipe for lang '$lang'" >&2; exit 1 ;;
   esac
   echo "toolchain ready"
@@ -377,6 +429,7 @@ case "${1:-}" in
   detect) shift; detect_area "${1:-}" ;;
   probe) shift; probe_root "${1:?usage: probe <installRoot>}" ;;
   plugins) shift; plugins_report "${1:-}" ;;
+  toolchain) shift; toolchain_facts "${1:?usage: toolchain <node|python|jdk>}" ;;
   init) shift; init_config "${1:?usage: init <installRoot> [projectPath]}" "${2:-}" ;;
   install-deps)
     shift

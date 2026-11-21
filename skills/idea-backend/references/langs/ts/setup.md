@@ -27,7 +27,7 @@ bash scripts/setup-env.sh probe  <IDEA安装根>   # 机器事实（含 IDEA_TS_
 3. **接项目**：
    - **已有项目** → `node scripts/inspect-project.mjs <项目目录>` 判语言与形态（`LANG=ts` + `SHAPE=node|web|unknown`）、列关键事实，再按 `--ids` 输出该形态适用的清单条目；
    - **新项目** → `bash scripts/init-project.sh <目标项目目录> --lang ts --template ts-project|ts-web --name <包名>`；
-   - 然后照 [setup-0to1.md](setup-0to1.md) 在 IDE 里逐条勾选。
+   - 然后照 [TS 逐步操作手册](setup-manual.md) 在 IDE 里逐条勾选。
 
 ## 模板即版本组合（别乱改）
 

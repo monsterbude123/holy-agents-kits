@@ -131,6 +131,8 @@ echo
 echo "Next: run  bash scripts/verify-item.sh --lang $LANG --all  from the skill dir, then follow"
 if [ -f "$SKILL_DIR/references/langs/$LANG/setup.md" ]; then
   echo "references/langs/$LANG/setup.md for the setup steps."
+elif [ -f "$SKILL_DIR/references/langs/$LANG/setup-manual.md" ]; then
+  echo "references/langs/$LANG/setup-manual.md for the setup steps."
 else
-  echo "references/langs/$LANG/setup-0to1.md for the setup steps."
+  echo "references/langs/$LANG/ for the setup steps."
 fi

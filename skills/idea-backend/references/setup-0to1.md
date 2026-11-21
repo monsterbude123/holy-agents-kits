@@ -193,7 +193,7 @@ curl -X POST ... -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'   # 结果�
 - **内置 MCP 工具面 20→25**：新增 `search_symbol`、`analyze_calls`、`read_file`（依赖/JDK 源码与反编译）、`lint_files`、`build_project`、`apply_patch`，搜索类更名 `search_text/search_regex/search_file`。2025.3 的 20 工具清单已过时。
 - **Index 插件（29170）在 262 上"名字索引"缺陷消失**：`ide_find_class`/qualifiedName 查询正常（253 + v5.20.6(253) 上一律返回空，当时只能位置法兜底）。升级后重测，勿照搬历史结论。
 - Index 插件下载 `build=` 参数填当前 IDE build（如 `IU-262.12573.28`），插件 zip 解压进用户插件目录 `%APPDATA%\JetBrains\IdeaIC<ver>\plugins\`。
-- **2026.2.5 不捆绑 Lombok 插件**（2025.3 是捆绑的）。症状：`get_file_problems`/`ide_diagnostics` 对 Lombok 代码系统性误报（`Cannot resolve symbol 'log'`、`Cannot resolve method 'getXxx()'`）。修复：marketplace id=6317（XML id `Lombook Plugin`，拼写如此），`pluginManager?action=download&id=Lombook%20Plugin&build=IU-262...` 下载后解压进用户插件目录重启。验证方式：同一文件 errors 应归零。
+- **Lombok 误报的根因不是插件（2026-11-22 更正）**：此前记的「2026.2.5 不捆绑 Lombok」是**错的** —— Lombok 仍在 IDEA 平台源码树里（`plugins/lombok`，vendor = JetBrains，自 2020.3 起集成），2026.2 官方文档也从未提到它。`get_file_problems`/`ide_diagnostics` 对 Lombok 代码系统性误报（`Cannot resolve symbol 'log'`、`Cannot resolve method 'getXxx()'`）的**真正根因是构建没跑注解处理**：① 构建脚本没声明 lombok 处理器（Maven 的 `annotationProcessorPaths` / Gradle 的 `annotationProcessor` 依赖），或 ② IDE 没委派构建给 Maven/Gradle、也没手动开注解处理。处置顺序：先查这两处（见 `references/langs/java/checklist.json` 的 `annotation-processing-enabled` 与 `idea-settings.json` 的 `idea-lombok-annotation-processing`），再考虑 marketplace 侧载（id=6317，XML id 拼写是 `Lombook Plugin`）。
 - 新版首次启动会全量重建索引（253 的索引缓存不通用），大项目需等待。
 
 ## 11. 全量 inspection 门禁（headless inspect.bat，官方路径）
