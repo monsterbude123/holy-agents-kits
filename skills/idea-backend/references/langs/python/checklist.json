@@ -157,12 +157,12 @@
   },
   {
     "id": "ide-plugin-gate",
-    "title": "先判 Python 插件在不在（社区版没有 Python 语言插件）",
+    "title": "先判 Python 插件在不在（社区版装 \"Python Community Edition\"）",
     "category": "ide-gate",
-    "action": "用 `bash scripts/setup-env.sh probe <IDEA安装根>` 看 IDEA_PYTHON_PLUGINS 与 IDEA_PYTHON_GATE：插件不在 = 这台 IDE 没有 Python 语言支持（Marketplace 上 Python 语言插件只发布到 Ultimate），要么装到支持它的 IDE，要么改用命令行工具链（uv/ruff/mypy/pytest）。",
-    "verify": "T1=$(mktemp -d) && mkdir -p \"$T1/bin\" \"$T1/plugins/python\" && : > \"$T1/bin/idea64.exe\" && printf '{\"productCode\":\"IU\",\"version\":\"2026.2.5\",\"buildNumber\":\"IU-262.1\",\"dataDirectoryName\":\"IdeaIU2026.2\"}' > \"$T1/product-info.json\" && U=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T1\") && T2=$(mktemp -d) && mkdir -p \"$T2/bin\" && : > \"$T2/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T2/product-info.json\" && C=$(bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T2\") && rm -rf \"$T1\" \"$T2\" && echo \"$U\" | grep -q '^IDEA_PYTHON_PLUGINS=present$' && echo \"$C\" | grep -q '^IDEA_PYTHON_PLUGINS=absent$' && echo \"$C\" | grep -q '^IDEA_PYTHON_GATE=ultimate$'",
-    "source": "https://plugins.jetbrains.com/api/plugins/631/updates?size=1",
-    "quote": "\"products\": [\"JBCLIENT\",\"IDEA_PRO\"]",
+    "action": "用 `bash scripts/setup-env.sh plugins <IDEA安装根>` 看 `LANG_PLUGIN python edition-gate=community python=absent python-ce=present`：**社区版能装 Python**（Marketplace id 7322「Python Community Edition」，xmlId `PythonCore`，目录名 `python-ce`），Ultimate 装的是完整版（id 631，目录名 `python`）。插件不在 = 这台 IDE 还没有 Python 语言支持 → 装上对应条目后**重启 IDEA**；若这台 IDE 装不了（能力模块缺失），改用命令行工具链（uv/ruff/mypy/pytest）当权威源。",
+    "verify": "T0=$(mktemp -d) && T1=$(mktemp -d) && mkdir -p \"$T1/bin\" \"$T1/plugins/python/lib\" && : > \"$T1/bin/idea64.exe\" && printf '{\"productCode\":\"IU\",\"version\":\"2026.2.5\",\"buildNumber\":\"IU-262.1\",\"dataDirectoryName\":\"IdeaIU2026.2\"}' > \"$T1/product-info.json\" && T2=$(mktemp -d) && mkdir -p \"$T2/bin\" && : > \"$T2/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T2/product-info.json\" && T3=$(mktemp -d) && mkdir -p \"$T3/bin\" \"$T3/plugins/python-ce/lib\" && : > \"$T3/bin/idea64.exe\" && printf '{\"productCode\":\"IC\",\"version\":\"2026.2.5\",\"buildNumber\":\"IC-262.1\",\"dataDirectoryName\":\"IdeaIC2026.2\"}' > \"$T3/product-info.json\" && U=$(APPDATA=\"$T0\" bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T1\") && C=$(APPDATA=\"$T0\" bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T2\") && CE=$(APPDATA=\"$T0\" bash \"$SKILL_DIR/scripts/setup-env.sh\" probe \"$T3\") && rm -rf \"$T0\" \"$T1\" \"$T2\" \"$T3\" && echo \"$U\" | grep -q '^IDEA_PYTHON_PLUGINS=present$' && echo \"$C\" | grep -q '^IDEA_PYTHON_PLUGINS=absent$' && echo \"$C\" | grep -q '^IDEA_PYTHON_GATE=community$' && echo \"$CE\" | grep -q '^IDEA_PYTHON_PLUGINS=present$'",
+    "source": "https://plugins.jetbrains.com/api/plugins/7322/compatible-products",
+    "quote": "[\"ANDROID_STUDIO\",\"CLION\",\"DATASPELL\",\"DBE\",\"GOLAND\",\"IDEA\",\"JBCLIENT\",\"PYCHARM\",\"RIDER\",\"RUST\",\"WEBSTORM\"]",
     "applies_to": [
       "any"
     ]

@@ -158,6 +158,30 @@ curl -X POST ... -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'   # 结果�
 - ⚠️ **已知缺陷（本机实测，v5.20.6）**：按名字查（`ide_find_class` 连 JDK `String`、qualifiedName 方式）一律返回空；**位置法（file+line+column）完全正常**且返回可复用 symbolId。绕过：grep 定位 → 位置法调用。待插件升级重测。
 - 其 `ide_diagnostics` 的深度分析要求文件已打开（可用内置 `open_file_in_editor` 配合）。
 
+## 7.5 语言插件（把某门语言接进 IDEA）—— 2026-11-22 实测增补
+
+**先判门禁再装**：社区版能不能装某门语言，查 [capability-matrix.md](capability-matrix.md) §3.1/§3.2（**别照抄 Marketplace 的 compatible-products**——那是声明，IDEA 的加载日志才是事实）。
+
+| 语言 | 社区版 | 装什么 |
+|---|---|---|
+| Python | ✅ **能** | Marketplace **"Python Community Edition"**（id **7322**，xmlId `PythonCore`）—— 社区版在 Marketplace 里能正常安装 |
+| Java/Kotlin | ✅ 捆绑 | 无需装 |
+| TS/JS、Go、Rust | ❌ | 侧载**实测不可用**（见 [langs/ts/runtime.md](langs/ts/runtime.md) §6.2 与 Go/Rust 分册）→ 平替 WebStorm / RustRover / GoLand |
+
+**装语言插件的通用动作**：
+
+1. **版本必须对上 IDE build**：查 `<IDEA安装根>/product-info.json` 的 `buildNumber`（本机 `IC-262.12573.28`）→ 到
+   `https://plugins.jetbrains.com/api/plugins/<id>/updates?size=40` 找 `compatibleVersions` 里含该 build 段的版本，
+   下载用 `https://plugins.jetbrains.com/plugin/download?updateId=<id>`；
+2. **Marketplace 里能搜到的，优先走 Marketplace 安装**（自动处理证书与更新）；只有 Marketplace 不给社区版时才考虑侧载 ZIP；
+3. **侧载 ZIP 的落点**：`%APPDATA%\JetBrains\IdeaIC<ver>\plugins\<插件目录名>\`（**用户插件目录**，不是安装目录 —— 丢进安装目录实测不加载），ZIP 顶层目录名保持原样；
+4. **装完必须重启 IDEA**，然后看日志确认：
+   `grep "Loaded custom plugins" idea.log` 里出现该插件；
+   Index 插件侧还要看 `grep "plugin detected via plugin ID" idea.log` —— **这一行才是"语言被认出来"的真凭据**；
+5. 门禁类失败会在这两处露头（社区版装 JS/TS 的真实原文）：
+   `Plugin 'JavaScript and TypeScript' (JavaScript) has dependency on 'intellij.platform.webide' which is not installed` /
+   `Plugin 'Go' (org.jetbrains.plugins.go) has dependency on 'com.intellij.modules.go-capable' which is not installed`
+
 ## 8. ZCode 接入
 
 项目根 `.mcp.json`（ZCode 支持 `type:"sse"` 与 `type:"http"`）：

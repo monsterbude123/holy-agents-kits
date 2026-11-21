@@ -86,6 +86,15 @@ if [ -d "$LANGS" ]; then
       det="$(node -e 'const fs=require("fs");try{const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(p.detector||"")}catch(e){}' "$d/profile.json")"
       if [ -n "$det" ] && [ -f "$SKILL_DIR/$det" ]; then ok "分册 $lang: 探测器 $det"; else bad "分册 $lang: 探测器缺失（profile.detector=${det:-none}）"; fi
     fi
+    # IDE 侧设置条目：逐条过结构校验（此前这个检查没有任何门禁在跑 = 死检查）
+    if [ -f "$d/idea-settings.json" ]; then
+      ids="$(node -e 'const fs=require("fs");try{const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write((Array.isArray(r)?r:[]).map(x=>x.id).join(" "))}catch(e){}' "$d/idea-settings.json")"
+      bad_ids=""
+      for i in $ids; do
+        bash "$SKILL_DIR/scripts/check-registry-entry.sh" "$i" --lang "$lang" >/dev/null 2>&1 || bad_ids="$bad_ids $i"
+      done
+      if [ -z "$bad_ids" ]; then ok "分册 $lang: IDE 侧设置条目结构校验（$(echo "$ids" | wc -w) 条）"; else bad "分册 $lang: IDE 侧设置条目不合格 →$bad_ids"; fi
+    fi
   done
   if node "$SKILL_DIR/scripts/verify-quotes.mjs" >/dev/null 2>&1; then
     ok "溯源门禁: 每条 quote 都能在 sources.md 逐字命中"

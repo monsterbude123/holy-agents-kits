@@ -22,8 +22,12 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 | 语言 | 分册 | edition 门禁 | 配置侧清单 | 运行期档位（L0 文件→L5 重构） |
 |---|---|---|---|---|
 | JVM（Java/Kotlin） | [references/langs/java/setup.md](references/langs/java/setup.md) | community（捆绑） | 27 条 ✅ 全自证 | L0-L3 ✅ · L4 ⚠️需 monster 插件 · L5 ✅ |
-| TS / JavaScript | [references/langs/ts/setup.md](references/langs/ts/setup.md) | **ultimate**（社区版装不了 JS/TS 插件栈） | 64 条 ✅ 全自证 | L0-L1 ✅ · L2 静默失效 · L3 恒空 → [档位实测](references/langs/ts/runtime.md) |
-| Python | [references/langs/python/setup.md](references/langs/python/setup.md) | **ultimate**（社区版没有 Python 语言插件；Ruff 这类工具插件社区版可装） | 16 条 ✅ 全自证 | L0-L1 ✅ · L2 静默失效 · L3+ 未实测 |
+| Python | [references/langs/python/setup.md](references/langs/python/setup.md) | **community**（装 "Python Community Edition"，id 7322，**实测**） | 16 条 ✅ 全自证 | **L0-L3 ✅ · L4 ⚠️需 monster 插件 · L5 ✅** → [档位实测](references/langs/python/runtime.md) |
+| TS / JavaScript | [references/langs/ts/setup.md](references/langs/ts/setup.md) | **ultimate**（社区版装不了；侧载实测不可用） | 64 条 ✅ 全自证 | L0-L1 ✅ · L2 静默失效 · L3 恒空 → [档位实测](references/langs/ts/runtime.md) |
+| Go / Rust | 无分册 | **ultimate**（社区版不提供 `go-capable`/`rust-capable` 能力模块 → 插件硬装不上） | — | L0-L1 ✅ · L2+ 结构性不可用 → [矩阵 §3.1-§3.4](references/capability-matrix.md) |
+
+**平替（社区版顶不住时的官方路线，2026-11 核对官方页面）**：TS/JS → **WebStorm**（非商业免费）· Rust → **RustRover**（非商业免费）· Go → **GoLand**（付费，无免费档）· 全部 → IDEA Ultimate（付费）。
+这些 IDE **都自带内置 MCP server** → 换过去后 `search_symbol`/`analyze_calls` 有真 PSI（社区版里这些工具对没有语言插件的语言是**返回空而不是报错**）。
 
 **没有分册的语言**：只走通用能力（文件索引 / 文本检索 / IDE GUI 重构），明确告诉用户"这门语言还没有分册"，并按 [references/capability-matrix.md](references/capability-matrix.md) §5 的契约补一册。
 
@@ -35,7 +39,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 2. **Index 插件 MCP**：对 `http://127.0.0.1:29170/index-mcp/streamable-http` POST 空 JSON-RPC 返回 4xx（非连接拒绝）即端点存活；**索引就绪**：`ide_index_status` 的 `isDumbMode:false && isIndexing:false`；
 3. **索引归属**：`ide_project_status` 里 open project 的路径 = 你要改的那棵树。**worktree 嵌在主检出内**（`<repo>/.worktrees/x`）会解析到主检出 → 静默拿到**另一分支**的索引（`ide_sync_files` 修不了）；不对就停手换检出；
 4. **工具面**：`bash scripts/mcp-call.sh has index ide_inspect`。上游插件版**没有** `ide_inspect`（整条审查流水线会走降级路径）；**工具面以 `mcp-call.sh list index` 实测为准，不以文档为准**；
-5. **语言插件在位**：`bash scripts/setup-env.sh plugins <IDEA安装根>` —— 逐语言给出「插件在不在 + edition 门禁」。**先看这张表再决定这门语言能不能做**（社区版装不了 JS/TS 与 Python 的**语言插件**；但 Go 语言插件、Ruff 这类**工具插件**社区版可装 → 门禁是每个插件一行，见能力矩阵 §3.1）。
+5. **语言插件在位**：`bash scripts/setup-env.sh plugins <IDEA安装根>` —— 逐语言给出「插件在不在 + edition 门禁」。**先看这张表再决定这门语言能不能做**。社区版装不上的语言插件：**JS/TS（22069）、Go（9568）、Rust（22407）**；**Python 可以**（走 "Python Community Edition"，id 7322）。门禁是每个插件一行，判定机制见 [references/capability-matrix.md](references/capability-matrix.md) §3.1。
 
 **新机器首次定位 IDEA（隐私规则，用户裁定：默认禁止全局扫描）**：config 不存在时 → `setup-env.sh roots` 列建议区域 → **先问用户** IDEA 在哪 → 用户确认后 `detect <该区域>` 定向探测 → `init <root>` 生成 config。
 **平台支持**：检索/分析/检视在 Windows/Linux 均可用（Linux：启动器 `bin/idea.sh`、headless `bin/inspect.sh`、config 在 `~/.config/JetBrains/IdeaIC<ver>`）；安装细节目前为 Windows 实录，`setup-env.sh` 已双平台兼容。
@@ -66,7 +70,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
    - **审查基线（主场景）**：`bash scripts/audit-baseline.sh [projectPath] [batchSize=25] [--whole]` —— 自动门禁 → 分批检视 → 归一化 `file:line | tool | desc` 清单分 MAIN/TEST/NOISE 三段。**手搓 curl 跑 6+ 次检视 = 25 分钟，它 28 秒**
    - **改动后门禁**：`bash scripts/inspect-diff.sh` —— 自动取 `git diff HEAD + untracked` 代码文件集 → 检视 → 问题清单（`--all` 含文档）；任意工具调用：`bash scripts/mcp-call.sh index <tool> '<json-args>' [timeoutSec]`（或 `builtin`），输出即 content[0].text
 1. **先验就绪**：`ide_index_status` 通过后再做语义查询；VFS 落后先 `ide_sync_files`。
-2. **symbolId 复用**：名字法（`ide_find_class` → symbolId）先定位，拿到 `symbolId` 后续引用/层级调用复用它；位置法（`file` + `line`/`column` 1-based 落符号首字符 + `language`）是兜底 —— **但语言参数只放行部分语言**（JVM 用 `java`；TS 仓会报错，见分册）。
+2. **symbolId 复用**：名字法（`ide_find_class` → symbolId）先定位，拿到 `symbolId` 后续引用/层级调用复用它；位置法（`file` + `line`/`column` 1-based 落符号首字符 + `language`）是兜底 —— **但 `language` 参数的枚举是运行时算的**（= 该插件注册了 SymbolReferenceHandler 且该语言插件被探测到的语言集）：实测 Java/Kotlin/Python 放行、TS 在没有 JS/TS 插件时报错；**Go/Rust 永远不会进枚举**（插件没给它们注册 handler）。见 [references/capability-matrix.md](references/capability-matrix.md) §3.4。
 3. **首轮小范围**：`search_symbol` 显式 `limit:20`；`analyze_calls` 显式 `depth:2, maxChildren:20, maxNodes:100`（官方默认 5/50/1000，截断时用 `cursor`/`treePath` 续读，不要一次拉全树）。
 4. **检索/分析一律走 IDEA MCP（强规则，用户裁定）**：代码检索、引用查找、影响面分析、代码理解全部用上表工具，**不用 grep/rg**——agent 手搓 grep 实际表现 = 反复调参数半天 + sleep 等待 + 假命中再排除。grep 仅当 IDEA server 不可用且任务不可延迟时兜底，须声明。
    | 意图 | 用什么 | 备注 |
@@ -131,7 +135,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 ## 八、参考
 
 - **语言 × 能力档位矩阵（档位定义 / 探测判据 / 升档动作 / 新增分册契约）** → [references/capability-matrix.md](references/capability-matrix.md)
-- **分册内部件**：TS 分册的引文快照 [references/langs/ts/sources.md](references/langs/ts/sources.md)、真实仓库回归记录 [references/langs/ts/field-test.md](references/langs/ts/field-test.md)、逐步操作手册 [references/langs/ts/setup-manual.md](references/langs/ts/setup-manual.md)；Python 分册的引文快照 [references/langs/python/sources.md](references/langs/python/sources.md)；JVM 分册的引文快照 [references/langs/java/sources.md](references/langs/java/sources.md)、档位与检视噪声 [references/langs/java/profile.md](references/langs/java/profile.md)；分册探测器 `scripts/langs/ts/detect.mjs`（通用分发器按语言调用，新增语言照它的形状写）
+- **分册内部件**：TS 分册的引文快照 [references/langs/ts/sources.md](references/langs/ts/sources.md)、运行期档位与侧载实验留档 [references/langs/ts/runtime.md](references/langs/ts/runtime.md)、真实仓库回归记录 [references/langs/ts/field-test.md](references/langs/ts/field-test.md)、逐步操作手册 [references/langs/ts/setup-manual.md](references/langs/ts/setup-manual.md)；Python 分册的引文快照 [references/langs/python/sources.md](references/langs/python/sources.md)、运行期档位实测 [references/langs/python/runtime.md](references/langs/python/runtime.md)；JVM 分册的引文快照 [references/langs/java/sources.md](references/langs/java/sources.md)、档位与检视噪声 [references/langs/java/profile.md](references/langs/java/profile.md)；Go/Rust 分册的门禁与平替 [references/langs/go/setup.md](references/langs/go/setup.md) / [references/langs/rust/setup.md](references/langs/rust/setup.md)、档位 [references/langs/go/runtime.md](references/langs/go/runtime.md) / [references/langs/rust/runtime.md](references/langs/rust/runtime.md)、引文底账 [references/langs/go/sources.md](references/langs/go/sources.md) / [references/langs/rust/sources.md](references/langs/rust/sources.md)；分册探测器 [scripts/langs/ts/detect.mjs](scripts/langs/ts/detect.mjs) / [scripts/langs/java/detect.mjs](scripts/langs/java/detect.mjs) / [scripts/langs/python/detect.mjs](scripts/langs/python/detect.mjs) / [scripts/langs/go/detect.mjs](scripts/langs/go/detect.mjs) / [scripts/langs/rust/detect.mjs](scripts/langs/rust/detect.mjs)（通用分发器按语言调用，新增语言照它的形状写）
 - **审查→修复流水线（方法论 + 时间预算 + 反例集 + 子代理模板 + MCP 授权清单）** → [references/audit-fix-playbook.md](references/audit-fix-playbook.md)
 - **运维备忘（工具面实测、降级能力差距、终端真实语义、路径坑、索引归属）** → [references/ops-memo.md](references/ops-memo.md)
 - **IDEA 安装与部署（版本事实、目录、踩坑实录）** → [references/setup-0to1.md](references/setup-0to1.md)

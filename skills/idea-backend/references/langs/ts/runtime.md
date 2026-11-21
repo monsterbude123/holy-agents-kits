@@ -11,11 +11,14 @@
 |---|---|---|
 | 文件索引 / 按名找文件 | ✅ 可用 | `ide_find_file` 能列出 .ts/.tsx |
 | 文本检索 | ✅ 可用 | `ide_search_text` + `wholeWord` + `context=code` → 13/13 真命中 |
-| 符号级（定义/引用/调用链） | ⚠️ **静默失效** | 位置法解析到**目录符号**；`language` 只放行 Java |
+| 符号级（定义/引用/调用链） | ⚠️ **静默失效** | 位置法解析到**目录符号**；`language` 参数**当前只放行 Java**（枚举是运行时算的，见 §6.1） |
 | 文件级检视 | ⚠️ **恒空** | `ide_diagnostics` 对 TS 文件连语法错误都不报 |
 | 语义重构 | ⚠️ 不可靠 | 改名/抽方法内部同样走位置法 |
 
 ⇒ **在当前插件构建下，TS/JS 的运行期可靠面 = 文本级 + 文件级索引**；语义级与检视级要等插件支持（见 §6）。这不是"TS 不行"，是**这一档位的边界**，换个 IDE 版本/插件构建可能就升档了。
+
+> ⚠️ **不要把"社区版装不了 JS/TS 插件"当成终点** —— 2026-11-22 实测：侧载官方 JS/TS 插件进社区版**确实能加载**（见 §6.2），
+> 但运行期缺 33 个专有类 → 每次开文件都抛 → **工程实际不可用**。平替是 **WebStorm**（非商业免费），矩阵见 [../../capability-matrix.md](../../capability-matrix.md) §3.3。
 
 ---
 
@@ -109,3 +112,30 @@ bash scripts/mcp-call.sh index ide_search_text \
 - 复查方式二：对一个 TS 符号做一次位置法查询，看 `resolvedSymbol.kind` 是否变成代码符号（不再是 `directory`）；
 - 复查方式三：`language:"TypeScript"` + `symbol:"src/xxx#exportName"` 是否不再被拒；
 - 三条都过了 → 本文档 §1 的"失效"结论作废，TS 仓可回到"符号级 + 检视级"路线，届时把 §0 的档位表更新即可。
+
+### §6.1 `language` 参数的枚举是**运行时算的**（2026-11-22 实测更正）
+
+此前记的「server 端只放行 Java 符号解析」**说窄了**。真实机制（实测 + 插件字节码核实）：
+
+- `language` 枚举 = **注册了 SymbolReferenceHandler、且对应语言插件被探测到**的语言集合，**不是写死的**；
+- 实测证据：装上 **Python Community Edition** → 日志 `Registered SymbolReferenceHandler for Python` → 枚举多出 `Python`；
+- 有 SymbolReferenceHandler 的语言：Java、Kotlin（走 Java 那个）、JavaScript、TypeScript、Python、PHP；
+  **没有的**：Go、Rust、Scala、Markdown —— 这几门**装什么插件都不会进枚举**（`GoHandlers` 只注册 CallHierarchy+TypeHierarchy，`RustHandlers` 只多一个 Implementations）；
+- ⇒ 「枚举里没有这门语言」有两种成因，要分开判：**① 语言插件没装**（可解）vs **② 插件没有这门的 handler**（不可解）。
+
+### §6.2 侧载 JS/TS 插件进社区版：能加载，但**不可用**（2026-11-22 实测全过程）
+
+结论先写：**这条路走不通，不要再重复这个实验。** 过程与证据留档，供别人判断：
+
+| 步骤 | 事实 |
+|---|---|
+| 取插件 | Marketplace id 22069 的 `updateId=1219647`，版本 **262.12573.28**（与本机 IDE build 精确一致）→ `https://plugins.jetbrains.com/plugin/download?updateId=1219647` |
+| 装哪 | 解压到 `%APPDATA%\JetBrains\IdeaIC<ver>\plugins\javascript-plugin\`（**用户插件目录**，不是安装目录） |
+| 装完能不能加载 | **不能**：`idea.log` → `Plugin 'JavaScript and TypeScript' (JavaScript) has dependency on 'intellij.platform.webide' which is not installed` → `intellij.javascript.analysis.impl` → `testing` → `backend` → 整个插件被排除 |
+| 门禁是什么 | **不是** `com.intellij.modules.ultimate`（插件顶层 `<depends>` 为 **0**；ultimate 只出现在 2 个 content module 里：`intellij.javascript.duplicatesDetection` 与 `intellij.javascript.ultimate`，属"按模块跳过"）。挡住的是**平台模块** `intellij.platform.webide`（社区版平台里没有） |
+| 摘掉它之后 | **插件真的加载了**：`Loaded custom plugins: JavaScript and TypeScript (262.12573.28)`；Index 插件打出 `JavaScript plugin detected via plugin ID (JavaScript)` + `Registered SymbolReferenceHandler for JavaScript/TypeScript`；JS 索引也建起来了（`js.custom.single.entry.index` / `TypeScriptConfigIndexData` / `js.package.index`） |
+| 但为什么还是不能用 | 运行期缺 **`com.intellij.webcore.*` 共 33 个类**（`ScriptingLibraryMappings` / `ScriptingLibraryManager` / `ScriptingLibraryModel` / `ScriptingLibraryTable` / `PackageManagementService` / `ui/*` …），它们只在 IDEA Ultimate / WebStorm 里（`intellij.platform.webide` 模块，**不在开源 intellij-community**）。缺类在 `SingleRootFileViewProvider` / `CodeInsightContextManagerImpl` / `FileManagerImpl.isExcludedOrIgnored` 上抛 → **每次开文件/走索引都炸** → 现象是：VFS 正常（`list_directory_tree` 有内容），但**所有基于索引的检索全返回空**（`ide_find_file`/`ide_search_text`/`ide_search_regex` 全 0 命中），工程看着像空的 |
+| 收尾 | 已把插件目录移出（备份留在本机 `.auto`），IDEA 恢复健康 |
+
+⇒ **判据沉淀**：某门语言在社区版能不能用，看它**运行时**会不会碰到付费平台模块的类 —— descriptor 里看不出来（那 33 个类藏在 content module 的字节码常量池里），
+只有真装真跑才会暴露。**平替 = WebStorm**（非商业免费，自带内置 MCP server → TS 有真 PSI）。

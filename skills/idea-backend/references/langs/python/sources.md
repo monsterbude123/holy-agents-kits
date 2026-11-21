@@ -156,3 +156,29 @@ Ruff（id 20574）最新版的 compatibleVersions（含社区版）：
 > Instead of using a `mypy.ini` file, a `pyproject.toml` file (as specified by PEP 518) may be used instead.
 
 > The `[mypy]` section should have `tool.` prepended to its name:
+
+---
+
+## [P11] Python Community Edition —— JetBrains 官方 Marketplace 条目（社区版 Python 语言插件）
+- URL: https://plugins.jetbrains.com/api/plugins/7322
+- 兼容列表 URL: https://plugins.jetbrains.com/api/plugins/7322/compatible-products
+- 用于条目：python 门禁段（[setup.md](setup.md) 的"版本门禁"节、[runtime.md](runtime.md) 的 §1）
+- 抓取时间：2026-11-22。**这是本分册此前记错的那条事实的更正依据** —— Python 不是"社区版装不了"。
+
+> The Python plug-in provides smart editing for Python scripts. The feature set of the plugin
+ corresponds to PyCharm IDE Community Edition.
+
+（`id` = 7322，`name` = "Python Community Edition"，`xmlId` = `PythonCore`，vendor = JetBrains）
+
+> ["ANDROID_STUDIO","CLION","DATASPELL","DBE","GOLAND","IDEA","JBCLIENT","PYCHARM","RIDER","RUST","WEBSTORM"]
+
+（`compatible-products` 的原文数组 —— 含 `IDEA`；**注意 Marketplace 的 `IDEA` 表示 IntelliJ IDEA 这个产品（社区版也在内），
+`IDEA_PRO` 才表示 Ultimate** —— 判据见 [../../capability-matrix.md](../../capability-matrix.md) §3.2。）
+
+**社区版为什么装得上（本机实测取证）**：插件级依赖 `com.intellij.modules.python-core-capable`，
+而 IDEA 社区版平台裁剪包 `lib/intellij.idea.community.customization.jar` 的 `META-INF/IdeaPlugin.xml` 里声明了：
+
+> <module value="com.intellij.modules.python-core-capable" />
+
+（同一张表里还有 `com.intellij.modules.java-capable` 与 `com.intellij.modules.python-in-non-pycharm-ide-capable`；
+**没有** `go-capable` / `rust-capable` —— 这就是 Go/Rust 插件在社区版装不上的根因。）

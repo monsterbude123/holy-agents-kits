@@ -56,8 +56,8 @@ node -e '
       process.exit(1);
     }
   }
-  if(!["any","ultimate"].includes(e.edition)){
-    console.error("registry entry "+id+" has an invalid edition: "+e.edition);
+  if(!["any","community","ultimate"].includes(e.edition)){
+    console.error("registry entry "+id+" has an invalid edition: "+e.edition+" (取值：any/community/ultimate)");
     process.exit(1);
   }
 ' "$ID"

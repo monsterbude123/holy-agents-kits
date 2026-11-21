@@ -1,0 +1,20 @@
+{
+  "lang": "go",
+  "displayName": "Go",
+  "markers": [
+    "go.mod",
+    "go.sum"
+  ],
+  "pluginDirs": [
+    "go-plugin"
+  ],
+  "bundledIn": [],
+  "edition": "ultimate",
+  "toolchain": "go",
+  "checklist": null,
+  "settings": null,
+  "templates": [],
+  "detector": "scripts/langs/go/detect.mjs",
+  "note": "Go 语言插件（Marketplace id 9568，xmlId `org.jetbrains.plugins.go`）**社区版装不上**：它依赖 `com.intellij.modules.go-capable` 能力模块，而 IDEA 社区版平台裁剪包只声明了 java-capable / python-core-capable / python-in-non-pycharm-ide-capable 三个 → IDEA 加载器直接拒（2026-11-22 实测：`Plugin 'Go' (org.jetbrains.plugins.go) has dependency on 'com.intellij.modules.go-capable' which is not installed`）。**门禁是产品定位**（Go 归 GoLand），不是配置问题。平替见 setup.md。",
+  "registryNote": "Go 语言服务在 IDE 侧的配置落点未取证（社区版根本装不上）→ registries 留空，别凭印象写。"
+}

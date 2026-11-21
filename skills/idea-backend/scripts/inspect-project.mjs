@@ -78,8 +78,8 @@ const facts = { PROJECT_DIR: DIR, LANG: profile ? profile.lang : 'unknown', LANG
 const conditions = new Set(['any']);
 
 if (profile) {
-  const detectorPath = join(SKILL_DIR, profile.detector);
-  if (existsSync(detectorPath)) {
+  const detectorPath = profile.detector ? join(SKILL_DIR, profile.detector) : null;
+  if (detectorPath && existsSync(detectorPath)) {
     // 分册探测器是独立进程：只吐 key=value 事实行，条件集合走 CONDITIONS=
     const res = spawnSync(process.execPath, [detectorPath, DIR], { encoding: 'utf8' });
     if (res.status === 0) {
