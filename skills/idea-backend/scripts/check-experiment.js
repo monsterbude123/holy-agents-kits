@@ -10,11 +10,15 @@
  *      召回与精度能被 gold 与实测命中数重算出来。
  *   3. **results.md ↔ results.json 逐列对账**：人读表与机器凭证必须逐列一致
  *      （**不许退化成「表里出现这个数字就算对上」**）。
+ *   4. **凭证卫生**：evidence / metrics.detail 里不许有本机绝对路径（普通形态与 URL 编码形态都拦）、
+ *      `raw` 不许是空壳（非空 + 长度下限）、诊断格（scope=diagnostics 且 status=完成）的
+ *      问题条数与类型要合 gold 事先写死的判据（条数 ≥ min_count 且类型属 gold 指定的那类）。
  *
  * 用法：
  *   node scripts/check-experiment.js              # 全查（gold + results + 表）
  *   node scripts/check-experiment.js --gold       # 只查 gold（回仓重数）
  *   node scripts/check-experiment.js --render     # 由 results.json 重新生成 results.md（表不许手写）
+ *   node scripts/check-experiment.js --normalize  # 把凭证里的本机绝对路径归一化成 <repo>（普通 + URL 编码形态）
  *   node scripts/check-experiment.js --selftest   # 反向自测：故意改坏数据，门禁必须转红
  *
  * 契约：stdout 一行/多行结论；退出码 0 = 通过 / 1 = 有问题。
@@ -37,7 +41,8 @@ const STATUS_FAILURE_PAIR = {
   '完成': ['无失败', '漏引用', '误报', '静默失效'],
   '能力缺席': ['能力缺席'],
   '环境未就绪': ['环境未就绪'],
-  '未取': ['环境未就绪', '索引未就绪', '工具报错', '超时'],
+  // 未取 = 没取到数；静默失效 = 工具没报错但结果无效/为空（返 0 条 ≠ 没有问题）
+  '未取': ['环境未就绪', '索引未就绪', '工具报错', '超时', '静默失效'],
   'flaky': FAILURE_MODES,
 };
 // 耗时极差判据：相对极差 > 20% **且** 绝对极差 ≥ 100ms（绝对下限是口径细化：
@@ -45,6 +50,30 @@ const STATUS_FAILURE_PAIR = {
 const FLAKY_REL = 0.20;
 const FLAKY_ABS_MS = 100;
 const RATIO_TOL = 0.006;
+
+// ---- 凭证卫生（机器本地绝对路径 / 空壳 raw / 诊断口径）----
+// 本机绝对路径的两种形态：① 盘符形态 D:/workspace/... ② URL 编码形态 file:///d%3A/workspace/...
+// 盘符字母**前面必须不是字母数字** —— 否则 JSON 转义（"-> str:\n24"）会假阳性。
+const LOCAL_PATH_RE = /(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|[A-Za-z]%3[Aa][\\/])/;
+// 归一化用的仓内相对尾巴（夹具仓根）；本机绝对路径命中它 ⇒ 归一化成 <repo>
+const REPO_TAIL = 'skills/idea-backend/fixtures/experiment/repo';
+// evidence.raw 的长度下限 —— 凭证不许是空壳。
+// 取 16 的理由：本仓最短的真实凭证是 23 字符（`Error: Illegal argument`），16 留 7 字符余量给将来更短的
+// 真实错误消息；低于 16 字符的 raw 只可能是人写的空壳（"" / 空白 / "ok" / "n/a" / "..."）。
+const RAW_MIN_LEN = 16;
+// 「问题类型属语法类」的机器判据（判据写死在门禁里 —— 凭证不许自带判据）：
+//   · 反向：任何一条消息命中「类型 / 风格类」措辞 ⇒ 不是语法错，判红；
+//   · 正向：至少一条消息命中「解析器措辞」⇒ 这批诊断确实是解析器吐的。
+// 措辞来源：IDEA PyPsi（Formal parameter name expected / ':' expected）与 pyright 1.1.414
+//           （Expected parameter name / "(" was not closed / Statements must be separated by ...）。
+const PARSER_MSG_RES = [
+  /\bexpected\b/i, /\bunexpected\b/i, /was not closed/i,
+  /not allowed\b/i, /must be separated\b/i, /invalid syntax/i, /syntax error/i,
+];
+const NON_SYNTAX_MSG_RES = [
+  /not assignable/i, /declared type/i, /cannot be assigned/i, /never used/i, /\bunused\b/i,
+  /is not defined/i, /could not be resolved/i, /cannot find name/i, /unresolved/i,
+];
 
 // ---------------------------------------------------------------- 工具函数
 
@@ -107,6 +136,92 @@ function pythonRejects(file) {
   }
 }
 
+// ---------------------------------------------------------------- 凭证卫生
+
+/** 本机绝对路径泄漏 —— 凭证里只许出现 <repo> / <project> 占位符 */
+function checkNoLocalPath(tag, value, problems) {
+  const s = typeof value === 'string' ? value : JSON.stringify(value);
+  if (!s) return;
+  const m = LOCAL_PATH_RE.exec(s);
+  if (m) problems.push(`本机绝对路径泄漏：${tag} 里有「${m[0]}」—— 机器本地绝对路径要归一化成 <repo> / <project>`);
+}
+
+/** 这条问题消息是不是解析器（语法）措辞 */
+function isParserMessage(msg) {
+  const s = String(msg);
+  if (NON_SYNTAX_MSG_RES.some((re) => re.test(s))) return false;
+  return PARSER_MSG_RES.some((re) => re.test(s));
+}
+
+/**
+ * 诊断格（scope=diagnostics）的判定 —— D-07 事先写死的判据：
+ * 「条数 ≥ 1 且类型属语法类」⇒ 机器判法 = 条数 ≥ gold 的 min_count，且每条问题消息都像解析器诊断
+ * （不得命中类型/风格类措辞），且至少一条命中解析器措辞。
+ */
+function checkDiagnosticsDetail(tag, anchor, cell, problems) {
+  const ep = (anchor && anchor.expect_problems) || {};
+  const min = isNum(ep.min_count) ? ep.min_count : 1;
+  const d = (cell.metrics && cell.metrics.detail) || {};
+  if (!isInt(d.problem_count)) {
+    problems.push(`诊断口径对不上：${tag} 的 metrics.detail.problem_count 缺或不是整数（gold 要求 ≥ ${min}）`);
+  } else if (d.problem_count < min) {
+    problems.push(`诊断口径对不上：${tag} 的 metrics.detail.problem_count=${d.problem_count}，gold 要求 ≥ ${min}`);
+  }
+  const types = d.problem_types;
+  if (!Array.isArray(types) || !types.length) {
+    problems.push(`诊断口径对不上：${tag} 的 metrics.detail.problem_types 缺 —— 问题类型要属 gold 指定的「${ep.type || 'syntax'}」类`);
+    return;
+  }
+  if (isInt(d.problem_count) && d.problem_count !== types.length) {
+    problems.push(`诊断口径对不上：${tag} 的 metrics.detail.problem_count=${d.problem_count} 与 problem_types 的 ${types.length} 条对不上`);
+  }
+  for (const t of types) {
+    const s = String(t);
+    if (NON_SYNTAX_MSG_RES.some((re) => re.test(s)))
+      problems.push(`诊断口径对不上：${tag} 的问题「${s}」命中类型/风格类措辞 —— 不属 gold 指定的「${ep.type || 'syntax'}」类`);
+    else if (!PARSER_MSG_RES.some((re) => re.test(s)))
+      problems.push(`诊断口径对不上：${tag} 的问题「${s}」不是解析器措辞 —— 不属 gold 指定的「${ep.type || 'syntax'}」类`);
+  }
+}
+
+/**
+ * 归一化：把机器本地绝对路径换成占位符（仓内夹具仓 → <repo>）。
+ * 四种形态一起处理：file:///d%3A/...（URL 编码）、裸的 %3A 形态、普通盘符形态；
+ * 分隔符正反斜杠都认（Windows 工具的输出常带反斜杠）。
+ * 盘符形态的盘符字母前面必须不是字母数字（否则 "-> str:\n" 会被误改）。
+ */
+function normalizeLocalPaths(text) {
+  const tail = REPO_TAIL.split('/').join('[/\\\\]');
+  const head = '(?:[^\\s"\'`]*?[/\\\\])?';
+  // ① file:///d%3A/<abs>/<tail>  ⇒  file:///<repo>
+  text = text.replace(new RegExp('file:///([A-Za-z])%3[Aa][\\\\/]' + head + tail, 'gi'), 'file:///<repo>');
+  // ② 裸的 URL 编码盘符形态
+  text = text.replace(new RegExp('(?<![A-Za-z0-9])[A-Za-z]%3[Aa][\\\\/]' + head + tail, 'g'), '<repo>');
+  // ③ 普通盘符形态
+  text = text.replace(new RegExp('(?<![A-Za-z0-9])[A-Za-z]:[\\\\/]' + head + tail, 'g'), '<repo>');
+  return text;
+}
+
+/** 深度遍历所有字符串值并归一化；返回 {value, changed} */
+function normalizeDeep(value) {
+  let changed = false;
+  const walk = (v) => {
+    if (typeof v === 'string') {
+      const n = normalizeLocalPaths(v);
+      if (n !== v) changed = true;
+      return n;
+    }
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const k of Object.keys(v)) out[k] = walk(v[k]);
+      return out;
+    }
+    return v;
+  };
+  return { value: walk(value), changed };
+}
+
 // ---------------------------------------------------------------- 检查项
 
 function checkGold(gold, repoRoot, problems) {
@@ -132,6 +247,17 @@ function checkGold(gold, repoRoot, problems) {
         const rej = pythonRejects(f);
         if (rej === false) bad(`锚点 ${a.id}：${a.decl_file} 本该被 Python 解析器拒绝，却解析成功了`);
         else if (rej === null) problems.push(`WARN 锚点 ${a.id}：本机没有 python，跳过 parse_error 复核`);
+      }
+    }
+    // decl_line 必须真的指着该符号（夹具行号漂移 ⇒ 判红；只核 decl_file 存在是不够的）
+    if (a.decl_file && a.decl_line && a.symbol) {
+      const df = path.join(repoRoot, a.decl_file);
+      if (fs.existsSync(df)) {
+        const lines = fs.readFileSync(df, 'utf8').split(/\r?\n/);
+        const line = lines[a.decl_line - 1];
+        if (line === undefined) bad(`锚点 ${a.id} 的 decl_line ${a.decl_line} 超出 ${a.decl_file} 的行数（${lines.length}）`);
+        else if (!wordHits(line, a.symbol))
+          bad(`锚点 ${a.id} 的 decl_line ${a.decl_line} 上没有符号 ${a.symbol}（该行是「${line.trim()}」）`);
       }
     }
   }
@@ -282,8 +408,16 @@ function checkResults(results, gold, problems) {
         c.evidence.forEach((e, j) => {
           for (const k of ['round', 'tool', 'at', 'elapsed_ms', 'payload_bytes', 'raw'])
             if (e[k] === undefined) problems.push(`字段缺失：${tag} 的 evidence[${j}] 缺 ${k}`);
+          // raw 键存在不算数 —— 它必须真的是一段原始输出（非空 + 长度下限）
+          if (typeof e.raw !== 'string' || !e.raw.trim())
+            problems.push(`凭证是空壳：${tag} 的 evidence[${j}].raw 是空的 —— 原始输出片段不许留空`);
+          else if (e.raw.trim().length < RAW_MIN_LEN)
+            problems.push(`凭证是空壳：${tag} 的 evidence[${j}].raw 只有 ${e.raw.trim().length} 字符（下限 ${RAW_MIN_LEN}）—— 不是工具的真实输出`);
+          checkNoLocalPath(`${tag} 的 evidence[${j}]`, e, problems);
         });
     }
+    // metrics.detail 里也不许有本机绝对路径
+    if (c.metrics && c.metrics.detail) checkNoLocalPath(`${tag} 的 metrics.detail`, c.metrics.detail, problems);
     // 锚点必须在 gold 里，且必须属于该任务的锚点
     let anchor = null;
     if (c.anchor && c.anchor.symbol) {
@@ -293,6 +427,9 @@ function checkResults(results, gold, problems) {
         problems.push(`字段缺失：${tag} 的锚点 ${anchor.id} 不属于任务 ${c.task}（该任务的锚点是 ${(spec.anchors || []).join('、')}）`);
     }
     checkRecallBlock(tag, anchor, c.metrics || {}, c.recall, problems, scope);
+    // 诊断口径（scope=diagnostics）：status=完成 ⇒ 条数 ≥ gold 的 min_count 且类型属 gold 指定的那类
+    if (scope === 'diagnostics' && c.status === '完成' && anchor)
+      checkDiagnosticsDetail(tag, anchor, c, problems);
     // flaky 标注与实测判据一致（命中数不一致 **或** 耗时极差到判据）
     if (c.metrics && Array.isArray(c.metrics.raw_ms) && c.metrics.raw_ms.length === 3) {
       const byTime = isFlakyByTime(c.metrics.raw_ms);
@@ -521,7 +658,7 @@ function selftest() {
     ],
     anchors: [
       { id: 'py_probe_item', lang: 'python', symbol: 'ProbeItem', decl_file: 'py/src/probe_item.py', decl_line: 1, expect_files: ['py/src/probe_consumer.py', 'py/src/probe_item.py'], expect_hits: 2, count_scope: 'py/', file_mask: ['*.py'], normalization: {} },
-      { id: 'py_probe_run', lang: 'python', symbol: 'probe_run', decl_file: 'py/src/probe_item.py', decl_line: 2, expect_files: ['py/src/probe_item.py'], expect_hits: 1, count_scope: 'py/', file_mask: ['*.py'], normalization: {} },
+      { id: 'py_probe_run', lang: 'python', symbol: 'probe_run', decl_file: 'py/src/probe_item.py', decl_line: 4, expect_files: ['py/src/probe_item.py'], expect_hits: 1, count_scope: 'py/', file_mask: ['*.py'], normalization: {} },
       { id: 'py_broken', lang: 'python', symbol: 'broken', decl_file: 'py/src/probe_broken.py', decl_line: 1, expect_files: ['py/src/probe_broken.py'], expect_hits: 1, count_scope: 'py/', file_mask: ['*.py'], expect_problems: { parse_error: true, min_count: 1, type: 'syntax' }, normalization: {} },
       { id: 'ts_probe_item', lang: 'typescript', symbol: 'ProbeItem', decl_file: 'ts/src/alpha.ts', decl_line: 1, expect_files: ['ts/src/alpha.ts'], expect_hits: 1, count_scope: 'ts/', file_mask: ['*.ts', '*.tsx'], normalization: {} },
     ],
@@ -547,12 +684,16 @@ function selftest() {
       } else if (spec.scope === 'impact') {
         metrics.files_reported = anchor.expect_files.slice();
       }
+      if (spec.scope === 'diagnostics') {
+        // 诊断格要有可判的明细（条数 + 类型）—— 否则门禁的诊断口径无从核
+        metrics.detail = { problem_count: 1, problem_types: ['Expected parameter name'] };
+      }
       const recall = recallOf(anchor, metrics, spec.scope);
       cells.push({
         task: spec.id, config: cfg, status: '完成', failure_mode: '无失败',
         anchor: { symbol: anchor.symbol, file: anchor.decl_file, line: anchor.decl_line },
         metrics, recall,
-        evidence: [{ round: 1, tool: 'selftest', arguments: {}, at: '2026-11-22T00:00:00.000+08:00', elapsed_ms: 10, payload_bytes: 100, raw: 'ok' }],
+        evidence: [{ round: 1, tool: 'selftest', arguments: {}, at: '2026-11-22T00:00:00.000+08:00', elapsed_ms: 10, payload_bytes: 100, raw: 'selftest raw output —— 原始输出片段占位' }],
         source: 'selftest',
       });
     }
@@ -685,6 +826,77 @@ function selftest() {
         writeAll(clone(gold), r, renderTable(r));
       },
     },
+    {
+      name: 'evidence 的 raw 被清空',
+      expect: '凭证是空壳',
+      run() {
+        const r = clone(results);
+        r.cells[0].evidence[0].raw = '';
+        writeAll(clone(gold), r, renderTable(r));
+      },
+    },
+    {
+      name: 'evidence 的 raw 是占位短串',
+      expect: '凭证是空壳',
+      run() {
+        const r = clone(results);
+        r.cells[0].evidence[0].raw = 'ok';
+        writeAll(clone(gold), r, renderTable(r));
+      },
+    },
+    {
+      name: '凭证里泄漏本机绝对路径（盘符形态）',
+      expect: '本机绝对路径泄漏',
+      run() {
+        const r = clone(results);
+        r.cells[0].evidence[0].raw = 'D:/workspace/holy-agents-kits/skills/idea-backend/x/y.py';
+        writeAll(clone(gold), r, renderTable(r));
+      },
+    },
+    {
+      name: '凭证里泄漏本机绝对路径（URL 编码形态）',
+      expect: '本机绝对路径泄漏',
+      run() {
+        const r = clone(results);
+        r.cells[0].evidence[0].raw = 'file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/x/y.py';
+        writeAll(clone(gold), r, renderTable(r));
+      },
+    },
+    {
+      name: 'metrics.detail 里泄漏本机绝对路径',
+      expect: '本机绝对路径泄漏',
+      run() {
+        const r = clone(results);
+        r.cells[10].metrics.detail = { rows: ['16|8|d:/workspace/holy-agents-kits/x/y.py|7|8'] };
+        writeAll(clone(gold), r, renderTable(r));
+      },
+    },
+    {
+      name: '诊断格的问题条数低于 gold 的 min_count',
+      expect: '诊断口径对不上',
+      run() {
+        const r = clone(results);
+        r.cells[16].metrics.detail.problem_count = 0;
+        writeAll(clone(gold), r, renderTable(r));
+      },
+    },
+    {
+      name: '诊断格的问题类型不属语法类',
+      expect: '诊断口径对不上',
+      run() {
+        const r = clone(results);
+        r.cells[16].metrics.detail.problem_types = ['Type "int" is not assignable to declared type "str"'];
+        writeAll(clone(gold), r, renderTable(r));
+      },
+    },
+    {
+      name: 'gold 的 decl_line 漂移到别的行',
+      expect: 'gold 对不上',
+      run() {
+        const g = clone(gold); g.anchors[2].decl_line = 2;
+        const r = clone(results); writeAll(g, r, renderTable(r));
+      },
+    },
   ];
 
   let failed = 0;
@@ -732,6 +944,26 @@ function main(argv) {
     return 0;
   }
 
+  if (args.includes('--normalize')) {
+    const raw = fs.existsSync(resultsPath) ? fs.readFileSync(resultsPath, 'utf8') : null;
+    if (!raw) { console.error('ERROR: results.json 不存在'); return 1; }
+    let results;
+    try { results = JSON.parse(raw); }
+    catch (e) { console.error('ERROR: results.json 不是合法 JSON —— ' + e.message); return 1; }
+    const { value, changed } = normalizeDeep(results);
+    if (!changed) {
+      console.log('凭证归一化：results.json 里没有本机绝对路径，不用改');
+      return 0;
+    }
+    // 保持原文件的换行风格与结尾（results.json 是 CRLF 且结尾无换行）
+    const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+    const trailing = /\r?\n$/.test(raw) ? (eol === '\r\n' ? '\r\n' : '\n') : '';
+    fs.writeFileSync(resultsPath, JSON.stringify(value, null, 2).replace(/\n/g, eol) + trailing, 'utf8');
+    console.log(`凭证归一化：已把 results.json 里的本机绝对路径换成 <repo>（${rel(resultsPath)}）`);
+    console.log('提示：表要跟着重生成 —— node scripts/check-experiment.js --render');
+    return 0;
+  }
+
   const problems = runAll({
     goldPath, resultsPath, mdPath, repoRoot,
     skipGold: args.includes('--gold') ? false : false,
@@ -751,6 +983,7 @@ function main(argv) {
 // 供测量台（backend-compare.sh 的实验模式）复用同一套计数/算式 —— 别各写一份
 module.exports = {
   recountAnchor, recallOf, scopeGold, median, isFlakyByTime, renderTable, wordHits, collectFiles, findAnchor,
+  normalizeLocalPaths,
 };
 
 if (require.main === module) process.exit(main(process.argv));

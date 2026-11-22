@@ -69,7 +69,7 @@
           "tool": "ide_find_class",
           "args": {
             "query": "ProbeItem",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:45:48.594Z",
           "elapsed_ms": 1870.4,
@@ -82,7 +82,7 @@
           "tool": "ide_find_class",
           "args": {
             "query": "ProbeItem",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:45:50.757Z",
           "elapsed_ms": 2159.1,
@@ -95,7 +95,7 @@
           "tool": "ide_find_class",
           "args": {
             "query": "ProbeItem",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:45:52.570Z",
           "elapsed_ms": 1812.5,
@@ -108,7 +108,7 @@
           "tool": "ide_find_class",
           "args": {
             "query": "ProbeItem",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:45:55.365Z",
           "elapsed_ms": 2795.3,
@@ -238,7 +238,7 @@
           "at": "2026-11-22T23:30:42.433+08:00",
           "elapsed_ms": 12,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 0,
@@ -256,7 +256,7 @@
           "at": "2026-11-22T23:30:42.467+08:00",
           "elapsed_ms": 33.9,
           "payload_bytes": 221,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"}]"
         },
         {
           "round": 1,
@@ -268,7 +268,7 @@
           "at": "2026-11-22T23:30:42.479+08:00",
           "elapsed_ms": 12,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 1,
@@ -286,7 +286,7 @@
           "at": "2026-11-22T23:30:42.497+08:00",
           "elapsed_ms": 18.2,
           "payload_bytes": 221,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"}]"
         },
         {
           "round": 2,
@@ -298,7 +298,7 @@
           "at": "2026-11-22T23:30:42.512+08:00",
           "elapsed_ms": 13.9,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 2,
@@ -316,7 +316,7 @@
           "at": "2026-11-22T23:30:42.534+08:00",
           "elapsed_ms": 22.8,
           "payload_bytes": 221,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"}]"
         },
         {
           "round": 3,
@@ -328,7 +328,7 @@
           "at": "2026-11-22T23:30:42.559+08:00",
           "elapsed_ms": 24.3,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 3,
@@ -346,7 +346,7 @@
           "at": "2026-11-22T23:30:42.577+08:00",
           "elapsed_ms": 17.7,
           "payload_bytes": 221,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"}]"
         }
       ],
       "source": "本机实测记录（本记录的 calls[] 里有逐条原始输出片段）"
@@ -385,7 +385,7 @@
         "by_lang": null,
         "detail": {
           "rows": [
-            "16|8|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py|7|8"
+            "16|8|<repo>/py/src/probe_item.py|7|8"
           ]
         },
         "detail_rounds": 3
@@ -724,7 +724,7 @@
             "line": 23,
             "column": 5,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:09.276Z",
           "elapsed_ms": 3098.2,
@@ -740,7 +740,7 @@
             "line": 23,
             "column": 5,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:10.876Z",
           "elapsed_ms": 1591.2,
@@ -756,7 +756,7 @@
             "line": 23,
             "column": 5,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:12.491Z",
           "elapsed_ms": 1614.7,
@@ -772,7 +772,7 @@
             "line": 23,
             "column": 5,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:14.232Z",
           "elapsed_ms": 1741.1,
@@ -908,7 +908,7 @@
           "at": "2026-11-22T23:30:50.233+08:00",
           "elapsed_ms": 725.3,
           "payload_bytes": 245,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":4},\"end\":{\"line\":22,\"character\":13}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":4},\"end\":{\"line\":22,\"character\":13}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 1,
@@ -926,7 +926,7 @@
           "at": "2026-11-22T23:30:50.290+08:00",
           "elapsed_ms": 56.9,
           "payload_bytes": 245,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":4},\"end\":{\"line\":22,\"character\":13}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":4},\"end\":{\"line\":22,\"character\":13}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 2,
@@ -944,7 +944,7 @@
           "at": "2026-11-22T23:30:50.339+08:00",
           "elapsed_ms": 49.1,
           "payload_bytes": 245,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":4},\"end\":{\"line\":22,\"character\":13}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":4},\"end\":{\"line\":22,\"character\":13}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 3,
@@ -962,7 +962,7 @@
           "at": "2026-11-22T23:30:50.390+08:00",
           "elapsed_ms": 50.8,
           "payload_bytes": 245,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":4},\"end\":{\"line\":22,\"character\":13}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":4},\"end\":{\"line\":22,\"character\":13}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         }
       ],
       "source": "本机实测记录（本记录的 calls[] 里有逐条原始输出片段）"
@@ -1001,7 +1001,7 @@
         "by_lang": null,
         "detail": {
           "rows": [
-            "14|23|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py|5|23"
+            "14|23|<repo>/py/src/probe_item.py|5|23"
           ]
         },
         "detail_rounds": 3
@@ -1279,7 +1279,7 @@
             "line": 8,
             "column": 7,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:25.320Z",
           "elapsed_ms": 1921.1,
@@ -1295,7 +1295,7 @@
             "line": 8,
             "column": 7,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:27.480Z",
           "elapsed_ms": 2156,
@@ -1311,7 +1311,7 @@
             "line": 8,
             "column": 7,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:29.532Z",
           "elapsed_ms": 2051.6,
@@ -1327,7 +1327,7 @@
             "line": 8,
             "column": 7,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:31.703Z",
           "elapsed_ms": 2171.4,
@@ -1472,7 +1472,7 @@
           "at": "2026-11-22T23:32:12.094+08:00",
           "elapsed_ms": 22,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 1,
@@ -1493,7 +1493,7 @@
           "at": "2026-11-22T23:32:12.124+08:00",
           "elapsed_ms": 30.4,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 2,
@@ -1514,7 +1514,7 @@
           "at": "2026-11-22T23:32:12.144+08:00",
           "elapsed_ms": 18.6,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 3,
@@ -1535,7 +1535,7 @@
           "at": "2026-11-22T23:32:12.173+08:00",
           "elapsed_ms": 28.7,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         }
       ],
       "source": "本机实测记录（本记录的 calls[] 里有逐条原始输出片段）"
@@ -1575,10 +1575,10 @@
         "by_lang": null,
         "detail": {
           "rows": [
-            "16|8|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py|7|8",
-            "30|23|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py|21|23",
-            "33|3|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py|24|3",
-            "21|7|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py|12|7"
+            "16|8|<repo>/py/src/probe_item.py|7|8",
+            "30|23|<repo>/py/src/probe_item.py|21|23",
+            "33|3|<repo>/py/src/probe_consumer.py|24|3",
+            "21|7|<repo>/py/src/probe_consumer.py|12|7"
           ]
         },
         "detail_rounds": 3
@@ -1877,7 +1877,7 @@
             "column": 7,
             "newName": "ProbeItemRenamed",
             "dryRun": true,
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:43.828Z",
           "elapsed_ms": 1530.8,
@@ -1894,7 +1894,7 @@
             "column": 7,
             "newName": "ProbeItemRenamed",
             "dryRun": true,
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:45.378Z",
           "elapsed_ms": 1547.7,
@@ -1911,7 +1911,7 @@
             "column": 7,
             "newName": "ProbeItemRenamed",
             "dryRun": true,
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:46.700Z",
           "elapsed_ms": 1321.5,
@@ -1928,7 +1928,7 @@
             "column": 7,
             "newName": "ProbeItemRenamed",
             "dryRun": true,
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:48.178Z",
           "elapsed_ms": 1477.5,
@@ -1974,8 +1974,8 @@
         "detail": {
           "edit_locations": 4,
           "files": [
-            "file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py",
-            "file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py"
+            "file:///<repo>/py/src/probe_consumer.py",
+            "file:///<repo>/py/src/probe_item.py"
           ]
         },
         "detail_rounds": 3
@@ -2073,7 +2073,7 @@
           "at": "2026-11-22T23:31:04.277+08:00",
           "elapsed_ms": 30.3,
           "payload_bytes": 650,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"edits\":[{\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"newText\":\"newName\"}]},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"edits\":[{\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"newText\":\"newName\"}]}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"edits\":[{\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"newText\":\"newName\"}]},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"edits\":[{\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"newText\":\"newName\"}]}]"
         },
         {
           "round": 1,
@@ -2091,7 +2091,7 @@
           "at": "2026-11-22T23:31:04.295+08:00",
           "elapsed_ms": 17.7,
           "payload_bytes": 650,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"edits\":[{\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"newText\":\"newName\"}]},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"edits\":[{\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"newText\":\"newName\"}]}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"edits\":[{\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"newText\":\"newName\"}]},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"edits\":[{\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"newText\":\"newName\"}]}]"
         },
         {
           "round": 2,
@@ -2109,7 +2109,7 @@
           "at": "2026-11-22T23:31:04.316+08:00",
           "elapsed_ms": 20.1,
           "payload_bytes": 650,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"edits\":[{\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"newText\":\"newName\"}]},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"edits\":[{\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"newText\":\"newName\"}]}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"edits\":[{\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"newText\":\"newName\"}]},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"edits\":[{\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"newText\":\"newName\"}]}]"
         },
         {
           "round": 3,
@@ -2127,7 +2127,7 @@
           "at": "2026-11-22T23:31:04.336+08:00",
           "elapsed_ms": 20,
           "payload_bytes": 650,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"edits\":[{\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"newText\":\"newName\"}]},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"edits\":[{\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"newText\":\"newName\"}]}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"edits\":[{\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"newText\":\"newName\"}]},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"edits\":[{\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"newText\":\"newName\"},{\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"newText\":\"newName\"}]}]"
         }
       ],
       "source": "本机实测：BifrostMCP 0.0.14 的 get_rename_locations 本轮**可用**（返回改名编辑清单、影响文件 2 个）—— 与 phase 02 记的「Unexpected type」矛盾（见 skills/vscode-backend/references/setup.md §0 事实块）；该工具的可用性随会话状态波动 ⇒ 按本轮实测记「完成」，不记「能力缺席」"
@@ -2234,7 +2234,7 @@
           "at": "2026-11-22T23:36:23.326+08:00",
           "elapsed_ms": 822.6,
           "payload_bytes": 1116,
-          "raw": "{\"workspace_edit\":{\"documentChanges\":[{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":15,\"line\":7},\"start\":{\"character\":6,\"line\":7}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":29,\"line\":22},\"start\":{\"character\":20,\"line\":22}}}],\"textDocument\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"version\":null}},{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":32,\"line\":2},\"start\":{\"character\":23,\"line\":2}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":20,\"line\":6},\"start\":{\"character\":11,\"line\":6}}}],\"textDocument\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"version\":null}}]},\"preview\":{\"files\":2,\"locations\":4,\"file_names\":[\"probe_consumer.py\",\"probe_item.py\"],\"note\":\"dry_run=true: preview only, nothing written. Re-run rename_symbol without dry_run to apply.\"}}\nNext step: Re-run rename_symbol without dry_run to apply. Do not reconstruct this edit into apply_edit; rename_symbol applies it directly."
+          "raw": "{\"workspace_edit\":{\"documentChanges\":[{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":15,\"line\":7},\"start\":{\"character\":6,\"line\":7}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":29,\"line\":22},\"start\":{\"character\":20,\"line\":22}}}],\"textDocument\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"version\":null}},{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":32,\"line\":2},\"start\":{\"character\":23,\"line\":2}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":20,\"line\":6},\"start\":{\"character\":11,\"line\":6}}}],\"textDocument\":{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"version\":null}}]},\"preview\":{\"files\":2,\"locations\":4,\"file_names\":[\"probe_consumer.py\",\"probe_item.py\"],\"note\":\"dry_run=true: preview only, nothing written. Re-run rename_symbol without dry_run to apply.\"}}\nNext step: Re-run rename_symbol without dry_run to apply. Do not reconstruct this edit into apply_edit; rename_symbol applies it directly."
         },
         {
           "round": 1,
@@ -2250,7 +2250,7 @@
           "at": "2026-11-22T23:36:24.132+08:00",
           "elapsed_ms": 805.9,
           "payload_bytes": 1116,
-          "raw": "{\"workspace_edit\":{\"documentChanges\":[{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":15,\"line\":7},\"start\":{\"character\":6,\"line\":7}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":29,\"line\":22},\"start\":{\"character\":20,\"line\":22}}}],\"textDocument\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"version\":null}},{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":32,\"line\":2},\"start\":{\"character\":23,\"line\":2}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":20,\"line\":6},\"start\":{\"character\":11,\"line\":6}}}],\"textDocument\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"version\":null}}]},\"preview\":{\"files\":2,\"locations\":4,\"file_names\":[\"probe_consumer.py\",\"probe_item.py\"],\"note\":\"dry_run=true: preview only, nothing written. Re-run rename_symbol without dry_run to apply.\"}}\nNext step: Re-run rename_symbol without dry_run to apply. Do not reconstruct this edit into apply_edit; rename_symbol applies it directly."
+          "raw": "{\"workspace_edit\":{\"documentChanges\":[{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":15,\"line\":7},\"start\":{\"character\":6,\"line\":7}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":29,\"line\":22},\"start\":{\"character\":20,\"line\":22}}}],\"textDocument\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"version\":null}},{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":32,\"line\":2},\"start\":{\"character\":23,\"line\":2}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":20,\"line\":6},\"start\":{\"character\":11,\"line\":6}}}],\"textDocument\":{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"version\":null}}]},\"preview\":{\"files\":2,\"locations\":4,\"file_names\":[\"probe_consumer.py\",\"probe_item.py\"],\"note\":\"dry_run=true: preview only, nothing written. Re-run rename_symbol without dry_run to apply.\"}}\nNext step: Re-run rename_symbol without dry_run to apply. Do not reconstruct this edit into apply_edit; rename_symbol applies it directly."
         },
         {
           "round": 2,
@@ -2266,7 +2266,7 @@
           "at": "2026-11-22T23:36:25.141+08:00",
           "elapsed_ms": 1008.9,
           "payload_bytes": 1116,
-          "raw": "{\"workspace_edit\":{\"documentChanges\":[{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":15,\"line\":7},\"start\":{\"character\":6,\"line\":7}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":29,\"line\":22},\"start\":{\"character\":20,\"line\":22}}}],\"textDocument\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"version\":null}},{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":32,\"line\":2},\"start\":{\"character\":23,\"line\":2}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":20,\"line\":6},\"start\":{\"character\":11,\"line\":6}}}],\"textDocument\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"version\":null}}]},\"preview\":{\"files\":2,\"locations\":4,\"file_names\":[\"probe_consumer.py\",\"probe_item.py\"],\"note\":\"dry_run=true: preview only, nothing written. Re-run rename_symbol without dry_run to apply.\"}}\nNext step: Re-run rename_symbol without dry_run to apply. Do not reconstruct this edit into apply_edit; rename_symbol applies it directly."
+          "raw": "{\"workspace_edit\":{\"documentChanges\":[{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":15,\"line\":7},\"start\":{\"character\":6,\"line\":7}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":29,\"line\":22},\"start\":{\"character\":20,\"line\":22}}}],\"textDocument\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"version\":null}},{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":32,\"line\":2},\"start\":{\"character\":23,\"line\":2}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":20,\"line\":6},\"start\":{\"character\":11,\"line\":6}}}],\"textDocument\":{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"version\":null}}]},\"preview\":{\"files\":2,\"locations\":4,\"file_names\":[\"probe_consumer.py\",\"probe_item.py\"],\"note\":\"dry_run=true: preview only, nothing written. Re-run rename_symbol without dry_run to apply.\"}}\nNext step: Re-run rename_symbol without dry_run to apply. Do not reconstruct this edit into apply_edit; rename_symbol applies it directly."
         },
         {
           "round": 3,
@@ -2282,7 +2282,7 @@
           "at": "2026-11-22T23:36:26.175+08:00",
           "elapsed_ms": 1033.8,
           "payload_bytes": 1116,
-          "raw": "{\"workspace_edit\":{\"documentChanges\":[{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":15,\"line\":7},\"start\":{\"character\":6,\"line\":7}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":29,\"line\":22},\"start\":{\"character\":20,\"line\":22}}}],\"textDocument\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"version\":null}},{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":32,\"line\":2},\"start\":{\"character\":23,\"line\":2}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":20,\"line\":6},\"start\":{\"character\":11,\"line\":6}}}],\"textDocument\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"version\":null}}]},\"preview\":{\"files\":2,\"locations\":4,\"file_names\":[\"probe_consumer.py\",\"probe_item.py\"],\"note\":\"dry_run=true: preview only, nothing written. Re-run rename_symbol without dry_run to apply.\"}}\nNext step: Re-run rename_symbol without dry_run to apply. Do not reconstruct this edit into apply_edit; rename_symbol applies it directly."
+          "raw": "{\"workspace_edit\":{\"documentChanges\":[{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":15,\"line\":7},\"start\":{\"character\":6,\"line\":7}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":29,\"line\":22},\"start\":{\"character\":20,\"line\":22}}}],\"textDocument\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"version\":null}},{\"edits\":[{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":32,\"line\":2},\"start\":{\"character\":23,\"line\":2}}},{\"newText\":\"ProbeItemRenamed\",\"range\":{\"end\":{\"character\":20,\"line\":6},\"start\":{\"character\":11,\"line\":6}}}],\"textDocument\":{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"version\":null}}]},\"preview\":{\"files\":2,\"locations\":4,\"file_names\":[\"probe_consumer.py\",\"probe_item.py\"],\"note\":\"dry_run=true: preview only, nothing written. Re-run rename_symbol without dry_run to apply.\"}}\nNext step: Re-run rename_symbol without dry_run to apply. Do not reconstruct this edit into apply_edit; rename_symbol applies it directly."
         }
       ],
       "source": "本机实测记录（本记录的 calls[] 里有逐条原始输出片段）；本格标 flaky（耗时极差超判据）"
@@ -2489,7 +2489,7 @@
           "tool": "ide_diagnostics",
           "args": {
             "file": "py/src/probe_broken.py",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:57.346Z",
           "elapsed_ms": 2094.5,
@@ -2502,7 +2502,7 @@
           "tool": "ide_diagnostics",
           "args": {
             "file": "py/src/probe_broken.py",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:46:59.418Z",
           "elapsed_ms": 2069.1,
@@ -2515,7 +2515,7 @@
           "tool": "ide_diagnostics",
           "args": {
             "file": "py/src/probe_broken.py",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:01.266Z",
           "elapsed_ms": 1846.9,
@@ -2528,7 +2528,7 @@
           "tool": "ide_diagnostics",
           "args": {
             "file": "py/src/probe_broken.py",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:03.338Z",
           "elapsed_ms": 2072.5,
@@ -2729,7 +2729,7 @@
       "task": "T5",
       "config": "C",
       "status": "未取",
-      "failure_mode": "索引未就绪",
+      "failure_mode": "静默失效",
       "anchor": {
         "symbol": "broken",
         "file": "py/src/probe_broken.py",
@@ -2757,7 +2757,7 @@
         "by_lang": null,
         "detail": {
           "problem_count": 0,
-          "note": "agent-lsp 的 get_diagnostics 返 0 条：工具自己写明『the server has not published any for this document; this does not confirm the file is clean』—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 空结果是未就绪，不是真干净"
+          "note": "agent-lsp 的 get_diagnostics 返 0 条 —— 2026-11-23 复测（daemon 预热 130s + 先 open_document）仍返 0 条，同一会话 list_symbols 能解析该文件 ⇒ 排除「索引未就绪」；工具自己写明『the server has not published any for this document; this does not confirm the file is clean』—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净，这条腿的诊断通道静默失效"
         },
         "detail_rounds": 3
       },
@@ -2876,9 +2876,95 @@
           "elapsed_ms": 25012.7,
           "payload_bytes": 267,
           "raw": "GCF profile=generic\n## \"file:///<repo>/py/src/probe_broken.py\" [0]\n\nNext step: No diagnostics received — the server has not published any for this document; this does not confirm the file is clean."
+        },
+        {
+          "round": 0,
+          "role": "retest-setup",
+          "tool": "start_lsp",
+          "args": {
+            "root_dir": "<repo>/py/src",
+            "language_id": "python"
+          },
+          "at": "2026-11-23T00:48:41.644+08:00",
+          "elapsed_ms": 655.4,
+          "payload_bytes": 31,
+          "raw": "LSP server started successfully"
+        },
+        {
+          "round": 0,
+          "role": "retest-warmup",
+          "tool": "list_symbols",
+          "args": {
+            "file_path": "<repo>/py/src/probe_broken.py"
+          },
+          "at": "2026-11-23T00:50:51.829+08:00",
+          "elapsed_ms": 183,
+          "payload_bytes": 255,
+          "raw": "GCF profile=graph tool=list_symbols symbols=1\n## targets\n@0 fn py/src.broken 1.00 lsp_resolved\n\nNext step: Use blast_radius with this file to analyze blast radius.\n{\"_meta\":{\"token_savings\":{\"tokens_full_file\":107,\"tokens_returned\":23,\"tokens_saved\":84}}}"
+        },
+        {
+          "round": 0,
+          "role": "retest-warmup",
+          "tool": "open_document",
+          "args": {
+            "file_path": "<repo>/py/src/probe_broken.py",
+            "language_id": "python"
+          },
+          "at": "2026-11-23T00:50:51.842+08:00",
+          "elapsed_ms": 13.2,
+          "payload_bytes": 114,
+          "raw": "Document opened: <repo>\\py\\src\\probe_broken.py"
+        },
+        {
+          "round": 1,
+          "role": "retest-answer",
+          "tool": "get_diagnostics",
+          "args": {
+            "file_path": "<repo>/py/src/probe_broken.py"
+          },
+          "at": "2026-11-23T00:51:31.867+08:00",
+          "elapsed_ms": 25016.8,
+          "payload_bytes": 267,
+          "raw": "GCF profile=generic\n## \"file:///<repo>/py/src/probe_broken.py\" [0]\n\nNext step: No diagnostics received — the server has not published any for this document; this does not confirm the file is clean."
+        },
+        {
+          "round": 2,
+          "role": "retest-answer",
+          "tool": "get_diagnostics",
+          "args": {
+            "file_path": "<repo>/py/src/probe_broken.py"
+          },
+          "at": "2026-11-23T00:52:06.892+08:00",
+          "elapsed_ms": 25010.1,
+          "payload_bytes": 267,
+          "raw": "GCF profile=generic\n## \"file:///<repo>/py/src/probe_broken.py\" [0]\n\nNext step: No diagnostics received — the server has not published any for this document; this does not confirm the file is clean."
+        },
+        {
+          "round": 3,
+          "role": "retest-answer",
+          "tool": "get_diagnostics",
+          "args": {
+            "file_path": "<repo>/py/src/probe_broken.py"
+          },
+          "at": "2026-11-23T00:52:41.920+08:00",
+          "elapsed_ms": 25015,
+          "payload_bytes": 267,
+          "raw": "GCF profile=generic\n## \"file:///<repo>/py/src/probe_broken.py\" [0]\n\nNext step: No diagnostics received — the server has not published any for this document; this does not confirm the file is clean."
+        },
+        {
+          "round": 0,
+          "role": "retest-control",
+          "tool": "pyright",
+          "args": {
+            "file_path": "<repo>/py/src/probe_broken.py"
+          },
+          "at": "2026-11-23T00:52:53.208+08:00",
+          "elapsed_ms": 1247.6,
+          "payload_bytes": 1149,
+          "raw": "<repo>\\py\\src\\probe_broken.py\n  <repo>\\py\\src\\probe_broken.py:9:11 - error: \"(\" was not closed\n  <repo>\\py\\src\\probe_broken.py:9:12 - error: Expected parameter name\n  <repo>\\py\\src\\probe_broken.py:9:12 - error: Position-only parameter separator not allowed as first parameter\n  <repo>\\py\\src\\probe_broken.py:10:5 - error: Expected expression\n  <repo>\\py\\src\\probe_broken.py:11:1 - error: Expected \":\"\n  <repo>\\py\\src\\probe_broken.py:11:1 - error: Expected expression\n  <repo>\\py\\src\\probe_broken.py:11:1 - error: Statements must be separated by newlines or semicolons\n7 errors, 0 warnings, 0 informations\n"
         }
       ],
-      "source": "agent-lsp 的 get_diagnostics 返 0 条；工具自己写明「the server has not published any for this document; this does not confirm the file is clean」—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 空结果按「索引未就绪」记（protocol：C 臂返 0 不许下结论）"
+      "source": "agent-lsp 的 get_diagnostics 恒返 0 条（2026-11-22 那轮 3 次 + 2026-11-23 复测 3 次：daemon 预热 130s 且先 open_document，同会话 list_symbols 能解析该文件 ⇒ 排除「索引未就绪」）；工具自己写明「the server has not published any for this document; this does not confirm the file is clean」—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净 ⇒ 这条腿的诊断通道静默失效（复测的原始输出见本格 evidence 里 role=retest-* 的条目）"
     },
     {
       "task": "T5",
@@ -2997,7 +3083,7 @@
           "tool": "ide_find_class",
           "args": {
             "query": "ProbeItem",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:08.423Z",
           "elapsed_ms": 1755.1,
@@ -3013,7 +3099,7 @@
             "line": 8,
             "column": 7,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:10.194Z",
           "elapsed_ms": 1768,
@@ -3026,7 +3112,7 @@
           "tool": "ide_find_class",
           "args": {
             "query": "ProbeItem",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:12.057Z",
           "elapsed_ms": 1862.7,
@@ -3042,7 +3128,7 @@
             "line": 8,
             "column": 7,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:13.878Z",
           "elapsed_ms": 1820.1,
@@ -3055,7 +3141,7 @@
           "tool": "ide_find_class",
           "args": {
             "query": "ProbeItem",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:15.605Z",
           "elapsed_ms": 1726.8,
@@ -3071,7 +3157,7 @@
             "line": 8,
             "column": 7,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:17.313Z",
           "elapsed_ms": 1707.9,
@@ -3084,7 +3170,7 @@
           "tool": "ide_find_class",
           "args": {
             "query": "ProbeItem",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:19.058Z",
           "elapsed_ms": 1744.7,
@@ -3100,7 +3186,7 @@
             "line": 8,
             "column": 7,
             "language": "Python",
-            "project_path": "D:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo"
+            "project_path": "<repo>"
           },
           "at": "2026-11-22T15:47:20.659Z",
           "elapsed_ms": 1600.6,
@@ -3268,7 +3354,7 @@
           "at": "2026-11-22T23:44:06.878+08:00",
           "elapsed_ms": 12.9,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 0,
@@ -3289,7 +3375,7 @@
           "at": "2026-11-22T23:44:06.921+08:00",
           "elapsed_ms": 43.8,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 0,
@@ -3310,7 +3396,7 @@
           "at": "2026-11-22T23:44:06.960+08:00",
           "elapsed_ms": 38.8,
           "payload_bytes": 2219,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
         },
         {
           "round": 0,
@@ -3322,7 +3408,7 @@
           "at": "2026-11-22T23:44:27.048+08:00",
           "elapsed_ms": 81.4,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 0,
@@ -3343,7 +3429,7 @@
           "at": "2026-11-22T23:44:27.065+08:00",
           "elapsed_ms": 17.3,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 0,
@@ -3364,7 +3450,7 @@
           "at": "2026-11-22T23:44:27.082+08:00",
           "elapsed_ms": 17,
           "payload_bytes": 2219,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
         },
         {
           "round": 0,
@@ -3376,7 +3462,7 @@
           "at": "2026-11-22T23:44:47.104+08:00",
           "elapsed_ms": 13.9,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 0,
@@ -3397,7 +3483,7 @@
           "at": "2026-11-22T23:44:47.119+08:00",
           "elapsed_ms": 15,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 0,
@@ -3418,7 +3504,7 @@
           "at": "2026-11-22T23:44:47.131+08:00",
           "elapsed_ms": 12,
           "payload_bytes": 2219,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
         },
         {
           "round": 1,
@@ -3430,7 +3516,7 @@
           "at": "2026-11-22T23:44:47.144+08:00",
           "elapsed_ms": 12.6,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 1,
@@ -3451,7 +3537,7 @@
           "at": "2026-11-22T23:44:47.159+08:00",
           "elapsed_ms": 15.1,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 1,
@@ -3472,7 +3558,7 @@
           "at": "2026-11-22T23:44:47.176+08:00",
           "elapsed_ms": 16.3,
           "payload_bytes": 2219,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
         },
         {
           "round": 2,
@@ -3484,7 +3570,7 @@
           "at": "2026-11-22T23:44:47.207+08:00",
           "elapsed_ms": 30.7,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 2,
@@ -3505,7 +3591,7 @@
           "at": "2026-11-22T23:44:47.221+08:00",
           "elapsed_ms": 14.4,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 2,
@@ -3526,7 +3612,7 @@
           "at": "2026-11-22T23:44:47.233+08:00",
           "elapsed_ms": 12.1,
           "payload_bytes": 2219,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
         },
         {
           "round": 3,
@@ -3538,7 +3624,7 @@
           "at": "2026-11-22T23:44:47.244+08:00",
           "elapsed_ms": 10.6,
           "payload_bytes": 498,
-          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
+          "raw": "[{\"name\":\"ProbeItem\",\"kind\":4,\"location\":{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}}},\"containerName\":\"\"},{\"name\":\"ProbeItem\",\"kind\":10,\"location\":{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":0},\"end\":{\"line\":4,\"character\":1}}},\"containerName\":\"\"}]"
         },
         {
           "round": 3,
@@ -3559,7 +3645,7 @@
           "at": "2026-11-22T23:44:47.257+08:00",
           "elapsed_ms": 13,
           "payload_bytes": 953,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":2,\"character\":23},\"end\":{\"line\":2,\"character\":32}},\"preview\":\"from probe_item import ProbeItem, probe_run\"},{\"uri\":\"file:///<repo>/py/src/probe_consumer.py\",\"range\":{\"start\":{\"line\":6,\"character\":11},\"end\":{\"line\":6,\"character\":20}},\"preview\":\"item = ProbeItem(ident, 1)\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":7,\"character\":6},\"end\":{\"line\":7,\"character\":15}},\"preview\":\"class ProbeItem:\"},{\"uri\":\"file:///<repo>/py/src/probe_item.py\",\"range\":{\"start\":{\"line\":22,\"character\":20},\"end\":{\"line\":22,\"character\":29}},\"preview\":\"def probe_run(item: ProbeItem) -> str:\"}]"
         },
         {
           "round": 3,
@@ -3580,7 +3666,7 @@
           "at": "2026-11-22T23:44:47.269+08:00",
           "elapsed_ms": 11.1,
           "payload_bytes": 2219,
-          "raw": "[{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///d%3A/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
+          "raw": "[{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/alpha.test.ts\",\"range\":{\"start\":{\"line\":3,\"character\":14},\"end\":{\"line\":3,\"character\":23}},\"preview\":\"const item: ProbeItem = { id: 'x', count: 1 };\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":1,\"character\":17},\"end\":{\"line\":1,\"character\":26}},\"preview\":\"export interface ProbeItem {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":7,\"character\":32},\"end\":{\"line\":7,\"character\":41}},\"preview\":\"export function probeCore(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/alpha.ts\",\"range\":{\"start\":{\"line\":15,\"character\":12},\"end\":{\"line\":15,\"character\":21}},\"preview\":\"run(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/beta.ts\",\"range\":{\"start\":{\"line\":2,\"character\":30},\"end\":{\"line\":2,\"character\":39}},\"preview\":\"export function betaUse(item: ProbeItem): string {\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":0,\"character\":9},\"end\":{\"line\":0,\"character\":18}},\"preview\":\"import { ProbeItem, ProbeRunner, probeCore } from './alpha';\"},{\"uri\":\"file:///<repo>/ts/src/gamma.ts\",\"range\":{\"start\":{\"line\":2,\"character\":31},\"end\":{\"line\":2,\"character\":40}},\"preview\":\"export function gammaUse(item: ProbeItem): string {\"}]"
         }
       ],
       "source": "一次 get_workspace_symbols 同时返回 py 与 ts 两侧的 ProbeItem（VS Code provider 并集）⇒ 跨语言统一符号空间在 VS Code 窗口内成立"
@@ -3641,10 +3727,10 @@
         },
         "detail": {
           "rows": [
-            "33|3|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py|24|3",
-            "21|7|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_consumer.py|12|7",
-            "16|8|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py|7|8",
-            "30|23|d:/workspace/holy-agents-kits/skills/idea-backend/fixtures/experiment/repo/py/src/probe_item.py|21|23"
+            "33|3|<repo>/py/src/probe_consumer.py|24|3",
+            "21|7|<repo>/py/src/probe_consumer.py|12|7",
+            "16|8|<repo>/py/src/probe_item.py|7|8",
+            "30|23|<repo>/py/src/probe_item.py|21|23"
           ]
         },
         "detail_rounds": 3

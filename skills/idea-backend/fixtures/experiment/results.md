@@ -18,7 +18,7 @@
 | T4 | D | ProbeItem @ py/src/probe_item.py:8 | 完成 | 无失败 | 文件 1.00/1.00 · 命中 —/— | 1 | 5393 | 0 | 1059.1ms | 1145.3ms | cells[15].evidence | codegraph 的口径是**受影响符号**（含 import 边与成员）⇒ 命中口径不适用（记 null），只比文件口径 |
 | T5 | A | broken @ py/src/probe_broken.py:9 | 完成 | 无失败 | 文件 —/— · 命中 —/— | 1 | 853 | 0 | 2069.1ms | 2069.1ms | cells[16].evidence | 本机实测记录（本记录的 calls[] 里有逐条原始输出片段） |
 | T5 | B | broken @ py/src/probe_broken.py:9 | 能力缺席 | 能力缺席 | 文件 —/— · 命中 —/— | 1 | 23 | 0 | 9.5ms | 9.1ms | cells[17].evidence | 能力缺席 —— 实测 BifrostMCP 0.0.14 的 get_code_actions 报 Illegal argument（与 phase 02 记录一致，见 skills/vscode-backend/references/setup.md §0 事实块） |
-| T5 | C | broken @ py/src/probe_broken.py:9 | 未取 | 索引未就绪 | 文件 —/— · 命中 —/— | 1 | 267 | 0 | 25017.4ms | 25017.4ms | cells[18].evidence | agent-lsp 的 get_diagnostics 返 0 条；工具自己写明「the server has not published any for this document; this does not confirm the file is clean」—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 空结果按「索引未就绪」记（protocol：C 臂返 0 不许下结论） |
+| T5 | C | broken @ py/src/probe_broken.py:9 | 未取 | 静默失效 | 文件 —/— · 命中 —/— | 1 | 267 | 0 | 25017.4ms | 25017.4ms | cells[18].evidence | agent-lsp 的 get_diagnostics 恒返 0 条（2026-11-22 那轮 3 次 + 2026-11-23 复测 3 次：daemon 预热 130s 且先 open_document，同会话 list_symbols 能解析该文件 ⇒ 排除「索引未就绪」）；工具自己写明「the server has not published any for this document; this does not confirm the file is clean」—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净 ⇒ 这条腿的诊断通道静默失效（复测的原始输出见本格 evidence 里 role=retest-* 的条目） |
 | T5 | D | broken @ py/src/probe_broken.py:9 | 能力缺席 | 能力缺席 | 文件 —/— · 命中 —/— | 0 | 0 | 0 | 0.0ms | 0.0ms | cells[19].evidence | 能力缺席 —— codegraph 1.7.0 的 CLI 没有检视/诊断子命令（命令表见 `codegraph --help`） |
 | T6 | A | ProbeItem @ py/src/probe_item.py:8 | 能力缺席 | 能力缺席 | 文件 1.00/1.00 · 命中 1.00/1.00 | 2 | 1398 | 1 | 3682.8ms | 3434.7ms | cells[20].evidence | 能力缺席 —— IDEA 社区版 2026.2.5 装不了 JS/TS 插件 ⇒ .ts 无 PSI（结构事实，见 skills/idea-backend/references/langs/ts/runtime.md） |
 | T6 | B | ProbeItem @ py/src/probe_item.py:8 | 完成 | 无失败 | 文件 1.00/1.00 · 命中 1.00/1.00 | 3 | 3670 | 1 | 44.0ms | 44.0ms | cells[21].evidence | 一次 get_workspace_symbols 同时返回 py 与 ts 两侧的 ProbeItem（VS Code provider 并集）⇒ 跨语言统一符号空间在 VS Code 窗口内成立 |
@@ -44,5 +44,5 @@
 |---|---|---|---|---|---|---|
 | T5 | A | 完成 | 无失败 | 2 | Formal parameter name expected / ':' expected | cells[16].evidence |
 | T5 | B | 能力缺席 | 能力缺席 | — | — | cells[17].evidence |
-| T5 | C | 未取 | 索引未就绪 | 0 | agent-lsp 的 get_diagnostics 返 0 条：工具自己写明『the server has not published any for this document; this does not confirm the file is clean』—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 空结果是未就绪，不是真干净 | cells[18].evidence |
+| T5 | C | 未取 | 静默失效 | 0 | agent-lsp 的 get_diagnostics 返 0 条 —— 2026-11-23 复测（daemon 预热 130s + 先 open_document）仍返 0 条，同一会话 list_symbols 能解析该文件 ⇒ 排除「索引未就绪」；工具自己写明『the server has not published any for this document; this does not confirm the file is clean』—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净，这条腿的诊断通道静默失效 | cells[18].evidence |
 | T5 | D | 能力缺席 | 能力缺席 | — | 该臂的工具面里没有这个任务的能力 | cells[19].evidence |
