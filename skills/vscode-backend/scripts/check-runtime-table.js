@@ -95,6 +95,10 @@ for (const key of Object.keys(rows)) {
     if (rows[key].net !== String(rec.net_ms)) bad(key + ': 表里净耗时 != 凭证 ' + rec.net_ms);
     if (rows[key].tool !== rec.tool) bad(key + ': 表里手段 ' + rows[key].tool + ' != 凭证工具 ' + rec.tool);
     if (rows[key].lang !== rec.lang) bad(key + ': 表里语言 ' + rows[key].lang + ' != 凭证语言 ' + rec.lang);
+    // 字段级对账：凭证里的 preview_files（改名预览覆盖的文件数）必须出现在档位表该行的判据列 ——
+    // 否则「这个数字有机器判据」只是说法（重复键或散文里的同一个数都能让松判据放过）。
+    if (typeof rec.preview_files === 'number' && !rows[key].note.includes(String(rec.preview_files)))
+      bad(key + ': 凭证的 preview_files=' + rec.preview_files + ' 没出现在表里该行的判据列 —— 字段级对账不过');
     const route = ((cred.routes || []).find((r) => r.route === rec.route) || {});
     if (typeof route.baseline_ms !== 'number') bad(key + ': 凭证里没有该路线的 baseline_ms —— 净耗时无从核算');
     else if (Math.abs(rec.net_ms - Math.max(0, rec.raw_ms - route.baseline_ms)) > NET_TOLERANCE_MS)

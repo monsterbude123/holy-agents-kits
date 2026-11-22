@@ -392,7 +392,11 @@ templates/<lang>-*/                # 可选：脚手架模板
       "numbers": [
         {
           "value": 247,
-            "value": 740,
+          "pointer": "技能 vscode-backend 的 references/measurements/typescript.json（records[]）",
+          "meaning": "改名预览覆盖的文件数"
+        },
+        {
+          "value": 740,
           "pointer": "技能 vscode-backend 的 references/measurements/typescript.json（records[]）",
           "meaning": "TS 侧 BifrostMCP 的引用条数"
         },
