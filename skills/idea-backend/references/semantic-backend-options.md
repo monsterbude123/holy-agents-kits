@@ -69,8 +69,9 @@ node scripts/tsserver-probe.js <工程目录> --symbol NAME --file src/x.ts --li
 | 类别 | 代表 | ★ / 最近 push | 备注 |
 |---|---|---|---|
 | VS Code 扩展宿主型 | `juehang/vscode-mcp-server` | 396 / **2026-01-07**（⚠️ 11 个月无提交） | 工具：`search_symbols_code` / `get_symbol_definition_code` / `get_diagnostics_code` / `rename_file_code` … |
-| VS Code 扩展宿主型 | `BifrostMCP` | 225 / 2026-10-20 | 明确暴露 **Find Usages / Rename** |
-| 直接跑 LSP | `oraios/serena` | **31589** / 2026-11-19 | 双后端：LSP（40+ 语言）/ 付费 JetBrains 插件 |
+| VS Code 扩展宿主型 | `BifrostMCP` | 225 / 2026-03-27（**实质功能代码停在 2025-12-15**；无 GitHub Release；**AGPL-3.0**） | 明确暴露 **Find Usages / Rename**；**本机已装 0.0.14 并实测通道通** |
+| **直接跑 LSP（不依赖窗口）** | **`blackwell-systems/agent-lsp`** | **182 / 2026-11-22（当天）/ MIT** | **66 工具 / 23 skill**；`blast_radius`（一次调用替代 20+ 次 LSP 往返）、`preview_edit`/`safe_apply_edit`（只在 net_delta==0 落盘）、**运行期阻断违规调用**；单 Go 二进制，VS Code 不必开着 |
+| 直接跑 LSP | `oraios/serena` | **31589** / 2026-11-19 | 双后端：LSP（40+ 语言，`src/solidlsp` 是 MIT 可单独抠出）/ 付费 JetBrains 插件（应用层 GPL-3.0） |
 | 直接跑 LSP | `isaacphi/mcp-language-server` | 1622 / 2026-03-01 | definition / references / rename / diagnostics |
 | 结构化检索 | `ast-grep/ast-grep-mcp` | 500 / 2026-11-21 | 只有模式匹配，**无符号身份/引用解析** |
 | 代码图 | `colbymchenry/codegraph`（本机已装） | 78344 / 2026-11-20 | 预索引符号图，IDE 无关 |
@@ -105,6 +106,19 @@ Serena 官方自评用的是 **JetBrains 后端**，并明说 "The evaluation ca
 **可替代的部分（VS Code 侧有等效物）**：单语言符号检索/引用 → 对应语言 LSP；诊断 → LSP `publishDiagnostics` + 语言 linter（eslint/gopls/clippy/ruff）；文本/文件检索 → ripgrep（VS Code 内置就是 rg）；结构化检索 → ast-grep（已有官方 MCP）；跨语言影响面 → codegraph（IDE 无关，30+ 语言统一）。
 
 ---
+
+## §3.5 官方路线到底有没有？（2026-11-22 逐条核过，结论是「没有」）
+
+| 查了什么 | 结论 |
+|---|---|
+| `microsoft/vscode-mcp` 仓库 | **不存在**（404）—— 微软从未开过这个仓 |
+| 1.104 宣布的「用 MCP 驱动本机 VS Code」（`test/mcp`） | **已于 2026-10-21 被删除**（`microsoft/vscode@6ba33e0c`，"remove obsolete automation MCP server"），始终是内部实验、从未 GA |
+| VS Code 把自身能力暴露成 MCP 的官方 API | **不存在**。官方唯一的「服务端」姿态是 `lm.startMcpGateway()` —— 它**代理**已注册的 MCP server，不暴露 IDE 能力，且仍在 proposed API（issue #288777） |
+| 官方发布的「VS Code as MCP server」扩展 | **不存在**（微软只有 DebugMCP，包装的是**调试**这一项能力） |
+
+⇒ **「VS Code 当语义后端」这件事只有社区实现、没有官方背书** —— 这是选型里最大的风险项。
+
+**另外两处更正**：① **Roo Code 仓库已 archived**（2026-05-15 停更）；**Cline 现在不再自建向量索引**（仓库树里已无 embedding/qdrant/codebase-index 目录，符号能力直接吃 VS Code 的 language provider）。② **IntelliJ 的 JS/TS 插件已不在开源仓**（`JetBrains/intellij-community` 的 `plugins/JavaScriptLanguage` 404）⇒ 闭源部分拿不到，这也是「换 IDE 不等于换引擎」的现实边界。
 
 ## §4 落地建议（按任务分家，而不是按 IDE 分家）
 
