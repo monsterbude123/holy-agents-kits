@@ -14,5 +14,5 @@
   "settings": "idea-settings.json",
   "templates": ["ts-project", "ts-web"],
   "detector": "scripts/langs/ts/detect.mjs",
-  "note": "JS/TS 插件在 Marketplace 的兼容列表不含 IC → 社区版装不了，得换 Ultimate/WebStorm（证据见 references/langs/ts/sources.md 的 idea-edition-gate 条目）。运行期能力档位见 references/langs/ts/runtime.md。"
+  "note": "JS/TS 插件在 Marketplace 的兼容列表不含 IC → 社区版装不了。2026-11-22 实测补充：**侧载官方插件进社区版确实能加载**（插件级 depends 为 0，ultimate 只在 2 个 content module 里），但运行期缺 33 个 com.intellij.webcore.* 专有类 → 每次开文件/走索引都抛 → 工程实际不可用 ⇒ 结论不变，平替是 Ultimate / WebStorm（非商业免费）。证据见 references/langs/ts/runtime.md §6.2。"
 }

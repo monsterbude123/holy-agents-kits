@@ -10,8 +10,10 @@
 ## 先看版本门禁（它决定后面哪些能做）
 
 - **JVM 不受 edition 门禁限制**：java / kotlin 插件在 IC/IU/WS 全版本捆绑，`setup-env.sh plugins` 会报
-  `LANG_PLUGIN java edition-gate=community java=present kotlin=present`。TS / Python 的**语言插件**社区版装不了，
-  那两门语言的门禁是 `ultimate`（见 [../../capability-matrix.md](../../capability-matrix.md) §3.1 的逐插件门禁表）。
+  `LANG_PLUGIN java edition-gate=community java=present kotlin=present`。
+  别的语言门禁（2026-11-22 实测）：**Python ✅ 社区版可装**（"Python Community Edition" id 7322）· **Rust ✅**（capability shim 配方）·
+  **TS/JS ❌**（侧载能加载但运行期缺 33 个付费平台专有类）· **Go ❌**（插件内有显式授权校验）——
+  逐条见 [../../capability-matrix.md](../../capability-matrix.md) §3.1/§3.2。
 - **IDEA 2026.2 支持的项目语言级别上探 Java 27**，**Java 25 是这一版的 LTS 对齐档**
   （Compact source files / Module imports）。所以项目 SDK 钉在 **JDK 25** 既稳又与 IDE 的 LTS 档对齐。
 - **JDK 25 本身是 LTS**（2025-09-16 GA，多数发行商按 LTS 支持），编译目标用 `release` 而不是

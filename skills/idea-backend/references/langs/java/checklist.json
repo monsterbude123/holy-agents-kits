@@ -256,7 +256,7 @@
     "applies_to": [
       "java"
     ],
-    "action": "通用门禁入口：bash scripts/setup-env.sh plugins <IDEA安装根>。JVM 语言栈在 IC/IU/WS 全版本捆绑（edition-gate=community），java 与 kotlin 插件都在位；TS 与 Python 的**语言插件**社区版装不了，所以那两门语言的门禁是 ultimate。门禁是「每个插件一行」，不是「一门语言一行」——同一门语言里，语言插件与工具插件（如 Ruff）可能落在不同门禁上。本机 IDEA 2026.2 支持的项目语言级别上探 Java 27，Java 25 为 LTS 档。",
+    "action": "通用门禁入口：bash scripts/setup-env.sh plugins <IDEA安装根>。JVM 语言栈在 IC/IU/WS 全版本捆绑（edition-gate=community），java 与 kotlin 插件都在位；别的语言门禁（2026-11-22 实测）：Python 与 Rust 在社区版可用（Python 走 "Python Community Edition" id 7322；Rust 走 capability shim 配方），TS/JS 与 Go 在社区版不可用（前者缺付费平台专有类，后者插件内有显式授权校验）—— 见 references/capability-matrix.md §3.1。门禁是「每个插件一行」，不是「一门语言一行」——同一门语言里，语言插件与工具插件（如 Ruff）可能落在不同门禁上。本机 IDEA 2026.2 支持的项目语言级别上探 Java 27，Java 25 为 LTS 档。",
     "verify": "R=$(node -e 'try{const c=require(process.env.SKILL_DIR+\"/config.json\");process.stdout.write(c.idea.installRoot)}catch(e){}' 2>/dev/null) && [ -n \"$R\" ] && bash \"$SKILL_DIR/scripts/setup-env.sh\" plugins \"$R\" | grep -qE '^LANG_PLUGIN java edition-gate=community .*java=present'",
     "source": "https://www.jetbrains.com/help/idea/2026.2/supported-java-versions.html",
     "quote": "Java 25: Compact source files, Module imports"
