@@ -21,7 +21,7 @@
 
 ## §1 本机实测：同一批任务，多个引擎（2026-11-22）
 
-测床：[fixtures/probe-ts](../fixtures/probe-ts)（4 个文件、跨文件引用，零依赖，真值见 [fixtures/README.md](../fixtures/README.md)）
+测床：[fixtures/experiment/repo/ts](../fixtures/experiment/repo/ts)（4 个文件、跨文件引用，零依赖，真值见 [fixtures/README.md](../fixtures/README.md) 与 [fixtures/experiment/gold.json](../fixtures/experiment/gold.json)）
 + `qData`（1517 个 Java 文件、40 模块，真实仓）。
 
 | 引擎 | 是什么 | 跨文件引用召回 | 全工程符号检索 | 语义改名 | 诊断 | 索引成本 |
