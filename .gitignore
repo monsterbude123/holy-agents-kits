@@ -18,3 +18,6 @@ skills/*/.env
 # 于是 `git add -A -- . ':(exclude).auto'` 直接以 exit 1 报错，实验提交全部失败。
 .auto/*
 autoresearch-dashboard.html
+
+# mm-gsd 流程记忆（不入库；业务票面走 .scratch/ 入库共享）
+.planning/
