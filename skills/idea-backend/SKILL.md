@@ -127,15 +127,14 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 | `scripts/inspect-project.mjs` | **通用探测器**：按 marker 判语言 → 调该语言分册探测器 → 出事实 → 过滤该语言适用清单条目（`--ids`/`--json`/`--lang`/`--list-langs`） |
 | `scripts/mcp-call.sh` | **统一调用出口**：`mcp-call.sh index|builtin <tool> '<json>' [timeoutSec]`；`list <server>` 拿真实工具面；`has <server> <tool>` 判工具在不在 |
 | `scripts/inspect-diff.sh` | 改动集门禁：自动取 `git diff HEAD + untracked` 代码文件 → 检视 → 问题清单（无 `ide_inspect` 时自动降级） |
-| `scripts/audit-baseline.sh` | **审查基线一条命令**：门禁 → 分批检视 → 归一化清单（MAIN/TEST/NOISE；无 `ide_inspect` 时自动降级） |
-| `scripts/audit-parse.js` | 把检视原始输出 + XML 解析成 `file:line | tool | desc` 清单（去重、剔噪、主/测试分流；兼容 `ide_diagnostics` 降级输出） |
-| `scripts/verify-item.sh` | **分册清单自证**：`--lang <lang> --all` 逐条真跑 `verify`（被检工程 = 当前工作目录；默认切到分册模板，`--dir <工程>` 可查真实工程） |
-| `scripts/verify-quotes.mjs` | **溯源门禁**：每条清单/设置条目的 `quote` 必须能在该分册 `sources.md` 里逐字命中（`--lang <lang>` 可限分册） |
+| `scripts/audit-baseline.sh` + `scripts/audit-parse.js` | **审查基线一条命令**：门禁 → 分批检视 → 归一化清单（无 `ide_inspect` 时自动降级） + 把检视原始输出 + XML 解析成 `file:line \| tool \| desc` 清单（去重、剔噪、主/测试分流；兼容 `ide_diagnostics` 降级输出） |
+| `scripts/verify-item.sh` + `scripts/verify-quotes.mjs` | **分册清单自证**（`--lang <lang> --all` 逐条真跑 `verify`；被检工程 = 当前工作目录，默认切到分册模板，`--dir <工程>` 可查真实工程） + **溯源门禁**（每条清单/设置条目的 `quote` 必须能在该分册 `sources.md` 里逐字命中） |
 | `scripts/check-registry-entry.sh` | IDE 侧设置条目结构校验（`--lang <lang> <id>`：路径/期望/断言/出处/引文齐全） |
 | `scripts/init-project.sh` | 按分册脚手架建新项目（`--lang <lang> [--template <name>]`） |
-| `scripts/backend-compare.sh` + `scripts/tsserver-probe.js` | **语义后端同题对比台**：同一符号跑 IDEA/codegraph/tsserver 多引擎，出可比表（引用命中 / 耗时 / 判据）—— 选型别靠感觉，见 [references/semantic-backend-options.md](references/semantic-backend-options.md) |
+| `scripts/backend-compare.sh` + `scripts/tsserver-probe.js` | **语义后端同题对比台**：同一符号跑 IDEA/codegraph/tsserver 多引擎，出可比表（引用命中 / 耗时 / 判据）—— 选型别靠感觉，见 [references/semantic-backend-options.md](references/semantic-backend-options.md)；`--experiment` 模式按「任务 × 配置」出 D-10 度量集（调用次数 / 载荷字节 / 前置步数 / 3 轮中位 / 两个口径的召回精度 / 失败模式），B、C 两腿从官方 MCP SDK 客户端的记录读 |
 | `scripts/audit-brief.md` | 子代理共用简报模板（工具用法/硬约束/判断原则/豁免/交付格式）——派发时引用它，别复制粘贴 |
 | `scripts/selftest.sh` | 脚本自检（路径桥接 / 工具面探测 / 清单解析）——改完脚本跑一遍 |
+| `scripts/check-experiment.js` | **对照实验门禁**：gold 回仓重数 + 24 格体检 + `results.md`↔`results.json` 逐列对账（`--gold` / `--selftest` 反向自测 / `--render` 由凭证生成表）—— 测床与任务集见 [fixtures/experiment/](fixtures/experiment/) |
 
 ## 八、参考
 
