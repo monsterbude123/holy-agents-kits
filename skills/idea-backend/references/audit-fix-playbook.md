@@ -174,6 +174,44 @@ bash scripts/inspect-diff.sh "$(pwd)"     # 改动集的门禁（uncommitted 自
 **关键**：清单给**方向**（怎么改），不替子代理做决定（该改还是豁免由它按判断原则判定并写依据）——
 既保速度（不重新找问题）又保质量（不盲改）。
 
+### §4.1 子代理 MCP 授权清单（照抄，别自己抄一遍）
+
+**前提**：自定义 agent 的 `frontmatter tools:` 写什么就有什么；**内置类型 agent（general-purpose / Explore）工具表固定、没有 MCP** → 代码调查类必须派自定义 agent。最常见的错漏是**只授 `mcp__idea-builtin__*`**（那样没有 `ide_find_references`，子代理只能改用文本搜索找引用）。
+
+最小授权（2026-11-20 按 server 实测工具面校准）：
+
+```yaml
+---
+name: audit-fixer
+description: 按 IDEA 检视清单修复指定文件组的问题
+tools:
+  - Read
+  - Edit
+  - Grep
+  - mcp__idea-index__ide_find_references
+  - mcp__idea-index__ide_find_definition
+  - mcp__idea-index__ide_find_class
+  - mcp__idea-index__ide_find_file
+  - mcp__idea-index__ide_call_hierarchy
+  - mcp__idea-index__ide_type_hierarchy
+  - mcp__idea-index__ide_find_implementations
+  - mcp__idea-index__ide_search_text
+  - mcp__idea-index__ide_diagnostics
+  - mcp__idea-index__ide_sync_files
+  - mcp__idea-index__ide_index_status
+  - mcp__idea-builtin__read_file
+  - mcp__idea-builtin__get_file_problems
+  - mcp__idea-builtin__lint_files
+  - mcp__idea-builtin__search_symbol
+  - mcp__idea-builtin__analyze_calls
+---
+```
+
+- **按需加**：需要改名 → `mcp__idea-index__ide_refactor_rename`；需要建类型文件 → `mcp__idea-index__ide_create_from_template`（monster 分支才有）；需要抽方法 → `mcp__idea-index__ide_refactor_extract_method`（monster 分支才有）。
+- **别授**：`execute_terminal_command`（CreateProcess 直调、PATH 是 IDEA 的、复合命令要自己包 `cmd /c`）、`build_project`/`execute_run_configuration`（构建与进程由编排层统一管，§Step 5 铁律）。
+- **授了不等于能用**：工具面因插件版本而异（上游版没有 `ide_inspect`/`ide_refactor_extract_method`/`ide_create_from_template`）→ 派发前用 `bash scripts/mcp-call.sh list index` 核对清单；**当前 server 没暴露的工具，写进 prompt 只会让子代理静默降级**。
+- **TS/Next 仓另有一套**：符号级工具在 TS 仓静默失效（位置法解析到目录符号），子代理必须改用 `ide_search_text` + 人工核对 —— 见 [ts-web.md](ts-web.md)。
+
 ---
 
 ## §5 中断恢复 vs 整体重派（对照表）
@@ -217,6 +255,8 @@ bash scripts/inspect-diff.sh "$(pwd)"     # 改动集的门禁（uncommitted 自
 | `ide_search_text` 的 snippet 字段 | `r.snippet` / `r.text` / `r.match` 名字不固定 | 逐个兜底取值 |
 | problems 文本清单 | `total` 与返回行数不符 | 读 `xmlDir` |
 | P3C `NonAsciiCharacters` | 612 条（每条中文注释一条） | 噪音规则，脚本已单列豁免 |
+| `ide_inspect` 不在工具面 | 上游插件版（5.20.x）只有 16 个工具 → 整条流水线不可用 | `mcp-call.sh has index ide_inspect` 探测；脚本自动降级 `ide_diagnostics` |
+| TS 仓位置法解析符号 | `resolvedSymbol.kind = directory` → 引用面是"目录"（假命中/0 命中），**不报错** | 查 `resolvedSymbol.kind`；TS 仓改走 `ide_search_text`（见 ts-web.md） |
 
 ---
 

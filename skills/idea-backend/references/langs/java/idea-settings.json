@@ -1,0 +1,62 @@
+[
+  {
+    "id": "idea-delegate-build-to-maven",
+    "title": "把 IDE 的构建/运行委派给 Maven",
+    "path": "Settings | Build, Execution, Deployment | Build Tools | Maven | Runner",
+    "expected": "勾选 Delegate IDE build/run actions to Maven（应用级设置）",
+    "assertion": "勾上后 IDEA 只负责索引与运行，编译交给 Maven；否则 IDE 用自己的增量编译器再编一遍，双编译且注解处理器（Lombok/MapStruct）只在 Maven 那趟生效 → 满屏 Cannot resolve symbol 'log'、getter 不可解析，而 Maven 构建是绿的",
+    "source": "https://www.jetbrains.com/help/idea/2026.2/maven-runner.html",
+    "quote": "Delegate IDE build/run actions to Maven | Select this checkbox to build, run, and debug code through Maven. It might be helpful if you have a configuration that changes the compilation on the fly, or your build generates an artifact with a custom layout.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-maven-importer-jdk",
+    "title": "Maven importer 的 JDK（应用级，容易是陈的）",
+    "path": "Settings | Build, Execution, Deployment | Build Tools | Maven | Importing",
+    "expected": "JDK for importer 选 JDK versions（项目 JDK）或 Use JAVA_HOME，不要留 Internal JRE",
+    "assertion": "同时可能有三个 JDK 在起作用：项目 SDK、importer 的 JDK、Maven runner 的 JRE。importer 是**应用级**设置，陈旧会影响所有项目。注意覆盖规则：pom.xml 里写的 Java 版本会覆盖 importer 的 JDK",
+    "source": "https://www.jetbrains.com/help/idea/2026.2/maven-importing.html",
+    "quote": "JDK for importer | Use this list to specify which JDK to use when the maven project is imported. You can choose one of the following options: Internal JRE: this is a default option that uses the installation directory for JRE. JDK versions: this option uses your project's JDK. Use JAVA_HOME: this option uses the value that is specified in the user's environment variable settings.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-maven-config",
+    "title": "让 IDE 也读 .mvn/maven.config（项目级 Maven 选项）",
+    "path": "Settings | Build, Execution, Deployment | Build Tools | Maven",
+    "expected": "勾选 Use settings from .mvn/maven.config",
+    "assertion": "maven.config 里的选项会覆盖 Maven 设置里的同名项；IDE 在**导入时**读它，改完 maven.config 要重新 Sync 才生效（jvm.config 的内容 IDE 忽略）",
+    "source": "https://www.jetbrains.com/help/idea/2026.2/maven.html",
+    "quote": "Use settings from .mvn/maven.config | Select this option if you want to use a set of Maven options configured in the maven.config file for your project. In this case, options that you have in this file will override the same options specified in the Maven settings.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-gradle-jvm",
+    "title": "Gradle JVM 必须与项目 SDK 对齐",
+    "path": "Settings | Build, Execution, Deployment | Build Tools | Gradle",
+    "expected": "Gradle JVM 指向项目 JDK（或用 Gradle JVM Criteria 指定版本/发行商）",
+    "assertion": "这个字段决定 IDEA 导入 Gradle 工程与执行其任务时用哪个 JVM 跑 Gradle；默认取项目 JDK。不对齐就会出现「IDE 里过、CI 里不过」",
+    "source": "https://www.jetbrains.com/help/idea/2026.2/gradle-settings.html",
+    "quote": "Gradle JVM | Use this field to specify the JVM under which IntelliJ IDEA will run Gradle when you import the specified Gradle project and when you execute its tasks. The default is set to your project JDK.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-gradle-jvm-resolution",
+    "title": "Gradle JVM 的解析顺序（org.gradle.java.home → JAVA_HOME → 最近可用 JDK）",
+    "path": "Settings | Build, Execution, Deployment | Build Tools | Gradle（Gradle JVM Criteria）",
+    "expected": "在 gradle.properties 里显式钉 org.gradle.java.home，或在构建脚本里用 Java toolchain",
+    "assertion": "文档给的解析顺序是 ① gradle.properties 的 org.gradle.java.home → ② JAVA_HOME 环境变量 → ③ 现有 Gradle 版本可用的最近合适 JDK；都没指定才用项目 SDK。不显式钉住，IDE 可能用与 CI 不同的 JDK 构建",
+    "source": "https://www.jetbrains.com/help/idea/2026.2/gradle-jvm-selection.html",
+    "quote": "1. IntelliJ IDEA checks the `gradle.properties` file for the appropriate Gradle JVM specified in `org.gradle.java.home` and uses it for the project. 2. Then it checks the `JAVA_HOME` environment variable. 3. Then it checks the closest appropriate JDK version for the existing Gradle version.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-lombok-annotation-processing",
+    "title": "Lombok 能不能工作取决于构建有没有跑注解处理（不是装不装插件）",
+    "path": "Settings | Build, Execution, Deployment | Compiler | Annotation Processors + Build Tools 的构建委派",
+    "expected": "注解处理已启用，且构建委派给了 Maven/Gradle（让处理器真的在编译期跑）",
+    "assertion": "Lombok 是**编译期**注解处理器：构建脚本声明了 lombok 依赖 + 委派构建（或手动开启注解处理）才生效。⚠️ 更正：本仓原先写的「2026.2 起 IDEA 不再捆绑 Lombok 插件」是**错的**——Lombok 仍在平台源码树里（plugins/lombok，vendor=JetBrains，自 2020.3 起集成）。真正的开关是注解处理，不是插件",
+    "source": "https://www.jetbrains.com/help/idea/2026.2/work-with-gradle-projects.html",
+    "quote": "If you use the annotationProcessors in your project, we recommend that you delegate run and build actions to Gradle, so the annotation processor will be correctly enabled in your project.",
+    "edition": "community"
+  }
+]

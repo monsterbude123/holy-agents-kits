@@ -416,7 +416,15 @@ def validate_skill(
         rel = info.relative(path)
         if path.name in EXEMPT_SCRIPT_NAMES:
             continue
-        if rel.split("/")[-1] not in info.referenced_scripts:
+        # 与 references 同口径：认完整路径（scripts/langs/ts/detect.mjs）、相对 scripts/ 的路径，也认文件名
+        matched = any(
+            r == path.name
+            or r == rel.split("/")[-1]
+            or r == rel
+            or r.endswith("/" + path.name)
+            for r in info.referenced_scripts
+        )
+        if not matched:
             add("warn", "script.orphan", "%s 未被 SKILL.md 引用（脚本不会被执行）" % rel)
 
     # ---- 代码外泄到正文 ------------------------------------------------

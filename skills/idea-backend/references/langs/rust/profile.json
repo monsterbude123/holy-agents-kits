@@ -1,0 +1,20 @@
+{
+  "lang": "rust",
+  "displayName": "Rust",
+  "markers": [
+    "Cargo.toml",
+    "Cargo.lock"
+  ],
+  "pluginDirs": [
+    "intellij-rust"
+  ],
+  "bundledIn": [],
+  "edition": "community",
+  "toolchain": "cargo",
+  "checklist": null,
+  "settings": null,
+  "templates": [],
+  "detector": "scripts/langs/rust/detect.mjs",
+  "note": "**社区版实测可用**（2026-11-22）：门禁是形态①（插件级 ultimate 硬依赖）+ 形态②（rust-capable / nativeDebug-plugin-capable 两个 capability）。解法：shim 插件声明那两个 capability + 装 Rust 插件与 Native Debugging Support + 删掉 descriptor 顶层 ultimate 依赖。**没有**形态④那种显式授权校验 —— 实测 L0-L3 + L5 全通。配方见 references/langs/rust/setup.md，档位见 runtime.md。官方路线仍是 RustRover（非商业免费）。",
+  "registryNote": "Rust 语言服务在 IDE 侧的配置落点未取证（社区版根本装不上）→ registries 留空，别凭印象写。"
+}

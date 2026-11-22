@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="AppTest" type="JUnit" factoryName="JUnit">
+    <option name="MAIN_CLASS_NAME" value="com.example.demo.AppTest" />
+    <module name="demo" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT_LIBS" value="" />
+    <shortenClasspath name="NONE" />
+    <method v="2" />
+  </configuration>
+</component>

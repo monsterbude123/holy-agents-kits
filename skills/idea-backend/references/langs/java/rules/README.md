@@ -12,7 +12,7 @@
 | 插件 | 来源 | 作用 |
 | --- | --- | --- |
 | Alibaba Java Coding Guidelines(XenoAmess TPM) | Marketplace `com.alibaba.p3c.xenoamess` | P3C 规范检视（65 条 Ali* 规则，其中 11 条经 MCP 可驱动） |
-| Lombok | Marketplace | 让 inspection 正确解析 Lombok 生成符号（2026.2.5 不再捆绑） |
+| Lombok | **IDEA 捆绑**（平台源码树 `plugins/lombok`，自 2020.3 起集成） | 让 inspection 正确解析 Lombok 生成符号；**前提是构建真的跑了注解处理**（声明处理器 + 委派构建/开启注解处理） |
 | IDE Index MCP Server | Marketplace `com.github.hechtcarmel.jetbrainsindexmcpplugin`（monster 维护仓 fork 构建见 SKILL.md） | MCP 工具面 |
 
 ## 新项目 setup（3 步）

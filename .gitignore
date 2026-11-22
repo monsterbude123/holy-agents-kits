@@ -12,3 +12,27 @@ skills/*/config.json
 # 技能本地密钥（运行时协议：只入库 .env.example；校验器见真实 .env 直接判错）
 skills/*/.env
 .agents/skills/*/.env
+
+# autoresearch 会话状态（不入库）
+# 用 `.auto/*` 而不是 `.auto/`：后者会让 git 把 .auto 判为"被忽略的目录"，
+# 于是 `git add -A -- . ':(exclude).auto'` 直接以 exit 1 报错，实验提交全部失败。
+.auto/*
+autoresearch-dashboard.html
+
+# mm-gsd 流程记忆（不入库；业务票面走 .scratch/ 入库共享）
+.planning/
+
+# 机器本地产物（与 .npmignore / package.json 的 files 白名单保持同一套判据）
+# —— 全局挡 ——
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+# 本地手工打包的旧副本（0.7.0 的包里带过一份 —— 含别的机器的路径）
+skills/*.zip
+
+# —— 只在 fixtures/ 下挡（templates/**/.idea/ 是项目模板自带，要入库）——
+skills/idea-backend/fixtures/**/.idea/
+skills/idea-backend/fixtures/**/.codegraph/
+skills/idea-backend/fixtures/**/.mcp.json
+skills/idea-backend/fixtures/**/bifrost.config.json

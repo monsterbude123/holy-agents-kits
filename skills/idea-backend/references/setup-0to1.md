@@ -158,6 +158,66 @@ curl -X POST ... -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'   # 结果�
 - ⚠️ **已知缺陷（本机实测，v5.20.6）**：按名字查（`ide_find_class` 连 JDK `String`、qualifiedName 方式）一律返回空；**位置法（file+line+column）完全正常**且返回可复用 symbolId。绕过：grep 定位 → 位置法调用。待插件升级重测。
 - 其 `ide_diagnostics` 的深度分析要求文件已打开（可用内置 `open_file_in_editor` 配合）。
 
+## 7.5 语言插件（把某门语言接进 IDEA）—— 2026-11-22 实测增补
+
+**先判门禁再装**：社区版能不能装某门语言，查 [capability-matrix.md](capability-matrix.md) §3.1/§3.2（**别照抄 Marketplace 的 compatible-products**——那是声明，IDEA 的加载日志才是事实）。
+
+| 语言 | 社区版 | 装什么 |
+|---|---|---|
+| Python | ✅ **能** | Marketplace **"Python Community Edition"**（id **7322**，xmlId `PythonCore`）—— 社区版在 Marketplace 里能正常安装 |
+| Java/Kotlin | ✅ 捆绑 | 无需装 |
+| TS/JS、Go、Rust | ❌ | 侧载**实测不可用**（见 [langs/ts/runtime.md](langs/ts/runtime.md) §6.2 与 Go/Rust 分册）→ 平替 WebStorm / RustRover / GoLand |
+
+**装语言插件的通用动作**：
+
+1. **版本必须对上 IDE build**：查 `<IDEA安装根>/product-info.json` 的 `buildNumber`（本机 `IC-262.12573.28`）→ 到
+   `https://plugins.jetbrains.com/api/plugins/<id>/updates?size=40` 找 `compatibleVersions` 里含该 build 段的版本，
+   下载用 `https://plugins.jetbrains.com/plugin/download?updateId=<id>`；
+2. **Marketplace 里能搜到的，优先走 Marketplace 安装**（自动处理证书与更新）；只有 Marketplace 不给社区版时才考虑侧载 ZIP；
+3. **侧载 ZIP 的落点**：`%APPDATA%\JetBrains\IdeaIC<ver>\plugins\<插件目录名>\`（**用户插件目录**，不是安装目录 —— 丢进安装目录实测不加载），ZIP 顶层目录名保持原样；
+4. **装完必须重启 IDEA**，然后看日志确认：
+   `grep "Loaded custom plugins" idea.log` 里出现该插件；
+   Index 插件侧还要看 `grep "plugin detected via plugin ID" idea.log` —— **这一行才是"语言被认出来"的真凭据**；
+5. 门禁类失败会在这两处露头（社区版装 JS/TS 的真实原文）：
+   `Plugin 'JavaScript and TypeScript' (JavaScript) has dependency on 'intellij.platform.webide' which is not installed` /
+   `Plugin 'Go' (org.jetbrains.plugins.go) has dependency on 'com.intellij.modules.go-capable' which is not installed`
+
+## 7.6 两个必踩的坑（2026-11-22 实测，都是"看起来像卡死"）
+
+### 坑 1：打开未信任工程 → IDE 静默卡死（没有任何窗口）
+
+- **现象**：`idea64.exe <工程路径>` 之后 IDEA **不弹主窗口**、进程占 CPU、`tasklist` 看得到进程但没有窗口标题；
+  日志停在 `PlatformProjectOpenProcessor - Opening (sync) <工程>` 之后不再前进；MCP 端口不监听。
+- **真因**（`jstack <pid>` 实锤）：`TrustedProjectsStartupDialog.showAndGet` 卡在 `ProjectManagerImpl.openProjectAsyncImpl` ——
+  「信任此工程」对话框在主窗口建起来之前就弹了，**没人应答** → 死等。
+- **解法**：先把工程加进受信任列表，再打开。
+
+```bash
+bash scripts/setup-env.sh trust /abs/path/to/project     # 写 <configDir>/options/trusted-paths.xml
+```
+
+（写进去的 key 用 **Windows 反斜杠路径**；已存在不重复加。）
+
+### 坑 2：某个语言插件"装上了但把索引层拖垮"
+
+- **现象**：装完某个语言插件后，**所有**基于索引的查询都返回
+  `TOOL_ERROR: com/intellij/ultimate/UltimateVerifier`（或别的缺类）—— 连和这门语言无关的文件都查不到；
+  `ide_find_file` / `ide_search_text` / `ide_find_class` 全空。
+- **真因**：插件在运行期缺付费平台的专有类（`intellij.platform.commercial.verifier` / `intellij.platform.webide` 等）。
+- **解法**：**把插件彻底卸掉**（移出 `%APPDATA%\JetBrains\IdeaIC<ver>\plugins\`），别留着拖累整个 IDE；
+  判据用 `bash scripts/install-lang-plugin.sh verify`（它会读 idea.log 的门禁段 + 缺类）。
+
+### 附：在社区版里补一门语言（shim 配方）
+
+社区版平台裁剪包只声明了 3 个 capability（`java-capable` / `python-core-capable` / `python-in-non-pycharm-ide-capable`），
+所以 Go/Rust 这类插件会因缺 capability 被拒。**一个自带 shim 插件就能补上**（不改 IDE 安装目录）：
+
+```bash
+bash scripts/install-lang-plugin.sh shim com.intellij.modules.rust-capable                                           com.intellij.modules.nativeDebug-plugin-capable
+```
+
+完整配方与实测见 [capability-matrix.md](capability-matrix.md) §3.1/§5。
+
 ## 8. ZCode 接入
 
 项目根 `.mcp.json`（ZCode 支持 `type:"sse"` 与 `type:"http"`）：
@@ -193,7 +253,7 @@ curl -X POST ... -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'   # 结果�
 - **内置 MCP 工具面 20→25**：新增 `search_symbol`、`analyze_calls`、`read_file`（依赖/JDK 源码与反编译）、`lint_files`、`build_project`、`apply_patch`，搜索类更名 `search_text/search_regex/search_file`。2025.3 的 20 工具清单已过时。
 - **Index 插件（29170）在 262 上"名字索引"缺陷消失**：`ide_find_class`/qualifiedName 查询正常（253 + v5.20.6(253) 上一律返回空，当时只能位置法兜底）。升级后重测，勿照搬历史结论。
 - Index 插件下载 `build=` 参数填当前 IDE build（如 `IU-262.12573.28`），插件 zip 解压进用户插件目录 `%APPDATA%\JetBrains\IdeaIC<ver>\plugins\`。
-- **2026.2.5 不捆绑 Lombok 插件**（2025.3 是捆绑的）。症状：`get_file_problems`/`ide_diagnostics` 对 Lombok 代码系统性误报（`Cannot resolve symbol 'log'`、`Cannot resolve method 'getXxx()'`）。修复：marketplace id=6317（XML id `Lombook Plugin`，拼写如此），`pluginManager?action=download&id=Lombook%20Plugin&build=IU-262...` 下载后解压进用户插件目录重启。验证方式：同一文件 errors 应归零。
+- **Lombok 误报的根因不是插件（2026-11-22 更正）**：此前记的「2026.2.5 不捆绑 Lombok」是**错的** —— Lombok 仍在 IDEA 平台源码树里（`plugins/lombok`，vendor = JetBrains，自 2020.3 起集成），2026.2 官方文档也从未提到它。`get_file_problems`/`ide_diagnostics` 对 Lombok 代码系统性误报（`Cannot resolve symbol 'log'`、`Cannot resolve method 'getXxx()'`）的**真正根因是构建没跑注解处理**：① 构建脚本没声明 lombok 处理器（Maven 的 `annotationProcessorPaths` / Gradle 的 `annotationProcessor` 依赖），或 ② IDE 没委派构建给 Maven/Gradle、也没手动开注解处理。处置顺序：先查这两处（见 `references/langs/java/checklist.json` 的 `annotation-processing-enabled` 与 `idea-settings.json` 的 `idea-lombok-annotation-processing`），再考虑 marketplace 侧载（id=6317，XML id 拼写是 `Lombook Plugin`）。
 - 新版首次启动会全量重建索引（253 的索引缓存不通用），大项目需等待。
 
 ## 11. 全量 inspection 门禁（headless inspect.bat，官方路径）

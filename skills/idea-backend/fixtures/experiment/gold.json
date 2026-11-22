@@ -1,0 +1,117 @@
+{
+  "_comment": "真值（机器可数）—— 每个锚点两个口径：expect_files（命中文件集合）+ expect_hits（整词命中次数，含定义行）。计数范围按子工程钉死（不跨语言合并）。回仓重数由 skills/idea-backend/scripts/check-experiment.js --gold 复核，对不上非 0 退出。口径定义见同目录 tasks.md。",
+  "repo_root": "skills/idea-backend/fixtures/experiment/repo",
+  "counting": {
+    "rule": "整词命中（正则 \\b<symbol>\\b），**含定义行**；统计范围 = count_scope 子工程目录 + file_mask 文件掩码；不跨语言合并",
+    "verified_by": "node skills/idea-backend/scripts/check-experiment.js --gold"
+  },
+  "scopes": {
+    "definition": "找定义类任务：文件口径 gold = {该锚点的 decl_file}；命中口径 gold = 1（定义条数）",
+    "references": "找引用类任务：文件口径 gold = 该锚点的 expect_files；命中口径 gold = 该锚点的 expect_hits（含定义行）",
+    "impact": "影响面类任务：文件口径 gold = 该锚点的 expect_files；命中口径**不适用**（影响面是文件集合，不是命中数）⇒ by_hits 记 null",
+    "diagnostics": "诊断类任务：口径 = 问题条数与类型 ⇒ 召回/精度**不适用**（by_files / by_hits 记 null）",
+    "per_language": "跨语言任务：按语言分列，各语言用 references 口径（py 一套 / ts 一套，**不合并成一个数**）"
+  },
+  "tasks": [
+    { "id": "T1", "title": "找定义（按名）", "anchors": ["py_probe_item"], "scope": "definition" },
+    { "id": "T2", "title": "找定义（按位置）", "anchors": ["py_probe_run"], "scope": "definition" },
+    { "id": "T3", "title": "找引用（列全部引用）", "anchors": ["py_probe_item"], "scope": "references" },
+    { "id": "T4", "title": "影响面/改名干跑", "anchors": ["py_probe_item"], "scope": "impact" },
+    { "id": "T5", "title": "单文件诊断", "anchors": ["py_broken"], "scope": "diagnostics" },
+    { "id": "T6", "title": "跨语言统一符号空间", "anchors": ["py_probe_item", "ts_probe_item"], "scope": "per_language" }
+  ],
+  "anchors": [
+    {
+      "id": "py_probe_item",
+      "lang": "python",
+      "symbol": "ProbeItem",
+      "decl_file": "py/src/probe_item.py",
+      "decl_line": 8,
+      "expect_files": ["py/src/probe_consumer.py", "py/src/probe_item.py"],
+      "expect_hits": 4,
+      "count_scope": "py/",
+      "file_mask": ["*.py"],
+      "normalization": {
+        "idea": "真代码引用（不含定义行）⇒ 归一化 = 命中数 + 1（补定义行，对齐 gold 口径）",
+        "bifrost_mcp": "VS Code 语言 provider 的引用位置（find_usages 带 context.includeDeclaration=true，含定义行）⇒ 归一化 = 命中数",
+        "agent_lsp": "pyright 语义引用位置（find_references 带 include_declaration=true，含定义行）⇒ 归一化 = 命中数",
+        "codegraph": "受影响符号（含 import 边与成员）⇒ **与 grep 命中数不同义**，不换算命中口径，只算文件口径"
+      }
+    },
+    {
+      "id": "py_probe_run",
+      "lang": "python",
+      "symbol": "probe_run",
+      "decl_file": "py/src/probe_item.py",
+      "decl_line": 23,
+      "expect_files": ["py/src/probe_consumer.py", "py/src/probe_item.py"],
+      "expect_hits": 3,
+      "count_scope": "py/",
+      "file_mask": ["*.py"],
+      "normalization": {
+        "idea": "真代码引用（不含定义行）⇒ 归一化 = 命中数 + 1",
+        "bifrost_mcp": "引用位置（含定义行）⇒ 归一化 = 命中数",
+        "agent_lsp": "语义引用位置（含定义行）⇒ 归一化 = 命中数",
+        "codegraph": "受影响符号 ⇒ 与 grep 命中数不同义，只算文件口径"
+      }
+    },
+    {
+      "id": "py_broken",
+      "lang": "python",
+      "symbol": "broken",
+      "decl_file": "py/src/probe_broken.py",
+      "decl_line": 9,
+      "expect_files": ["py/src/probe_broken.py"],
+      "expect_hits": 1,
+      "count_scope": "py/",
+      "file_mask": ["*.py"],
+      "expect_problems": {
+        "parse_error": true,
+        "min_count": 1,
+        "type": "syntax",
+        "note": "条数按引擎各自的计数粒度记（IDEA 的 ide_diagnostics 与 pyright 的 get_diagnostics 粒度不同）⇒ 判定口径 = 条数 ≥ 1 且类型属语法类。文件必须被 Python 解析器拒绝 —— check-experiment.js 回仓用 ast 复核这条。"
+      },
+      "normalization": {
+        "idea": "ide_diagnostics 的 problemCount（文件级）",
+        "bifrost_mcp": "get_code_actions 里的 codeAction.diagnostics（扩展 0.0.14 实测坏 ⇒ 无此能力）",
+        "agent_lsp": "get_diagnostics 的 diagnostics[] 条数",
+        "codegraph": "无诊断能力（CLI 无检视子命令）"
+      }
+    },
+    {
+      "id": "ts_probe_item",
+      "lang": "typescript",
+      "symbol": "ProbeItem",
+      "decl_file": "ts/src/alpha.ts",
+      "decl_line": 2,
+      "expect_files": ["ts/src/alpha.test.ts", "ts/src/alpha.ts", "ts/src/beta.ts", "ts/src/gamma.ts"],
+      "expect_hits": 9,
+      "count_scope": "ts/",
+      "file_mask": ["*.ts", "*.tsx"],
+      "normalization": {
+        "idea": "社区版无 JS/TS 插件 ⇒ .ts 无 PSI ⇒ 该侧无此能力（结构事实）",
+        "bifrost_mcp": "VS Code 内建 TS provider 的引用位置（含定义行）⇒ 归一化 = 命中数",
+        "agent_lsp": "本腿只起 pyright；LSP 协议级无跨语言符号空间 ⇒ 该侧无此能力（结构事实）",
+        "codegraph": "受影响符号 ⇒ 与 grep 命中数不同义，只算文件口径"
+      }
+    },
+    {
+      "id": "ts_probe_core",
+      "lang": "typescript",
+      "symbol": "probeCore",
+      "decl_file": "ts/src/alpha.ts",
+      "decl_line": 8,
+      "expect_files": ["ts/src/alpha.test.ts", "ts/src/alpha.ts", "ts/src/beta.ts", "ts/src/gamma.ts"],
+      "expect_hits": 8,
+      "count_scope": "ts/",
+      "file_mask": ["*.ts", "*.tsx"],
+      "_note": "8/8 基线（phase 01 实测：tsserver references = 8 含定义、codegraph impact = 8 个受影响符号）。**只作参照、不是 gold** —— 根级索引下 impact 数字会不同。",
+      "normalization": {
+        "idea": "社区版无 JS/TS 插件 ⇒ 无此能力",
+        "bifrost_mcp": "引用位置（含定义行）⇒ 归一化 = 命中数",
+        "agent_lsp": "本腿只起 pyright ⇒ 无此能力",
+        "codegraph": "受影响符号 ⇒ 与 grep 命中数不同义，只算文件口径"
+      }
+    }
+  ]
+}

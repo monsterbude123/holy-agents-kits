@@ -1,0 +1,23 @@
+{
+  "$schema": "https://www.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "types": [],
+    "jsx": "react-jsx",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

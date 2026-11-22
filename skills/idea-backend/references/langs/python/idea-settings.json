@@ -1,0 +1,62 @@
+[
+  {
+    "id": "idea-python-plugin",
+    "title": "安装并启用 Python 插件（社区版装 \"Python Community Edition\"）",
+    "path": "Settings > Plugins",
+    "expected": "Python 插件已安装并处于启用状态（社区版装 Python Community Edition / xmlId PythonCore；Ultimate 装完整版）",
+    "assertion": "打开任意 .py 文件，编辑器出现 Python 代码洞察（补全、跳转、inspection 高亮）；若整份 .py 文件被当纯文本，说明插件没装。社区版另可用 `bash scripts/setup-env.sh plugins <IDEA安装根>` 看 `LANG_PLUGIN python ... python-ce=present` 交叉验证",
+    "source": "https://www.jetbrains.com/help/idea/managing-plugins.html",
+    "quote": "Open settings or press Ctrl+Alt+S in your IDE and then select Plugins.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-python-interpreter",
+    "title": "项目解释器指向项目的虚拟环境",
+    "path": "Settings > Python Interpreter",
+    "expected": "项目解释器 = 项目的虚拟环境（如 .venv/bin/python），不是系统全局解释器",
+    "assertion": "状态栏的 Python Interpreter widget 显示该解释器路径；Settings > Python Interpreter 列表里项目 SDK 一栏指向 .venv",
+    "source": "https://www.jetbrains.com/help/idea/configuring-python-sdk.html",
+    "quote": "Click the Python Interpreter widget on the status bar.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-uv-environment",
+    "title": "用 uv 建/选虚拟环境（uv 可用时）",
+    "path": "Settings > Python Interpreter > Add Interpreter > uv",
+    "expected": "环境类型里选 uv，基解释器选项目要求的版本",
+    "assertion": "Add Interpreter 弹窗里存在 uv 条目；建好的环境出现在解释器列表且指向 .venv",
+    "source": "https://www.jetbrains.com/help/idea/configuring-python-sdk.html",
+    "quote": "Select uv from the list of environment types.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-pytest-runner",
+    "title": "默认测试运行器 = pytest",
+    "path": "Settings | Python | Tools | Integrated Tools",
+    "expected": "Default test runner 选 pytest",
+    "assertion": "该下拉里选中的是 pytest（不是 unittest / nose）",
+    "source": "https://www.jetbrains.com/help/idea/pytest.html",
+    "quote": "press Ctrl+Alt+S to open settings and select Python | Tools | Integrated Tools",
+    "edition": "community"
+  },
+  {
+    "id": "idea-pytest-run-configuration",
+    "title": "pytest 运行配置指向 tests/ 目录",
+    "path": "Run > Edit Configurations... > Pytest",
+    "expected": "有一个 pytest 运行配置：module = 项目模块，target = tests 目录",
+    "assertion": "配置里 module 指向项目模块、target 是 $PROJECT_DIR$/tests；运行它与命令行 pytest 结果一致",
+    "source": "https://www.jetbrains.com/help/idea/pytest.html",
+    "quote": "PyCharm provides a pytest Run/Debug configuration automatically.",
+    "edition": "community"
+  },
+  {
+    "id": "idea-indexing-excludes",
+    "title": "把虚拟环境与缓存目录排除出索引",
+    "path": "Project 视图里右键目录 > Mark Directory As | Excluded",
+    "expected": ".venv / __pycache__ / .mypy_cache / .ruff_cache / .pytest_cache 被排除",
+    "assertion": "这些目录在 Project 视图里是黄色（excluded）；索引统计里不含它们",
+    "source": "https://www.jetbrains.com/help/idea/indexing.html",
+    "quote": "Right-click a folder and select Mark Directory As | Excluded.",
+    "edition": "any"
+  }
+]

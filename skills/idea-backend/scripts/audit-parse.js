@@ -21,6 +21,8 @@
  *   - problems 行里文件路径是相对路径, XML 里是 file://$PROJECT_DIR$/... → 两种都要归一
  *   - 同一问题可能同时出现在 daemon-core 段与 XML global 段 → 按 (tool,file,line,desc) 去重
  *   - desc 里的 HTML 实体(&lt; &gt; &quot; &amp;) 与 <code> 标签要还原
+ *   - 降级路径(ide_inspect 不可用时)喂进来的是 ide_diagnostics 的整块 JSON: problems[] = {message,severity,file,line,column}
+ *     → 这一路没有"检视工具名"，工具列填 severity(ERROR/WARNING/WEAK_WARNING)
  */
 'use strict';
 const fs = require('fs');
@@ -68,9 +70,31 @@ function addItem(file, line, tool, desc, src) {
 // 格式实测:  "  [WARNING] <tool> — <file>:<line> <desc>"
 //   (工具名在破折号前; 位置与描述之间是空格, 不是冒号)
 const PROBLEM_RE = /^\s*\[(WARNING|ERROR|INFO)\]\s+([A-Za-z][A-Za-z0-9_]*)\s+—\s+(.+)$/;
+let diagTruncated = 0;
 for (const rf of raws) {
   if (!rf || !fs.existsSync(rf)) continue;
   const text = fs.readFileSync(rf, 'utf8').replace(/\r/g, '');
+  // ── 降级路径: 整块 ide_diagnostics JSON ─────────────────────────────────
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    let j = null;
+    try { j = JSON.parse(trimmed); } catch (e) { j = null; }
+    if (j && Array.isArray(j.problems)) {
+      for (const p of j.problems) {
+        addItem(p.file, p.line, p.severity || '?', p.message || '', 'diagnostics');
+      }
+      // 编译错误没有文件维度时归到 (build)，别让它在清单里消失
+      if (Array.isArray(j.buildErrors)) {
+        for (const b of j.buildErrors) {
+          addItem(b.file || '(build)', b.line, 'BUILD_ERROR',
+                  b.message || b.text || JSON.stringify(b), 'diagnostics');
+        }
+      }
+      if (j.problemsTruncated) diagTruncated++;
+      if (j.byTool) summaries.push(j);
+      continue;
+    }
+  }
   for (const line of text.split('\n')) {
     const t = line.trim();
     if (!t) continue;
@@ -131,7 +155,7 @@ const totalReported = summaries.reduce((a, s) => a + (s.total || 0), 0);
 
 const lines = [];
 lines.push(`[SUMMARY] ${JSON.stringify({ reportedTotal: totalReported, uniqueParsed: uniq.length, actionable: uniq.length - noise.length, main: main.length, test: test.length, other: other.length, noiseSuppressed: noise.length, byTool: merged })}`);
-lines.push('[STATS] reportedTotal 是各次 summary.total 累加(跨批重复计数, 只作量级参考); uniqueParsed 是去重后的真实条目数; actionable 已剔除噪音工具(NonAsciiCharacters 等 P3C 中文注释规则); 若 actionable 明显小于 reportedTotal, 说明 problems 文本清单被截断, 以 XML 条目为准。');
+lines.push('[STATS] reportedTotal 是各次 summary.total 累加(跨批重复计数, 只作量级参考); uniqueParsed 是去重后的真实条目数; actionable 已剔除噪音工具(NonAsciiCharacters 等 P3C 中文注释规则); 若 actionable 明显小于 reportedTotal, 说明 problems 文本清单被截断, 以 XML 条目为准。' + (diagTruncated ? ` ⚠️ 降级路径(ide_diagnostics)有 ${diagTruncated} 批 problems 被 maxProblems 截断, 该批需缩小批次重查。` : ''));
 lines.push('--- MAIN (src/main) ---');
 main.forEach(i => lines.push('[MAIN] ' + fmt(i)));
 lines.push('--- TEST (src/test) ---');

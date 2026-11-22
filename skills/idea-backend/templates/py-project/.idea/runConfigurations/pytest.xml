@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="pytest" type="tests" factoryName="Pytest">
+    <module name="py-project" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHON_DONTWRITEBYTECODE" value="1" />
+    </envs>
+    <option name="_new_additionalArguments" value="&quot;&quot;" />
+    <option name="_new_target" value="&quot;$PROJECT_DIR$/tests&quot;" />
+    <option name="_new_targetType" value="&quot;PATH&quot;" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -15,6 +15,9 @@
 #   - scope=files 的每一批都会跑批处理管线并产出 xmlDir → 分批即可拼出全量 global 项
 #   - 手搓 curl / 反复单跑 ide_inspect 是最大的时间黑洞 → 这里一次跑完
 #
+# 降级: 当前插件没暴露 ide_inspect 时(上游 5.20.x 只有 16 个工具), 自动改走 ide_diagnostics
+#       文件级检视 —— 输出格式不变, 但拿不到 P3C/阿里规范与 global 批处理项, 工具列=severity。
+#
 # 依赖: scripts/mcp-call.sh（统一出口，不要绕过它手搓 JSON-RPC）
 
 set -u
@@ -51,12 +54,33 @@ if ! bash "$SKILL_DIR/scripts/mcp-call.sh" index ide_index_status '{}' 20 | /usr
   echo "ERROR: 索引未就绪或端点不可用(ide_index_status 非 isDumbMode:false)"; exit 2
 fi
 
+# ── 工具门禁: ide_inspect 在不在当前插件的工具面 ────────────────────────────
+# 上游插件版(5.20.x)只暴露 16 个工具, 没有 ide_inspect → 整条流水线不可用。
+# 判据 = server 当前的 tools/list(不是文档), 探测脚本: scripts/mcp-call.sh list index
+MODE=inspect
+bash "$SKILL_DIR/scripts/mcp-call.sh" has index ide_inspect >/dev/null 2>&1
+RC=$?
+if [ "$RC" = "1" ]; then
+  MODE=diagnostics
+  echo "[gate] 当前 idea-index 未暴露 ide_inspect → 降级: ide_diagnostics 文件级检视" >&2
+  echo "[gate] ⚠️ 降级拿不到 P3C/阿里规范 与 global 批处理项(unused declaration 等), 工具列=severity" >&2
+  if [ "$BATCH" -gt 100 ]; then
+    echo "[gate] ide_diagnostics 单次最多 100 文件 → batch 夹到 100" >&2
+    BATCH=100
+  fi
+elif [ "$RC" != "0" ]; then
+  echo "ERROR: 工具面探测失败(tools/list 探不到, rc=$RC)"; exit 2
+fi
+
 # ── 文件清单 ────────────────────────────────────────────────────────────────
+# --files-only <路径正则>: 只取匹配的路径（glob 用 shell 展开不了，按正则匹配相对路径）
 if [ -n "$FILES_ONLY" ]; then
-  FILES=$(find . -path ./target -prune -o -type f -name "*.$EXT" -print 2>/dev/null | sed 's|^\./||')
+  # 走 git 取（快，且天然排除 node_modules 等忽略目录）；非 git 仓才 fallback find
+  FILES=$({ git ls-files 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | /usr/bin/grep -E "\.$EXT$" | /usr/bin/grep -E "$FILES_ONLY")
+  [ -z "$FILES" ] && FILES=$(find . \( -name node_modules -o -name .next -o -name .git -o -name target -o -name dist -o -name out \) -prune -o -type f -name "*.$EXT" -print 2>/dev/null | sed 's|^\./||' | /usr/bin/grep -E "$FILES_ONLY")
 else
   FILES=$(git ls-files 2>/dev/null | /usr/bin/grep -E "\.$EXT$")
-  [ -z "$FILES" ] && FILES=$(find . -path ./target -prune -o -type f -name "*.$EXT" -print 2>/dev/null | sed 's|^\./||')
+  [ -z "$FILES" ] && FILES=$(find . \( -name node_modules -o -name .next -o -name .git -o -name target -o -name dist -o -name out \) -prune -o -type f -name "*.$EXT" -print 2>/dev/null | sed 's|^\./||')
 fi
 COUNT=$(printf '%s\n' "$FILES" | /usr/bin/grep -c . || true)
 echo "[gate] IDEA 就绪 | 待检视文件 $COUNT 个 | batch=$BATCH" >&2
@@ -74,16 +98,26 @@ for b in "$TMP"/batch_*; do
   BATCH_NO=$((BATCH_NO+1))
   # ⚠️ MSYS 坑: node(Windows) 读不了 /tmp/... (会解析成 D:\tmp\...) → 路径必须 cygpath -m
   B_WIN=$(cygpath -m "$b")
-  ARGS=$(node -e "
-    const fs=require('fs');
-    const files=fs.readFileSync(process.argv[1],'utf8').split('\n').filter(Boolean);
-    console.log(JSON.stringify({scope:'files',engine:'full',min_severity:'all',files,project_path:process.argv[2]}));
-  " "$B_WIN" "$PROJECT_WIN")
   RAW="$TMP/raw_$BATCH_NO.txt"
-  bash "$SKILL_DIR/scripts/mcp-call.sh" index ide_inspect "$ARGS" 590 > "$RAW" 2>/dev/null
+  if [ "$MODE" = "inspect" ]; then
+    ARGS=$(node -e "
+      const fs=require('fs');
+      const files=fs.readFileSync(process.argv[1],'utf8').split('\n').filter(Boolean);
+      console.log(JSON.stringify({scope:'files',engine:'full',min_severity:'all',files,project_path:process.argv[2]}));
+    " "$B_WIN" "$PROJECT_WIN")
+    bash "$SKILL_DIR/scripts/mcp-call.sh" index ide_inspect "$ARGS" 590 > "$RAW" 2>/dev/null
+  else
+    # 降级: ide_diagnostics 文件级检视(单次最多 100 文件 → 批次夹到 100)
+    ARGS=$(node -e "
+      const fs=require('fs');
+      const files=fs.readFileSync(process.argv[1],'utf8').split('\n').filter(Boolean).slice(0,100);
+      console.log(JSON.stringify({files,severity:'all',includeBuildErrors:true,maxProblems:500,project_path:process.argv[2]}));
+    " "$B_WIN" "$PROJECT_WIN")
+    bash "$SKILL_DIR/scripts/mcp-call.sh" index ide_diagnostics "$ARGS" 590 > "$RAW" 2>/dev/null
+  fi
   RAWS="$RAWS $RAW"
   RAW_WIN=$(cygpath -m "$RAW")
-  # 每批都产 XML(xmlDir), 逐批合并目录 -> 全量 global 项
+  # 每批都产 XML(xmlDir), 逐批合并目录 -> 全量 global 项(仅 inspect 模式)
   XMLD=$(node -e "
     const fs=require('fs');
     const t=fs.readFileSync(process.argv[1],'utf8').replace(/\r/g,'');
@@ -100,7 +134,10 @@ for b in "$TMP"/batch_*; do
 done
 
 # ── 可选: whole scope(全项目 global 工具一次跑完, 比拼批 XML 更稳) ──────────
-if [ "$WHOLE" = "1" ]; then
+if [ "$WHOLE" = "1" ] && [ "$MODE" = "diagnostics" ]; then
+  echo "[gate] 降级模式忽略 --whole(global 批处理项在降级路径拿不到)" >&2
+fi
+if [ "$WHOLE" = "1" ] && [ "$MODE" = "inspect" ]; then
   ARGS=$(node -e "console.log(JSON.stringify({scope:'whole',engine:'full',min_severity:'all',project_path:process.argv[1]}))" "$PROJECT_WIN")
   RAW="$TMP/raw_whole.txt"
   bash "$SKILL_DIR/scripts/mcp-call.sh" index ide_inspect "$ARGS" 590 > "$RAW" 2>/dev/null

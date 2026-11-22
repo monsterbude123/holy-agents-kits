@@ -187,7 +187,7 @@ taskkill /IM idea64.exe; sleep 8; taskkill /F /IM idea64.exe; sleep 2
 
 实现要点：
 1. 引擎：`InspectionManager.getInstance(project).createTools()` 拿全局 tool wrapper，或 `GlobalInspectionContextImpl(project, ...).performInspectionsWithProgressAndOutput(scope, profile, ...)`（与 GUI Inspect Code 同源，含 P3C 等全部 profile 检查）。
-2. profile：`InspectionProfileManager.getInstance().getCurrentProfile()` 或按名从 `InspectionProfileManager` 取；skill 的 rules/profile XML 可在 setup 时导入为项目 profile。
+2. profile：`InspectionProfileManager.getInstance().getCurrentProfile()` 或按名从 `InspectionProfileManager` 取；skill 的 references/langs/java/rules/Project_Default.xml XML 可在 setup 时导入为项目 profile。
 3. scope：复用 `BuiltInSearchScopeResolver`；新增 `uncommitted`（`ChangeListManager.getInstance(project).getUncommittedChanges()` → VirtualFile 集 → `ExcludedEntriesConfigurable` 反向 scope）。
 4. 线程：inspection 引擎需要 smart mode（`StartupManager`/`DumbService.waitForSmartMode()`）+ 后台 task（照 `DiagnosticsAnalysisService` 的协程/进度写法），结果经 `ReadAction` 收集 PSI 问题。
 5. 输出：复用插件的 JSON 序列化模式（kotlinx serializer，见 `LintFileResult` 结构）。

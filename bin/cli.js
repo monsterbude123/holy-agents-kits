@@ -9,7 +9,11 @@ const SKILLS_DIR = path.join(__dirname, "..", "skills");
 const FEEDBACK_FILE = path.join(__dirname, "..", "FEEDBACK.md");
 const FEEDBACK_URL = "https://github.com/monsterbude123/holy-agents-kits/issues/new";
 const DEFAULT_TARGET = path.join(os.homedir(), ".agents", "skills");
-const SKIP_NAMES = new Set(["node_modules", "__pycache__", ".git"]);
+// 机器相关的产物不进包：node_modules / .venv 的路径是绝对路径，拷到别的机器就是坏的
+// （装完跑 `scripts/setup-env.sh install-deps --lang <lang>` 在本机重建）
+const SKIP_NAMES = new Set(["node_modules", "__pycache__", ".git", ".venv", ".mypy_cache", ".ruff_cache", ".pytest_cache"]);
+// config.json 是机器本地的运行时事实（端口/路径/插件构建），覆盖它会把目标机器的配置改成别人的
+const SKIP_FILES = new Set(["config.json"]);
 
 function usage() {
   console.log(`holy-agents-kits —— 安装 Agent Skill
@@ -71,6 +75,7 @@ function copyDir(src, dest) {
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     if (SKIP_NAMES.has(entry.name)) continue;
     if (entry.isFile() && entry.name.endsWith(".pyc")) continue;
+    if (entry.isFile() && SKIP_FILES.has(entry.name)) continue;
     const from = path.join(src, entry.name);
     const to = path.join(dest, entry.name);
     if (entry.isDirectory()) copyDir(from, to);

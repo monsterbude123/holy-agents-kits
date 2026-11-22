@@ -1,0 +1,172 @@
+[
+  {
+    "id": "idea-ts-language-service",
+    "title": "打开 TypeScript Language Service（IDE 的类型检查引擎）",
+    "path": "Settings > Languages & Frameworks > TypeScript > TypeScript language service",
+    "expected": "TypeScript Language Service 复选框勾选（默认勾选）",
+    "assertion": "打开任意 .ts 文件，状态栏出现 TypeScript 语言服务挂件；勾选状态下语法/错误高亮来自 TS 服务",
+    "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
+    "quote": "By default, the TypeScript Language Service checkbox is selected.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-node-runtime",
+    "title": "把本机 Node 解释器设为项目运行时",
+    "path": "Settings > Languages & Frameworks > JavaScript Runtime",
+    "expected": "Preferred runtime 指向本机 Node 安装目录，Version 字段非空",
+    "assertion": "Version 字段显示的版本必须与命令行 node -v 一致；勾选 Coding assistance for Node.js 才会挂上 Node 内置类型",
+    "source": "https://www.jetbrains.com/help/idea/developing-node-js-applications.html",
+    "quote": "select  Add Local from the context menu  and choose the installation of Node.js, then click OK.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-package-manager",
+    "title": "设定项目包管理器（npm / yarn / pnpm / bun）",
+    "path": "Settings > Languages & Frameworks > JavaScript Runtime > Package manager",
+    "expected": "选择 npm（或 yarn/pnpm）作为当前项目的包管理器",
+    "assertion": "Run 'npm install'、NPM 运行配置与所有脚本调用都使用该管理器；仓库有 yarn.lock / pnpm-lock.yaml 时 IDEA 会自动切换",
+    "source": "https://www.jetbrains.com/help/idea/javascript-runtime.html",
+    "quote": "In this field,   choose the package manager (npm, Yarn, pnpm, bun) for the current project.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-ts-version-selection",
+    "title": "指定 TS 语言服务用项目里的 typescript 包（而非 IDE 自带版本）",
+    "path": "Settings > Languages & Frameworks > TypeScript > TypeScript",
+    "expected": "TypeScript 包选择项目 node_modules/typescript 的版本，而不是 Bundled",
+    "assertion": "Settings 里显示的 TS 版本必须等于 node_modules/typescript/package.json 的 version，也必须等于 package.json devDependencies.typescript 钉的版本",
+    "source": "https://www.jetbrains.com/help/idea/typescript-support.html",
+    "quote": "By default, the `typescript` package from the project's `node_modules` folder is used.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-eslint-automatic",
+    "title": "ESLint 开启 Automatic ESLint configuration",
+    "path": "Settings > Languages & Frameworks | JavaScript | Code Quality Tools | ESLint",
+    "expected": "选中 Automatic ESLint configuration",
+    "assertion": "编辑器里能高亮 ESLint 违规；自动模式会用项目 node_modules 里的 eslint，并从当前文件所在目录逐级向上找配置文件",
+    "source": "https://www.jetbrains.com/help/idea/eslint.html",
+    "quote": "go to `Languages & Frameworks | JavaScript | Code Quality Tools | ESLint`, and select the Automatic ESLint configuration option.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-prettier-run-on-save",
+    "title": "Prettier 开启自动配置并 Run on save",
+    "path": "Settings > Languages & Frameworks | JavaScript | Prettier",
+    "expected": "Automatic Prettier configuration + Run on save 勾选",
+    "assertion": "保存 .ts 文件后内容按 Prettier 风格重写；Run for files 默认覆盖 JS/TS/JSX/TSX/HTML/Vue/Astro",
+    "source": "https://www.jetbrains.com/help/idea/prettier.html",
+    "quote": "To apply Prettier automatically to saved files, select the Run on save checkbox.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-file-type-associations",
+    "title": ".ts / .tsx / .js / .jsx 绑定到正确的文件类型",
+    "path": "Settings > Editor | File Types",
+    "expected": "TypeScript / TypeScript React (.tsx) / JavaScript / JavaScript React (.jsx) 条目存在且模式正确",
+    "assertion": "任何 .ts/.tsx 文件都不得绑定到 Plain text；.mts/.cts/.d.ts 等变体需要用 Add file type associations 补上",
+    "source": "https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html",
+    "quote": "For language-specific features (such as syntax highlighting and code analysis) in files representing different languages and technologies, IntelliJ IDEA maintains a list of file types, each of which links a language service with one or more file name patterns.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-tsconfig-file-type-pattern",
+    "title": "把 tsconfig*.json 注册进 Typescript config 文件类型",
+    "path": "Settings > Editor | File Types > Typescript config",
+    "expected": "文件名模式覆盖项目用到的全部 tsconfig*.json（tsconfig.json / tsconfig.app.json 等）",
+    "assertion": "IDEA 解析「离文件最近的 tsconfig」时，只认被登记为 Typescript config 的文件；没登记的会被当成普通文本",
+    "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
+    "quote": "go to `Editor | File Types`, and make sure the names of all these files match the patterns from the Typescript config file name pattern list.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-library-scopes",
+    "title": "收窄库的作用域（Node.js Core 只对后端目录生效）",
+    "path": "Settings > Languages & Frameworks | JavaScript | Libraries > Manage Scopes",
+    "expected": "取消库的 Enabled 后按目录分配 scope，Node.js Core 只挂到后端目录",
+    "assertion": "前端文件里补全不再出现 fs/path；node_modules 自动库的 scope 同样在这里改",
+    "source": "https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html",
+    "quote": "IntelliJ IDEA lets you tune code completion by configuring scopes for libraries.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-ts-service-powered-engine",
+    "title": "按需开启 service-powered type engine（用真 TS 编译器算类型）",
+    "path": "Settings > Languages & Frameworks > TypeScript > TypeScript language service",
+    "expected": "默认不勾选；只有 IDE 内置引擎算错类型或性能异常时才勾上",
+    "assertion": "改完在状态栏 TS 挂件上 Restart TypeScript Service，成功后挂件重新出现",
+    "source": "https://www.jetbrains.com/help/idea/settings-languages-typescript.html",
+    "quote": "By default, the checkbox is cleared, so type evaluation, resolution, code inspections and refactorings are based on the type information from the IntelliJ IDEA internal TypeScript engine.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-run-ts-file",
+    "title": "直接 Run/Debug 一个 .ts 文件（临时 Node.js 运行配置）",
+    "path": "编辑器右键 .ts 入口 / Run 挂件 > Current file",
+    "expected": "右键菜单出现 Run '<file>.ts' 与 Debug '<file>.ts'",
+    "assertion": "Run 工具窗里出现 Node 输出；把临时配置存下来就变成可复用的常驻配置",
+    "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
+    "quote": "IntelliJ IDEA creates a temporary run/debug configuration of the type Node.js which you can save, edit, and reuse for running and debugging.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-source-map-debug",
+    "title": "用 sourcemap 调试 TypeScript（JavaScript Debug 运行配置）",
+    "path": "Run | Edit Configurations > Add > JavaScript Debug",
+    "expected": "tsconfig 的 sourceMap=true，且 JavaScript Debug 配置指向 dev server URL",
+    "assertion": "在 .ts 里打断点后能命中（而不是 unresolved）；Debug 工具窗的 Disable Source Maps 可切换到实际执行的代码",
+    "source": "https://www.jetbrains.com/help/idea/running-and-debugging-typescript.html",
+    "quote": "During compilation, there can also be generated source maps that set correspondence between your TypeScript code and the JavaScript code that is actually executed.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-vitest-run-config",
+    "title": "Vitest 运行配置（IDE 测试视图）",
+    "path": "Run | Edit Configurations > Add > Vitest",
+    "expected": "Vitest 配置存在，vitest.config.ts / vite.config.ts 可被识别",
+    "assertion": "测试能从编辑器行号槽直接跑；watch 模式在源码变化后自动重跑受影响的用例",
+    "source": "https://www.jetbrains.com/help/idea/vitest.html",
+    "quote": "You can run, debug, do snapshot testing, and measure test coverage both from the editor and via a run/debug configuration.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-jest-run-config",
+    "title": "Jest 运行配置（用 Jest 而非 Vitest 时）",
+    "path": "Run | Edit Configurations > Add > Jest",
+    "expected": "Configuration file 指向 jest.config.js / jest.config.ts，Jest package 指向 node_modules 里的 jest",
+    "assertion": "留空 Configuration file 时 IDEA 会去找 package.json 的 jest 字段，找不到就现场生成默认配置；ESM 项目需在 Node options 加 --experimental-vm-modules",
+    "source": "https://www.jetbrains.com/help/idea/run-debug-configuration-jest.html",
+    "quote": "In this field, specify the `jest.config.js` or `jest.config.ts` file to use",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-file-watchers",
+    "title": "File Watchers：保存/改动时自动跑编译器、格式化器、lint",
+    "path": "Settings | Tools | File Watchers（需先在 Settings | Plugins 启用 File Watchers 插件）",
+    "expected": "为 TS 项目配置一个 watcher（如 tsc --noEmit -w 或 prettier --write）",
+    "assertion": "File Watchers 插件只在 Ultimate 订阅下提供；社区版拿不到这个能力，只能靠 npm scripts + IDE 的保存钩子",
+    "source": "https://www.jetbrains.com/help/idea/using-file-watchers.html",
+    "quote": "The plugin is available only in IntelliJ IDEA with the Ultimate subscription.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-install-type-definitions",
+    "title": "给没类型的第三方包装 @types 定义",
+    "path": "编辑器里光标停在无类型的 import 上 → Alt+Enter → Install TypeScript definitions",
+    "expected": "IDEA 提示为缺失的包安装类型定义，并把 @types/<pkg> 写进 package.json",
+    "assertion": "装完后该 import 的符号能解析、有补全；标准 JS API 还能通过 Ctrl+Q 打开 MDN 链接",
+    "source": "https://www.jetbrains.com/help/idea/typescript-support.html",
+    "quote": "IntelliJ IDEA lets you get reference for symbols from your project and from its dependencies, for symbols defined in external libraries, and for standard JavaScript APIs because TypeScript implements all of them.",
+    "edition": "ultimate"
+  },
+  {
+    "id": "idea-node-modules-library",
+    "title": "node_modules 是自动库根，不要当普通库手工添加",
+    "path": "Settings > Languages & Frameworks | JavaScript | Libraries",
+    "expected": "库列表里有 IDEA 自动创建的 node_modules 库，Project 视图里该目录带库根图标",
+    "assertion": "该库里只有 package.json 的 dependencies 直接列出的模块，传递依赖不进项目；库内不跑 inspection 以保性能",
+    "source": "https://www.jetbrains.com/help/idea/configuring-javascript-libraries.html",
+    "quote": "To provide code completion for project dependencies, IntelliJ IDEA creates a node_modules library automatically so Node.js modules are kept in your project but no inspections are run against them, which improves performance.",
+    "edition": "ultimate"
+  }
+]

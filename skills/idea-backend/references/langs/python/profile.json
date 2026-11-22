@@ -1,0 +1,16 @@
+{
+  "lang": "python",
+  "displayName": "Python",
+  "markers": ["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "Pipfile", "poetry.lock", "uv.lock"],
+  "pluginDirs": ["python", "python-ce"],
+  "bundledIn": [],
+  "edition": "community",
+  "toolchain": "python",
+  "checklist": "checklist.json",
+  "checklistRequires": ["pyproject"],
+  "settings": "idea-settings.json",
+  "templates": ["py-project"],
+  "detector": "scripts/langs/python/detect.mjs",
+  "note": "**社区版可装**（2026-11-22 实测更正）：走 Marketplace 的 **Python Community Edition**（id 7322，xmlId `PythonCore`，目录名 `python-ce`）—— 它的插件级硬依赖 `com.intellij.modules.python-core-capable` 由社区版平台裁剪包提供。完整版 id 631（目录名 `python`）只发布到 IDEA_PRO/PYCHARM_PRO，社区版装不上 —— **门禁是每个插件一行**，别把两个条目混为一谈。实测 L0-L5 全通，见 references/langs/python/runtime.md。工具链侧（uv/ruff/mypy/pytest）与 IDE 无关，命令行照样能当门禁。",
+  "registryNote": "IDEA 侧解释器注册（options/ 下的 python 相关文件）未取证 → registries 留空，别凭印象写。"
+}
