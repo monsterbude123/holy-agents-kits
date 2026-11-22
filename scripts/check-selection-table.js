@@ -235,6 +235,41 @@ for (const d of parsed) {
   if (cross && cross.test(d.section)) bad(d.name + '：新增小节里出现了指向另一技能的仓内路径');
 }
 
+// ---- 旧选型表与比例阈值必须作废（新表接管了这两处的职责） ----
+const opts = readText(OPTIONS);
+if (opts === null) {
+  bad('文件不存在: ' + path.relative(ROOT, OPTIONS));
+} else {
+  const s4 = opts.indexOf('## §4');
+  const s5 = opts.indexOf('## §5');
+  if (s4 === -1 || s5 === -1 || s5 < s4) bad('semantic-backend-options.md：找不到 §4 / §5 段');
+  else {
+    const sec4 = opts.slice(s4, s5);
+    if (!/作废|取代|已废弃/.test(sec4)) bad('semantic-backend-options.md：§4 旧选型表还没标被取代');
+  }
+  const ratioLines = opts
+    .split(/\r?\n/)
+    .filter((l) => /完成率\s*≥|recall\s*≥|precision\s*\/\s*recall\s*≥|≥\s*0\.9|≥\s*95\s*%/.test(l));
+  for (const l of ratioLines) {
+    if (!/作废|取代|已废弃/.test(l)) bad('semantic-backend-options.md：比例阈值还活着 —— ' + l.trim());
+  }
+}
+
+// ---- npm test 必须接上本 phase 的两道门禁（门禁不在 test 脚本里就没人跑） ----
+const pkg = readText(PKG);
+if (pkg === null) bad('文件不存在: package.json');
+else {
+  let scripts = {};
+  try {
+    scripts = JSON.parse(pkg).scripts || {};
+  } catch (e) {
+    bad('package.json 解析失败 —— ' + e.message);
+  }
+  const test = scripts.test || '';
+  for (const k of ['check-experiment', 'check-selection-table'])
+    if (!test.includes(k)) bad('npm test 没接 ' + k);
+}
+
 // ---- 结论 ----
 if (problems.length) {
   for (const p of problems) console.error('  ✗ ' + p);
@@ -242,4 +277,4 @@ if (problems.length) {
   process.exit(1);
 }
 const rowCount = parsed.length ? parsed[0].json.rows.length : 0;
-console.log('选型决策表：两份副本逐字相同（' + rowCount + ' 行）· 每个数字的出处指针都能回查到该数 · 证据等级合法');
+console.log('选型决策表：两份副本逐字相同（' + rowCount + ' 行）· 每个数字的出处指针都能回查到该数 · 证据等级合法 · 旧表与比例阈值已作废');

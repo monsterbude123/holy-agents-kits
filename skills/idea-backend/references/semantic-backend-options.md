@@ -120,7 +120,20 @@ Serena 官方自评用的是 **JetBrains 后端**，并明说 "The evaluation ca
 
 **另外两处更正**：① **Roo Code 仓库已 archived**（2026-05-15 停更）；**Cline 现在不再自建向量索引**（仓库树里已无 embedding/qdrant/codebase-index 目录，符号能力直接吃 VS Code 的 language provider）。② **IntelliJ 的 JS/TS 插件已不在开源仓**（`JetBrains/intellij-community` 的 `plugins/JavaScriptLanguage` 404）⇒ 闭源部分拿不到，这也是「换 IDE 不等于换引擎」的现实边界。
 
-## §4 落地建议（按任务分家，而不是按 IDE 分家）
+## §4 落地建议（按任务分家，而不是按 IDE 分家）—— ⚠️ **已作废，见新的决策表**
+
+> ⚠️ **本节已被取代（2026-11-22）**：下表是 phase 01 的旧选型表 —— 它按「任务」一句话给建议，
+> **没有语言维度、没有证据等级、没有逐行的出处指针，也没有「何时别选它」**。
+> **现行决策表**在 [capability-matrix.md](capability-matrix.md) 的「跨后端选型」节：
+> 行 = 任务类型 × 语言，每行带推荐（主 / 备）· 依据（数字 + 出处指针）· 证据等级 · 代价与前提 · 何时别选它；
+> 同一份内容在另一技能 vscode-backend 的 references/runtime.md 里带**同源副本**（仓内门禁 `scripts/check-selection-table.js` 逐格对账）。
+> ⇒ **按任务分家请查那张表**；下表只留作旧结论的对照（哪些被沿用、哪些被改写）。
+>
+> 逐条沿用关系：全项目规范审查 → IDEA（沿用，见新表「全项目规范审查 / Inspect Code」行）·
+> JVM 符号级 → IDEA（沿用，见新表「符号级检索 / 引用 / 影响面 × JVM」行）·
+> TS/JS 符号级 → tsserver / LSP（沿用并细化，见新表「找引用（列全部引用）× TypeScript」行）·
+> 跨语言影响面 / 代码地图 → codegraph（沿用并补上实测数，见新表「跨语言统一符号空间」与「代码探索 / 代码地图」行）·
+> 结构化模式搜索 / 重写 → ast-grep（沿用）。
 
 | 任务 | 建议用 | 为什么 |
 |---|---|---|
@@ -145,6 +158,10 @@ IDEA（MCP 工具）+ codegraph（探索/影响面）+ LSP（单语言精查）�
 
 **任务集**（每类 1~2 个，判定口径写死）：
 
+> ℹ️ 下面是 phase 03 **规划期**的任务框架（5 类，编号 T1-T5）—— 它是规划期工件 03-RESEARCH §E 的出处，保留作框架参考；
+> **本 phase 实测用的 6 个同题任务**（编号同为 T1-T6 但题目不同：按名找定义 / 按位置找定义 / 找引用 / 影响面改名干跑 / 单文件诊断 / 跨语言统一符号空间）
+> 在 [fixtures/experiment/tasks.md](../fixtures/experiment/tasks.md) 与 [fixtures/experiment/results.md](../fixtures/experiment/results.md)。
+
 | 类别 | 任务 | 判定口径 |
 |---|---|---|
 | T1 找定义 | 给符号名定位声明（含跨模块 1 个） | 文件+行正确 |
@@ -157,11 +174,15 @@ IDEA（MCP 工具）+ codegraph（探索/影响面）+ LSP（单语言精查）�
 
 **控制**：同一 agent / 同一模型 / 只换工具面；每任务跑 3 次（先热身 1 次不计分）；记录 agent 是否「先 grep 再符号检索」。
 
-**判定规则（事前写死）**：
-- T1+T2 完成率 ≥95% 且 precision/recall ≥0.95 → 「VS Code 侧够用（单语言维度）」；
-- T4 recall ≥0.9 → 「批检视可替代」；**<0.7 → 结论即「IDEA 的 inspection 引擎不可替代」**；
-- T2 的 token/任务 > IDEA 的 2× → 「迁移不划算」；
-- T5 跨语言用例在 VS Code 侧完成率为 0 → 实证 §3 第 1 条。
+**判定规则（事前写死）—— ⚠️ 已作废（2026-11-22）**：下面这套**比例阈值判定已废止** ——
+本 phase 的样本量是 6 任务 × 3 轮，95% of 6 = 5.7，比例阈值在这个样本量下是噪音，而且允许事后解释。
+**现行口径 = 任务级 pass/fail + 实测数字 + 原始输出凭证**（.planning/03-CONTEXT.md 的 D-07）；
+实测数据表见 [fixtures/experiment/results.md](../fixtures/experiment/results.md)（任务级 pass/fail 逐格记），
+判据由 `scripts/check-experiment.js` 机器复核。旧阈值原文保留在下面（**只作历史记录，不作判定依据**）：
+- ~~T1+T2 完成率 ≥95% 且 precision/recall ≥0.95 → 「VS Code 侧够用（单语言维度）」~~（**已作废**）
+- ~~T4 recall ≥0.9 → 「批检视可替代」；**<0.7 → 结论即「IDEA 的 inspection 引擎不可替代」**~~（**已作废**）
+- T2 的 token/任务 > IDEA 的 2× → 「迁移不划算」（**未作废**：本 phase 是工具级对照、不跑 agent 会话 ⇒ 没有 token 数据；这一条留给 agent 端到端版）
+- T5 跨语言用例在 VS Code 侧完成率为 0 → 实证 §3 第 1 条（**未被推翻**：本 phase 实测 VS Code 窗口内成立、agent-lsp 侧不成立）
 
 **本技能已备好的测量台**：`scripts/backend-compare.sh`（同题多引擎对照）+ `scripts/tsserver-probe.js`（VS Code 引擎单测）。
 先用它把「同一符号、同一工程、各引擎多少命中/多少毫秒」量出来，再决定要不要做完整实验。
