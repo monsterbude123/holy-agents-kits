@@ -118,7 +118,7 @@
 - **环境前提**：**VS Code 窗口常开** + 工作区 = `<repo>` + 扩展 0.0.14 在位 + **Pylance 在位**（缺 Pylance 时 Python 侧返空 —— 那是「环境没装」，不是「漏引用」）。
 - **起 / 就绪**：`install-vscode-mcp.sh --check` 报通道就绪 → `get_workspace_symbols` 返回的路径必须属于 `<repo>`（否则静默测错对象）→ **Python 就绪判据**：Python 锚点文件上 `get_document_symbols` 返符号清单（返空 ⇒ 记「环境未就绪」，不进打分）→ TS 索引预热（首次真实调用可能 23.6s）→ 之后才计时。
 - **位置与 uri**：`position.line` **零基准**；uri 必须是 `file:///<小写盘符>/<正斜杠路径>`。
-- **已知坏工具（只限本臂）**：`get_code_actions`（`Illegal argument`）、`get_rename_locations`（`Unexpected type`）⇒ **诊断与改名不从这条腿取数**；重试上限 1 次后记「无此能力」。
+- **已知坏工具（只限本臂）**：`get_code_actions`（`Illegal argument`，**实测坏**）⇒ **诊断不从这条腿取数**；重试上限 1 次后记「无此能力」。`get_rename_locations` 的**可用性随会话波动**（phase 02 记 `Unexpected type`、phase 03 复测**可用** —— 返回改名编辑清单、影响文件 2 个）⇒ **改名可以从这条腿取数，但用前先干跑一次自检**（返的不是编辑清单就换 agent-lsp 那条腿）。
 - **规模判据**：`find_usages` 命中数 > 0 且与 gold 同量级；返 0 ⇒ 重试 1 次，仍 0 记「索引未就绪」。
 
 ### C · agent-lsp（窗口外）
@@ -126,7 +126,7 @@
 - **环境前提**：**窗口无关**；server spec **必须带 `,--stdio`**（`python:pyright-langserver,--stdio`；少了它 broker 拉起 server 即退出并自杀，报 `daemon: broker did not start`）。doctor 走直连路径，**不能替代取数前的双确认**。
 - **起 / 就绪**：`start_lsp{root_dir, language_id}` **必须带 `language_id: "python"`**（不带会走「全部语言直连」路径，每次冷起 ⇒ 恒返 0）→ daemon ready → **预热等待** → **结果规模与预期量级相符**。三条同时成立才取数。
 - **索引未就绪的两种形态**：① 显式提示 `"workspace is still being indexed by the daemon"` ⇒ 按「索引未就绪」重试；② **静默返 0** ⇒ 同样不许下「死代码」结论。
-- **返 0 的处理**：不许下「死代码」结论；按间隔重试（上限 3 次），仍 0 ⇒ 记「索引未就绪」。
+- **返 0 的处理**：不许下「死代码」结论；按间隔重试（上限 3 次），仍 0 ⇒ 记「索引未就绪」。**诊断腿例外**：`get_diagnostics` 返 0 条按 2026-11-23 复测判为「**静默失效**」（daemon 活 + `list_symbols` 能解析该文件 + `open_document` 后仍 0 条 ⇒ **排除索引未就绪**；同版本 pyright CLI 对同一文件报 7 条 ⇒ **0 条 ≠ 文件干净**）⇒ 记「未取 + 静默失效」，**不记「索引未就绪」**。
 - **入参**：`find_references` 要 `file_path` + `line`(1-based) + **`column`(1-based，必填)**。
 - **root_dir 钉死**：`<repo>/py/src`（平铺导入要 `py/src` 在 sys.path 上 ⇒ pyright 的 root 就是 `py/src`，与 IDEA 的 source root 口径一致）。
 
@@ -244,7 +244,7 @@
 | 3 | `go_to_definition` | `{"file_path":"<repo>/py/src/probe_item.py","line":23,"column":5}` | 命中定义行 23（**column 必填**） |
 | 4 | `find_references` | `{"file_path":"<repo>/py/src/probe_item.py","line":8,"column":7,"include_declaration":true}` | 命中数与 gold 同量级 |
 | 5 | `rename_symbol` | `{"file_path":...,"line":8,"column":7,"new_name":"ProbeItemRenamed","dry_run":true}` | 受影响文件/编辑预览（**dry_run，不落盘**） |
-| 6 | `get_diagnostics` | `{"file_path":"<repo>/py/src/probe_broken.py"}` | `diagnostics[]` 条数 ≥ 1 且类型属语法类 |
+| 6 | `get_diagnostics` | `{"file_path":"<repo>/py/src/probe_broken.py"}` | `diagnostics[]` 条数 ≥ 1 且类型属语法类；**返 0 条按 §2 C 臂「返 0 的处理」的诊断腿例外处理**（daemon 预热 ≥ 120s + 先 `open_document`；仍 0 ⇒ 记「未取 + 静默失效」，**不是「索引未就绪」**） |
 
 > **官方 MCP SDK 客户端**：Python MCP SDK（本机 1.26.0）的 `mcp.client.sse.sse_client` / `mcp.client.stdio.stdio_client`；驱动脚本**只在本机临时目录**，不入库 —— 原始输出片段入库（`results.json` 的 `evidence[]`），本文件即「怎么重测」的清单。
 
@@ -259,6 +259,6 @@
 | B BifrostMCP | `get_rename_locations` **本轮可用**（返回改名编辑、影响文件 2 个），与 phase 02 记的「Unexpected type」矛盾；换会话状态又会报 Unexpected type | 该格按本轮实测记「完成」，**不记「能力缺席」**；出处里写明矛盾与波动（protocol §5「已实测存在的能力不得写成能力缺席」） |
 | B BifrostMCP | `get_code_actions` 本轮仍报 `Illegal argument`（与 phase 02 一致）⇒ 诊断这条腿拿不到 | 记「能力缺席 + 来源」 |
 | C agent-lsp | **冷状态下 `find_symbol` 静默返 0**（GCF 符号索引没建），`find_references` 也只返同文件内的引用（pyright 的工程图没扫完）⇒ 两处静默错数据 | 热身 = `list_symbols`（锚点文件 + 引用文件）+ 本题调用序列，**重复到结果规模与 gold 同量级为止（上限 3 次，间隔 20s）** —— 这就是 protocol 的「预热 + 结果规模双确认」 |
-| C agent-lsp | `get_diagnostics` 对 `probe_broken.py` **返 0 条**（工具自己写明「the server has not published any for this document; this does not confirm the file is clean」），而同一 pyright 1.1.414 的 CLI 对同一文件报 **7 条**语法错 | 按 protocol「返 0 不许下结论」记「索引未就绪 / 未取」；CLI 的对照数写进该格出处 |
+| C agent-lsp | `get_diagnostics` 对 `probe_broken.py` **返 0 条**（工具自己写明「the server has not published any for this document; this does not confirm the file is clean」），而同一 pyright 1.1.414 的 CLI 对同一文件报 **7 条**语法错；**2026-11-23 复测**：daemon 预热 130s + 先 `open_document`，**仍 0 条**，同会话 `list_symbols` 能解析该文件 ⇒ daemon 是活的 | 记「**未取 + 静默失效**」；理由：daemon 活、`list_symbols` 能解析、`open_document` 后仍 0 条 ⇒ **排除「索引未就绪」**（复测的 7 条原始输出与 CLI 对照数一起写进该格出处） |
 | D codegraph | `impact` 的**符号**集合含 import 边与成员（6 个受影响符号）⇒ 与 gold 的「整词命中数」不同义 | 命中口径记 `null`，只比文件口径；文件口径 2 个 = gold ✓ |
 | D codegraph | `impact` 不带 `-f` 时会把同名的 py 类与 ts 接口**合并**（`ambiguous:true`，`aggregation:"union"`）⇒ 跨语言引用会被混在一起 | py/ts 分开查时带 `-f <该语言的声明文件>`；只有 T6（统一符号空间）才用不带 `-f` 的根级查询 |

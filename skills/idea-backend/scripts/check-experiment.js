@@ -74,6 +74,9 @@ const NON_SYNTAX_MSG_RES = [
   /not assignable/i, /declared type/i, /cannot be assigned/i, /never used/i, /\bunused\b/i,
   /is not defined/i, /could not be resolved/i, /cannot find name/i, /unresolved/i,
 ];
+// 「声明行」的机器判据 —— 行首（允许缩进与修饰符）出现声明关键字，且**紧接着就是该符号**。
+// 只判「这一行含有该符号」不够：`def probe_run(item: ProbeItem)` 里也含 ProbeItem，但那是引用不是声明。
+const DECL_LINE_RE = /^\s*(?:export\s+|default\s+|declare\s+|abstract\s+|public\s+|private\s+|protected\s+|static\s+|readonly\s+|async\s+|pub\s+)*(?:class|interface|enum|function|def|const|let|var|type|struct|fn|fun|impl|trait|namespace|module)\s+(?:const\s+|enum\s+)?/;
 
 // ---------------------------------------------------------------- 工具函数
 
@@ -85,6 +88,14 @@ function wordHits(text, symbol) {
   const esc = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const m = text.match(new RegExp('\\b' + esc + '\\b', 'g'));
   return m ? m.length : 0;
+}
+
+/** 这一行是不是「该符号的声明行」（声明关键字后面紧接着就是该符号） */
+function isDeclLine(line, symbol) {
+  const m = DECL_LINE_RE.exec(line);
+  if (!m) return false;
+  const esc = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('^' + esc + '\\b').test(line.slice(m[0].length));
 }
 
 function maskToRe(mask) {
@@ -242,7 +253,8 @@ function checkGold(gold, repoRoot, problems) {
         else if (rej === null) problems.push(`WARN 锚点 ${a.id}：本机没有 python，跳过 parse_error 复核`);
       }
     }
-    // decl_line 必须真的指着该符号（夹具行号漂移 ⇒ 判红；只核 decl_file 存在是不够的）
+    // decl_line 必须真的指着该符号的**声明行**（夹具行号漂移 ⇒ 判红；只核 decl_file 存在是不够的；
+    // 只核「这一行含有该符号」也不够 —— `def probe_run(item: ProbeItem)` 含 ProbeItem 但不是它的声明）
     if (a.decl_file && a.decl_line && a.symbol) {
       const df = path.join(repoRoot, a.decl_file);
       if (fs.existsSync(df)) {
@@ -251,8 +263,25 @@ function checkGold(gold, repoRoot, problems) {
         if (line === undefined) bad(`锚点 ${a.id} 的 decl_line ${a.decl_line} 超出 ${a.decl_file} 的行数（${lines.length}）`);
         else if (!wordHits(line, a.symbol))
           bad(`锚点 ${a.id} 的 decl_line ${a.decl_line} 上没有符号 ${a.symbol}（该行是「${line.trim()}」）`);
+        else if (!isDeclLine(line, a.symbol))
+          bad(`锚点 ${a.id} 的 decl_line ${a.decl_line} 不是 ${a.symbol} 的声明行（该行是「${line.trim()}」）`);
       }
     }
+  }
+  // G-03-15：诊断口径的判据不许被真值文件关掉 ——
+  //   带 expect_problems 的锚点集合 **必须等于** 被 diagnostics 口径任务用到的锚点集合。
+  //   （少带 ⇒ 判据没了；scope 被改成 references ⇒ 判据被关掉）
+  const tasks = (gold && gold.tasks) || [];
+  const anchors = (gold && gold.anchors) || [];
+  const diagIds = new Set();
+  for (const t of tasks) if (t.scope === 'diagnostics') for (const aid of t.anchors || []) diagIds.add(aid);
+  for (const a of anchors) {
+    const ep = a.expect_problems;
+    const hasEp = !!(ep && isNum(ep.min_count) && ep.type);
+    if (diagIds.has(a.id) && !hasEp)
+      bad(`锚点 ${a.id} 被诊断口径的任务用到，却缺 expect_problems（min_count + type）—— 诊断判据不许被真值文件关掉`);
+    if (!diagIds.has(a.id) && ep)
+      bad(`锚点 ${a.id} 带 expect_problems 却没有诊断口径的任务用它 —— 诊断判据与真值口径对不上（scope 被降级？）`);
   }
 }
 
@@ -409,8 +438,9 @@ function checkResults(results, gold, problems) {
           checkNoLocalPath(`${tag} 的 evidence[${j}]`, e, problems);
         });
     }
-    // metrics.detail 里也不许有本机绝对路径
+    // metrics.detail 与 source 里也不许有本机绝对路径（两者都是凭证的一部分）
     if (c.metrics && c.metrics.detail) checkNoLocalPath(`${tag} 的 metrics.detail`, c.metrics.detail, problems);
+    checkNoLocalPath(`${tag} 的 source`, c.source, problems);
     // 锚点必须在 gold 里，且必须属于该任务的锚点
     let anchor = null;
     if (c.anchor && c.anchor.symbol) {
@@ -635,7 +665,9 @@ function selftest() {
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, content, 'utf8');
   };
-  mk('py/src/probe_item.py', 'class ProbeItem:\n    pass\n\ndef probe_run():\n    pass\n');
+  // 第 4 行既含 ProbeItem 又不是它的声明行（`def probe_run(item: ProbeItem)`）——
+  // 用来验证「decl_line 必须是声明行」这条判据比「这一行含有该符号」严
+  mk('py/src/probe_item.py', 'class ProbeItem:\n    pass\n\ndef probe_run(item: ProbeItem):\n    pass\n');
   mk('py/src/probe_consumer.py', 'from probe_item import ProbeItem\n');
   mk('py/src/probe_broken.py', 'def broken(:\n    return 1\n');
   mk('ts/src/alpha.ts', 'export interface ProbeItem {}\n');
@@ -650,7 +682,7 @@ function selftest() {
       { id: 'T6', title: '跨语言', anchors: ['py_probe_item', 'ts_probe_item'], scope: 'per_language' },
     ],
     anchors: [
-      { id: 'py_probe_item', lang: 'python', symbol: 'ProbeItem', decl_file: 'py/src/probe_item.py', decl_line: 1, expect_files: ['py/src/probe_consumer.py', 'py/src/probe_item.py'], expect_hits: 2, count_scope: 'py/', file_mask: ['*.py'], normalization: {} },
+      { id: 'py_probe_item', lang: 'python', symbol: 'ProbeItem', decl_file: 'py/src/probe_item.py', decl_line: 1, expect_files: ['py/src/probe_consumer.py', 'py/src/probe_item.py'], expect_hits: 3, count_scope: 'py/', file_mask: ['*.py'], normalization: {} },
       { id: 'py_probe_run', lang: 'python', symbol: 'probe_run', decl_file: 'py/src/probe_item.py', decl_line: 4, expect_files: ['py/src/probe_item.py'], expect_hits: 1, count_scope: 'py/', file_mask: ['*.py'], normalization: {} },
       { id: 'py_broken', lang: 'python', symbol: 'broken', decl_file: 'py/src/probe_broken.py', decl_line: 1, expect_files: ['py/src/probe_broken.py'], expect_hits: 1, count_scope: 'py/', file_mask: ['*.py'], expect_problems: { parse_error: true, min_count: 1, type: 'syntax' }, normalization: {} },
       { id: 'ts_probe_item', lang: 'typescript', symbol: 'ProbeItem', decl_file: 'ts/src/alpha.ts', decl_line: 1, expect_files: ['ts/src/alpha.ts'], expect_hits: 1, count_scope: 'ts/', file_mask: ['*.ts', '*.tsx'], normalization: {} },
@@ -888,6 +920,39 @@ function selftest() {
       run() {
         const g = clone(gold); g.anchors[2].decl_line = 2;
         const r = clone(results); writeAll(g, r, renderTable(r));
+      },
+    },
+    {
+      name: 'gold 的 decl_line 指向含该符号但不是声明行的行',
+      expect: '不是 ProbeItem 的声明行',
+      run() {
+        const g = clone(gold); g.anchors[0].decl_line = 4;
+        const r = clone(results); writeAll(g, r, renderTable(r));
+      },
+    },
+    {
+      name: '诊断锚点删掉 expect_problems（诊断判据被真值文件关掉）',
+      expect: '缺 expect_problems',
+      run() {
+        const g = clone(gold); delete g.anchors[2].expect_problems;
+        const r = clone(results); writeAll(g, r, renderTable(r));
+      },
+    },
+    {
+      name: '诊断任务的 scope 被降级成 references（诊断判据被关掉）',
+      expect: 'scope 被降级',
+      run() {
+        const g = clone(gold); g.tasks[4].scope = 'references';
+        const r = clone(results); writeAll(g, r, renderTable(r));
+      },
+    },
+    {
+      name: 'source 里泄漏本机绝对路径',
+      expect: '本机绝对路径泄漏',
+      run() {
+        const r = clone(results);
+        r.cells[0].source = '本机实测 —— D:/workspace/holy-agents-kits/skills/idea-backend/x/y.py';
+        writeAll(clone(gold), r, renderTable(r));
       },
     },
   ];
