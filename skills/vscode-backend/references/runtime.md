@@ -28,7 +28,7 @@
 - **缺口行**：三列都是 `—`，第 7 列写「无此能力」+ 可逐字核对的来源；
 - **未测行**：三列都是 `—`，第 7 列写「未测」+ 原因。
 
-**耗时口径**：`原始ms` = 单次 MCP 调用往返（含协议往返）；`净ms` = max(0, 原始ms − 基线)，基线 = 3 次 `tools/list` 的中位数（纯协议往返，不触工程：BifrostMCP 6.7ms、agent-lsp 4.9ms）；**首次调用的冷启动单独记**（BifrostMCP 146.7ms、agent-lsp `start_lsp` 71ms；另有一轮**未入凭证**的会话观测：首次真实调用 23.6s —— 那是 VS Code 侧 TS 索引预热，索引热了以后就几十毫秒）。
+**耗时口径**：`原始ms` = **单次样本**（不是均值也不是上界）—— 复测同一调用得 1019/1351/1481ms 三个值，**方差远大于表内数字**；冷索引会话里同一调用还可能挂死 >150s。`净ms` = max(0, 原始ms − 基线)，基线 = 3 次 `tools/list` 的中位数（纯协议往返，不触工程：BifrostMCP 6.7ms、agent-lsp 4.9ms）；**首次调用的冷启动单独记**（BifrostMCP 146.7ms、agent-lsp `start_lsp` 71ms；另有一轮**未入凭证**的会话观测：首次真实调用 23.6s —— 那是 VS Code 侧 TS 索引预热，索引热了以后就几十毫秒）。
 
 ## 代价与边界
 
@@ -39,7 +39,8 @@
 | **`doctor` 报 ok 不等于 daemon 链路可用** | doctor 走**直连**路径且 autodetect 自带 `--stdio` ⇒ 测不出上面那个坑（本轮踩过） |
 | **诊断的成本** | agent-lsp 的 `get_diagnostics` 单文件 **25s**（daemon 已 ready 状态）—— 大仓里按文件逐个问诊断会很贵 |
 | **影响面的成本** | agent-lsp 的 `blast_radius` **18.9s**（446 符号 / 445 条边）；BifrostMCP 侧**没有**等价工具（L5 不可用） |
-| **两条腿的引用数差 1** | 同一锚点同一工程：BifrostMCP 740 条 / agent-lsp 739 条 —— `includeDeclaration` 口径不同，不是谁对谁错 |
+| ⚠️ **影响面会静默少报** | agent-lsp 的 `blast_radius` 在 **daemon 索引不全**时返回**残缺图**且**不给任何提示**（实测：新起的 daemon 上只给 11 符号 / 9 边，而 `agent-lsp daemon-status` 同时报 `ready`）⇒ **拿影响面当真答案前必须双确认**：`daemon-status` 报 ready **且**图的规模与预期量级相符（对大仓，几十个符号的图基本就是残缺）。这是静默错数据，比报错危险 |
+| **两条腿的引用数差 1** | 同一锚点同一工程：BifrostMCP 740 条 / agent-lsp 739 条 —— **口径差异的具体机制未复核**（实测 BifrostMCP 带不带 `includeDeclaration` 都是 740，所以那个归因不成立）；差 1 的来源待查 |
 | **VS Code 侧诊断从哪来** | 只有 `get_code_actions` 里，而该工具实测坏了 ⇒ **这一轮 VS Code 侧拿不到诊断** |
 | **VS Code 的 TS 跑什么协议** | 跑 **tsserver 自有协议**，不跑 LSP ⇒ 跨语言引用在 TS 上结构性不可能 |
 | **两个协议级缺口** | ① **跨语言统一符号空间**：LSP 规范原文 "The protocol currently assumes that one server serves one tool."；② **全项目批检视**：`textDocument/codeAction` 无 scope 参数，协议层没有这个能力 |
@@ -56,13 +57,13 @@
 | 只开窗口不加载工作区 | 服务仍起，但符号工具没有项目可查 | `tools/list` 可用、`get_workspace_symbols` 返回空 |
 | 窗口常开但工作区换成了别的仓 | 测的就变成别的仓（**静默测错对象**） | 查 `get_workspace_symbols` 的结果路径是否属于目标仓 |
 | `find_usages` 命中的位置基准 | 传零基准的行号才落在符号上 | 传 1-based 的 78 会落到下一行；传零基准的 77 命中 apiFetch 定义 |
-| 工作区符号的噪音比例 | 知道 190 条里有多少是真符号 | 看返回项的 `name` 字段：多数是 `# files: …` 聚合项 |
-| agent-lsp 的 daemon 是否活着 | `agent-lsp daemon-status` 报 ready | 报 ready 才算链路可用（doctor 不算数） |
+| 工作区符号的噪音比例 | 知道 190 条里有多少是真符号 | 看返回项的 `name` 字段：实测 190 条里 **14 条**是 `# files: …` 聚合项，其余多是「file:line 文本命中」⇒ 噪音高，但**不是**「多数是聚合项」 |
+| agent-lsp 的 daemon 是否活着 | `agent-lsp daemon-status` 报 ready **且**图的规模与预期量级相符 | doctor 不算数；**只看 ready 会漏掉残缺图**（实测 ready 时也只给 11 符号） |
 
 ## 怎么重测
 
 1. **准备**：VS Code 开着、扩展已装（`code --list-extensions | grep bifrost`）；`npm install -g @blackwell-systems/agent-lsp` + `npm install -g typescript-language-server` + 全局 `typescript@5`（TS 7 没有 `lib/tsserver.js`）。
-2. **起通道**：`bash skills/vscode-backend/scripts/install-vscode-mcp.sh <工作区路径>`（写 `config.json` + 生成工程根 `.mcp.json`）；确认：`bash skills/vscode-backend/scripts/install-vscode-mcp.sh --check` 报「通道就绪」。
+2. **起通道**：`bash scripts/install-vscode-mcp.sh <工作区路径>`（相对本技能目录；写 `config.json` + 生成工程根 `.mcp.json`）；确认：`bash scripts/install-vscode-mcp.sh --check` 报「通道就绪」。
 3. **按凭证里的调用重跑**（凭证里每条都记了 `tool` + `args`，逐条调用即可复现同样的数）：
    - `tools/call get_document_symbols {"textDocument":{"uri":"file:///<project>/src/lib/api-fetch.ts"}}`
    - `tools/call get_semantic_tokens {"textDocument":{"uri":"file:///<project>/src/lib/api-fetch.ts"}}`
@@ -70,7 +71,7 @@
    - `tools/call find_usages {"textDocument":{"uri":"file:///<project>/src/lib/api-fetch.ts"},"position":{"line":77,"character":0},"context":{"includeDeclaration":true}}`
    - `tools/call get_workspace_symbols {"query":"apiFetch"}`
    - 诊断/改名两档要复核扩展是否修好了：`tools/call get_code_actions {...}`、`tools/call get_rename_locations {...}`（**位置零基准**；uri 必须 `file:///<小写盘符>/…`）
-   - agent-lsp 那条腿：`agent-lsp typescript:typescript-language-server,--stdio` 起（MCP stdio）→ `tools/call start_lsp {"root_dir":"<project>","language_id":"typescript"}` → `tools/call find_references {"file_path":"<project>/src/lib/api-fetch.ts","line":78,"column":23}` → `tools/call get_diagnostics {"file_path":"<project>/src/lib/api-fetch.ts"}` → `tools/call blast_radius {"changed_files":["<project>/src/lib/api-fetch.ts"]}`（**column 必填**）
+   - agent-lsp 那条腿：`agent-lsp typescript:typescript-language-server,--stdio` 起（MCP stdio；**取数前先 `agent-lsp daemon-status` 报 ready，且图的规模与预期量级相符** —— 索引不全时它会静默少报）→ `tools/call start_lsp {"root_dir":"<project>","language_id":"typescript"}` → `tools/call find_references {"file_path":"<project>/src/lib/api-fetch.ts","line":78,"column":23}` → `tools/call get_diagnostics {"file_path":"<project>/src/lib/api-fetch.ts"}` → `tools/call blast_radius {"changed_files":["<project>/src/lib/api-fetch.ts"]}`（**column 必填**）
 4. **换版本/换语言后**：改 `references/measurements/<语言>.json`，再按同一口径重测并更新本表 —— **表里的数字不许手写**（门禁逐格对账）。
 
 ## 口径与证据边界

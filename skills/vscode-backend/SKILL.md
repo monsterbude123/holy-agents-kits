@@ -31,6 +31,7 @@ description: 把 VS Code 与语言服务器当 agent 的语义后端，两条腿
 
 - **VS Code 侧没有独立诊断入口**：诊断只挂在 `get_code_actions` 里，而该工具在 0.0.14 实测报错 ⇒ 诊断走腿 ②；
 - **VS Code 侧没有改名工具**：`get_rename_locations` 实测报错 ⇒ 改名/影响面走腿 ②；
+- **影响面会静默少报**：agent-lsp 的 `blast_radius` 在 daemon 索引不全时返回残缺图且**不给提示**（实测 ready 时也只给 11 符号）⇒ 用它当影响面前，先 `daemon-status` 报 ready **且**图的规模与预期量级相符；
 - **全项目批检视是协议级缺口**：LSP 的 `textDocument/codeAction` 没有 scope 参数，协议里没有「一次批检视一个范围」这个能力；
 - **跨语言统一符号空间没有**：LSP 规范原文 "The protocol currently assumes that one server serves one tool."；
 - **VS Code 的 TS 跑 tsserver 自有协议，不跑 LSP** ⇒ 跨语言引用在 TS 上结构性不可能。

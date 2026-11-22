@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "check": "python skills/skill-creator-v2/scripts/validate_skill.py --all --root .",
-    "test": "npm run check && node bin/cli.js list",
+    "test": "npm run check && node bin/cli.js list && node skills/vscode-backend/scripts/check-runtime-table.js",
     "prepublishOnly": "npm run check"
   },
   "engines": {

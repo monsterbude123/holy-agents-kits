@@ -1,7 +1,7 @@
 # VS Code 侧 MCP 通道 —— 安装与实测手册
 
 > 本文件是 **2026-11-22 在本机实测**的记录：装哪个扩展、服务怎么起、端点是什么、工具面有哪些、哪些坑会咬人。
-> 机器本地事实（端点端口等）写在 `skills/vscode-backend/config.json`（**不入库、不分发**，`.gitignore` 的 `skills/*/config.json` 覆盖）。
+> 机器本地事实（端点端口等）写在**本技能目录下的 `config.json`**（**不入库、不分发**，`.gitignore` 的 `skills/*/config.json` 覆盖）。
 
 ## 0. 机器可读事实块（脚本与门禁读这一块，别只读散文）
 
