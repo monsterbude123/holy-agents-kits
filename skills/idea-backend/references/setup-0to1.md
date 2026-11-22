@@ -182,6 +182,42 @@ curl -X POST ... -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'   # 结果�
    `Plugin 'JavaScript and TypeScript' (JavaScript) has dependency on 'intellij.platform.webide' which is not installed` /
    `Plugin 'Go' (org.jetbrains.plugins.go) has dependency on 'com.intellij.modules.go-capable' which is not installed`
 
+## 7.6 两个必踩的坑（2026-11-22 实测，都是"看起来像卡死"）
+
+### 坑 1：打开未信任工程 → IDE 静默卡死（没有任何窗口）
+
+- **现象**：`idea64.exe <工程路径>` 之后 IDEA **不弹主窗口**、进程占 CPU、`tasklist` 看得到进程但没有窗口标题；
+  日志停在 `PlatformProjectOpenProcessor - Opening (sync) <工程>` 之后不再前进；MCP 端口不监听。
+- **真因**（`jstack <pid>` 实锤）：`TrustedProjectsStartupDialog.showAndGet` 卡在 `ProjectManagerImpl.openProjectAsyncImpl` ——
+  「信任此工程」对话框在主窗口建起来之前就弹了，**没人应答** → 死等。
+- **解法**：先把工程加进受信任列表，再打开。
+
+```bash
+bash scripts/setup-env.sh trust /abs/path/to/project     # 写 <configDir>/options/trusted-paths.xml
+```
+
+（写进去的 key 用 **Windows 反斜杠路径**；已存在不重复加。）
+
+### 坑 2：某个语言插件"装上了但把索引层拖垮"
+
+- **现象**：装完某个语言插件后，**所有**基于索引的查询都返回
+  `TOOL_ERROR: com/intellij/ultimate/UltimateVerifier`（或别的缺类）—— 连和这门语言无关的文件都查不到；
+  `ide_find_file` / `ide_search_text` / `ide_find_class` 全空。
+- **真因**：插件在运行期缺付费平台的专有类（`intellij.platform.commercial.verifier` / `intellij.platform.webide` 等）。
+- **解法**：**把插件彻底卸掉**（移出 `%APPDATA%\JetBrains\IdeaIC<ver>\plugins\`），别留着拖累整个 IDE；
+  判据用 `bash scripts/install-lang-plugin.sh verify`（它会读 idea.log 的门禁段 + 缺类）。
+
+### 附：在社区版里补一门语言（shim 配方）
+
+社区版平台裁剪包只声明了 3 个 capability（`java-capable` / `python-core-capable` / `python-in-non-pycharm-ide-capable`），
+所以 Go/Rust 这类插件会因缺 capability 被拒。**一个自带 shim 插件就能补上**（不改 IDE 安装目录）：
+
+```bash
+bash scripts/install-lang-plugin.sh shim com.intellij.modules.rust-capable                                           com.intellij.modules.nativeDebug-plugin-capable
+```
+
+完整配方与实测见 [capability-matrix.md](capability-matrix.md) §3.1/§5。
+
 ## 8. ZCode 接入
 
 项目根 `.mcp.json`（ZCode 支持 `type:"sse"` 与 `type:"http"`）：

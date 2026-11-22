@@ -9,12 +9,12 @@
     "intellij-rust"
   ],
   "bundledIn": [],
-  "edition": "ultimate",
+  "edition": "community",
   "toolchain": "cargo",
   "checklist": null,
   "settings": null,
   "templates": [],
   "detector": "scripts/langs/rust/detect.mjs",
-  "note": "Rust 语言插件（Marketplace id 22407，xmlId `com.jetbrains.rust`）**社区版装不上**，且是三种门禁里最硬的一种：插件**顶层** `<dependencies>` 直接写 `<plugin id=\"com.intellij.modules.ultimate\" />`（2026-11-22 实测：摘掉它之后，下一道门 `com.intellij.modules.rust-capable` 立刻挡住 —— 社区版平台裁剪包不提供该能力模块）。插件自述也写明 2026.2 起还要求先装 `com.intellij.nativeDebug`。**门禁是产品定位**（Rust 归 RustRover），不是配置问题。平替见 setup.md。",
+  "note": "**社区版实测可用**（2026-11-22）：门禁是形态①（插件级 ultimate 硬依赖）+ 形态②（rust-capable / nativeDebug-plugin-capable 两个 capability）。解法：shim 插件声明那两个 capability + 装 Rust 插件与 Native Debugging Support + 删掉 descriptor 顶层 ultimate 依赖。**没有**形态④那种显式授权校验 —— 实测 L0-L3 + L5 全通。配方见 references/langs/rust/setup.md，档位见 runtime.md。官方路线仍是 RustRover（非商业免费）。",
   "registryNote": "Rust 语言服务在 IDE 侧的配置落点未取证（社区版根本装不上）→ registries 留空，别凭印象写。"
 }

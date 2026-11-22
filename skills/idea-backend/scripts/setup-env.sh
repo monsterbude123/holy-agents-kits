@@ -216,6 +216,37 @@ lang_facts() { # <installRoot> <configDir>
   done
 }
 
+# 把工程目录加进 IDEA 的「受信任工程」列表。
+# 不加的后果（实测）：IDEA 在同步打开工程时会弹「信任此工程」对话框 —— 此时主窗口
+# 还没建起来，弹框无人应答 → IDE 看起来"卡死"，没有任何窗口，jstack 里能看到
+# TrustedProjectsStartupDialog.showAndGet 卡在 openProjectAsyncImpl。
+trust_paths() { # <path> [<path>...]
+  local cfgdir root
+  if command -v node >/dev/null 2>&1; then
+    root="$(node -e 'const fs=require("fs");let j={};try{j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"))}catch(e){};process.stdout.write(j.idea?.installRoot||"")' "$(cygpath -m "$CONFIG" 2>/dev/null || echo "$CONFIG")" 2>/dev/null)"
+    cfgdir="$(node -e 'const fs=require("fs");let j={};try{j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"))}catch(e){};process.stdout.write(j.idea?.configDir||"")' "$(cygpath -m "$CONFIG" 2>/dev/null || echo "$CONFIG")" 2>/dev/null)"
+  fi
+  [ -n "$cfgdir" ] || { echo "ERROR: config.json 里没有 idea.configDir（或缺 config.json）—— 先跑 setup-env.sh init" >&2; return 2; }
+  local f="$cfgdir/options/trusted-paths.xml"
+  mkdir -p "$(dirname "$f")"
+  [ -f "$f" ] || cat > "$f" <<'XML'
+<application>
+  <component name="Trusted.Paths">
+    <option name="TRUSTED_PROJECT_PATHS">
+      <map>
+      </map>
+    </option>
+  </component>
+</application>
+XML
+  local p
+  for p in "$@"; do
+    p="$(cygpath -m "$p" 2>/dev/null || echo "$p")"
+    python "$SKILL_DIR/scripts/trusted-paths.py" "$f" "$p" && echo "  trusted: $p"
+  done
+  echo "  → $f"
+}
+
 plugins_report() {
   local root; root="$(to_msys "${1//\\//}")"
   local exe; exe="$(exe_name)"
@@ -429,6 +460,7 @@ case "${1:-}" in
   detect) shift; detect_area "${1:-}" ;;
   probe) shift; probe_root "${1:?usage: probe <installRoot>}" ;;
   plugins) shift; plugins_report "${1:-}" ;;
+  trust) shift; [ $# -gt 0 ] || { echo "usage: setup-env.sh trust <projectDir> [...]" >&2; exit 2; }; trust_paths "$@" ;;
   toolchain) shift; toolchain_facts "${1:?usage: toolchain <node|python|jdk>}" ;;
   init) shift; init_config "${1:?usage: init <installRoot> [projectPath]}" "${2:-}" ;;
   install-deps)
@@ -436,5 +468,5 @@ case "${1:-}" in
     LANG=""; while [ $# -gt 0 ]; do case "$1" in --lang) LANG="${2:-}"; shift 2 ;; *) shift ;; esac; done
     install_deps "$LANG" ;;
   check) check_config ;;
-  *) echo "usage: setup-env.sh roots | detect <area> | probe <root> | plugins [root] | init <installRoot> [projectPath] | install-deps --lang <lang> | check" >&2; exit 1 ;;
+  *) echo "usage: setup-env.sh roots | detect <area> | probe <root> | plugins [root] | trust <dir> [...] | init <installRoot> [projectPath] | install-deps --lang <lang> | check" >&2; exit 1 ;;
 esac

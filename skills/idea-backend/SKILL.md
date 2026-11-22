@@ -23,11 +23,11 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 |---|---|---|---|---|
 | JVM（Java/Kotlin） | [references/langs/java/setup.md](references/langs/java/setup.md) | community（捆绑） | 27 条 ✅ 全自证 | L0-L3 ✅ · L4 ⚠️需 monster 插件 · L5 ✅ |
 | Python | [references/langs/python/setup.md](references/langs/python/setup.md) | **community**（装 "Python Community Edition"，id 7322，**实测**） | 16 条 ✅ 全自证 | **L0-L3 ✅ · L4 ⚠️需 monster 插件 · L5 ✅** → [档位实测](references/langs/python/runtime.md) |
+| Rust | [references/langs/rust/setup.md](references/langs/rust/setup.md) | **community**（shim 配方，**实测**） | — | **L0-L3 ✅ · L4 ⚠️需 monster · L5 ✅** → [档位](references/langs/rust/runtime.md) |
 | TS / JavaScript | [references/langs/ts/setup.md](references/langs/ts/setup.md) | **ultimate**（社区版装不了；侧载实测不可用） | 64 条 ✅ 全自证 | L0-L1 ✅ · L2 静默失效 · L3 恒空 → [档位实测](references/langs/ts/runtime.md) |
-| Go / Rust | 无分册 | **ultimate**（社区版不提供 `go-capable`/`rust-capable` 能力模块 → 插件硬装不上） | — | L0-L1 ✅ · L2+ 结构性不可用 → [矩阵 §3.1-§3.4](references/capability-matrix.md) |
+| Go | [references/langs/go/setup.md](references/langs/go/setup.md) | **ultimate**（插件内有**显式授权校验** → 不绕） | — | L0-L1 ✅ · L2+ 不可用 → [档位实测](references/langs/go/runtime.md) |
 
-**平替（社区版顶不住时的官方路线，2026-11 核对官方页面）**：TS/JS → **WebStorm**（非商业免费）· Rust → **RustRover**（非商业免费）· Go → **GoLand**（付费，无免费档）· 全部 → IDEA Ultimate（付费）。
-这些 IDE **都自带内置 MCP server** → 换过去后 `search_symbol`/`analyze_calls` 有真 PSI（社区版里这些工具对没有语言插件的语言是**返回空而不是报错**）。
+**平替（官方路线，2026-11 核对官方页面）**：TS/JS → **WebStorm**（非商业免费）· Rust → **RustRover**（非商业免费）· Go → **GoLand**（付费，无免费档）· 全部 → IDEA Ultimate（付费）。这些 IDE **都自带内置 MCP server** → 换过去后 `search_symbol`/`analyze_calls` 有真 PSI（社区版里这些工具对没有语言插件的语言是**返回空而不是报错**）。
 
 **没有分册的语言**：只走通用能力（文件索引 / 文本检索 / IDE GUI 重构），明确告诉用户"这门语言还没有分册"，并按 [references/capability-matrix.md](references/capability-matrix.md) §5 的契约补一册。
 
@@ -39,7 +39,8 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 2. **Index 插件 MCP**：对 `http://127.0.0.1:29170/index-mcp/streamable-http` POST 空 JSON-RPC 返回 4xx（非连接拒绝）即端点存活；**索引就绪**：`ide_index_status` 的 `isDumbMode:false && isIndexing:false`；
 3. **索引归属**：`ide_project_status` 里 open project 的路径 = 你要改的那棵树。**worktree 嵌在主检出内**（`<repo>/.worktrees/x`）会解析到主检出 → 静默拿到**另一分支**的索引（`ide_sync_files` 修不了）；不对就停手换检出；
 4. **工具面**：`bash scripts/mcp-call.sh has index ide_inspect`。上游插件版**没有** `ide_inspect`（整条审查流水线会走降级路径）；**工具面以 `mcp-call.sh list index` 实测为准，不以文档为准**；
-5. **语言插件在位**：`bash scripts/setup-env.sh plugins <IDEA安装根>` —— 逐语言给出「插件在不在 + edition 门禁」。**先看这张表再决定这门语言能不能做**。社区版装不上的语言插件：**JS/TS（22069）、Go（9568）、Rust（22407）**；**Python 可以**（走 "Python Community Edition"，id 7322）。门禁是每个插件一行，判定机制见 [references/capability-matrix.md](references/capability-matrix.md) §3.1。
+5. **语言插件在位**：`bash scripts/setup-env.sh plugins <IDEA安装根>` —— 逐语言给出「插件在不在 + edition 门禁」。**先看这张表再决定这门语言能不能做**。社区版现状（2026-11-22 实测）：**Java 捆绑 ✅ · Python ✅**（"Python Community Edition" id 7322）· **Rust ✅**（capability shim 配方，见 [references/langs/rust/setup.md](references/langs/rust/setup.md)）· **JS/TS ❌**（缺 33 个付费平台专有类）· **Go ❌**（插件内有显式授权校验，**不做绕过**）。门禁有四种形态与判定法见 [references/capability-matrix.md](references/capability-matrix.md) §3.1；**"IDE 支持某语言"永远要补"支持到哪一档、怎么探出来的"**。
+6. **工程受信任**：打开未信任工程会让 IDEA 静默卡死（无窗口，线程栈卡在 `TrustedProjectStartupDialog`）→ 先 `bash scripts/setup-env.sh trust <工程路径>`，见 [references/setup-0to1.md](references/setup-0to1.md) §7.6。
 
 **新机器首次定位 IDEA（隐私规则，用户裁定：默认禁止全局扫描）**：config 不存在时 → `setup-env.sh roots` 列建议区域 → **先问用户** IDEA 在哪 → 用户确认后 `detect <该区域>` 定向探测 → `init <root>` 生成 config。
 **平台支持**：检索/分析/检视在 Windows/Linux 均可用（Linux：启动器 `bin/idea.sh`、headless `bin/inspect.sh`、config 在 `~/.config/JetBrains/IdeaIC<ver>`）；安装细节目前为 Windows 实录，`setup-env.sh` 已双平台兼容。
@@ -119,7 +120,10 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 
 | 脚本 | 用途 |
 |---|---|
-| `scripts/setup-env.sh` | 机器事实探测/初始化 `config.json`（`roots`/`detect`/`probe`/`init`/`check`/`plugins`/`install-deps --lang`） |
+| `scripts/setup-env.sh` | 机器事实探测/初始化 `config.json`（`roots`/`detect`/`probe`/`init`/`check`/`plugins`/`trust`/`install-deps --lang`） |
+| `scripts/install-lang-plugin.sh` | **装语言插件一条龙**：`gate`（读门禁 + 社区版 capability 表）/ `install`（按 build 选版下载安装）/ `shim`（补 capability）/ `verify`（读 idea.log 的真实加载结论） |
+| `scripts/lang-caps-shim.py` | capability shim 插件生成器（被 `install-lang-plugin.sh shim` 调用） |
+| `scripts/trusted-paths.py` | 受信任工程列表增删（被 `setup-env.sh trust` 调用） |
 | `scripts/inspect-project.mjs` | **通用探测器**：按 marker 判语言 → 调该语言分册探测器 → 出事实 → 过滤该语言适用清单条目（`--ids`/`--json`/`--lang`/`--list-langs`） |
 | `scripts/mcp-call.sh` | **统一调用出口**：`mcp-call.sh index|builtin <tool> '<json>' [timeoutSec]`；`list <server>` 拿真实工具面；`has <server> <tool>` 判工具在不在 |
 | `scripts/inspect-diff.sh` | 改动集门禁：自动取 `git diff HEAD + untracked` 代码文件 → 检视 → 问题清单（无 `ide_inspect` 时自动降级） |

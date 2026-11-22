@@ -2,6 +2,7 @@
 
 > **一句话**：IDEA 的运行期能力**按语言分档**。档位由三件事共同决定 —— **IDE 版本/插件栈**（能不能装）、**插件构建**（装的这版支持到哪）、**语言本身**（该语言的检视器/重构后端有没有）。所以"IDEA 支持某语言"这句话永远要补一句"支持到哪一档、怎么探出来的"。
 > **本表是判据的 SSOT**：档位定义 + 探测方法 + 各语言实测值。某门语言的细节在它自己的分册里。
+> **实测快照**：2026-11-22，IDEA **IC 2026.2.5（社区版）** + Index 插件 **5.20.7** + 本地 capability shim。
 
 ---
 
@@ -24,64 +25,71 @@
 |---|---|---|---|
 | L0 | `ide_find_file` 查一个该语言的源文件 | 返回该文件 | 插件在不在：`bash scripts/setup-env.sh plugins <root>` |
 | L1 | `ide_search_text` 查一个符号名，`wholeWord:true` + `context:code` | 命中声明 + 调用点，且无假命中 | 掩码要覆盖扩展名（`*.ts` 不匹配 `.tsx`） |
-| L2 | 对该语言的一个符号做位置法查询（`ide_find_references`） | `resolvedSymbol.kind` 是**代码符号**（不是 `directory`/`package`） | ① 该语言有没有装上语言插件（见 §3.1 门禁形态）；② Index 插件有没有给这语言注册 SymbolReferenceHandler（见 §3.4） |
-| L3 | 故意写一个语法错误的文件，`ide_diagnostics` | `problemCount > 0` | ① 该语言文件是否在项目 source root 内；② VFS 是否同步（`ide_sync_files`）；③ 检视规则集是否启用该语言的 inspection |
+| L2 | 对该语言的一个符号做位置法查询（`ide_find_references`） | `resolvedSymbol.kind` 是**代码符号**（不是 `directory`/`package`） | ① **该语言的文件有没有 PSI**（= 语言插件在不在 + 能不能打开文件）；② 插件有没有在运行期崩（查 idea.log 的 `NoClassDefFoundError`） |
+| L3 | 故意写一个语法错误的文件，`ide_diagnostics` | `problemCount > 0` | ① 该语言文件是否在项目 source root 内；② VFS 是否同步（`ide_sync_files`）；③ 该语言的 inspection 是否启用 |
 | L4 | `mcp-call.sh has index ide_inspect` | 退出码 0 | 插件是不是 monster 分支（`setup-env.sh plugins` 看 `ide_inspect` 在不在） |
 | L5 | `ide_refactor_rename` + `dryRun:true` | 返回受影响文件清单 | 是否与 L2 同源（多数实现复用同一套符号解析） |
 
 > **铁律**：L2 的探测必须看 `resolvedSymbol`，不能只看"命中数"。命中 0 条和"解析到了目录符号"是两回事 —— 后者会给你一堆 markdown 路径字符串当引用。
 
+### §2.1 `language` 参数的枚举**只管 symbol 路由**（2026-11-22 实测更正）
+
+- `ide_find_references` / `ide_find_definition` 的 `language` 枚举 = **注册了 SymbolReferenceHandler 的语言**（本机实测枚举 = `["Java","Python"]`）；
+- 但**位置法**（`file` + `line` + `column`）**不走这个枚举**，它直接解析 PSI → **只要该语言的文件有 PSI，位置法就能用**；
+- ⇒ **「符号级失效」的正确诊断不是"枚举里没这门语言"，而是"这门语言的文件没有 PSI"**：
+  - 没装语言插件 → 文件被当纯文本 → 位置法解析到**目录符号**（`resolvedSymbol.kind = directory`）→ 静默失效；
+  - 装了语言插件但插件在运行期崩（缺专有类）→ 所有基于索引的查询**全返回空**（连 `find_file` 都空）；
+  - 装了且正常 → 位置法给出真代码符号（Rust 实测 `kind = "function"`）。
+- ⇒ **Rust 的实测结论**：它**没有** SymbolReferenceHandler（插件字节码核实：`RustHandlers` 只注册 CallHierarchy/Implementations/TypeHierarchy），
+  但位置法照样工作 —— 所以「有没有 SymbolReferenceHandler」决定的是 **symbol/qualifiedName 路由**能不能用，不是 L2 的全部。
+
 ---
 
-## §3 当前各语言档位（实测快照 2026-11-22，IC 2026.2.5 + Index 插件 5.20.7）
+## §3 当前各语言档位（实测快照 2026-11-22，IC 2026.2.5 社区版 + Index 插件 5.20.7）
 
-| 语言 | edition 门禁 | L0 | L1 | L2 | L3 | L4 | L5 | 分册 |
+| 语言 | 社区版可用性 | L0 | L1 | L2 | L3 | L4 | L5 | 分册 |
 |---|---|---|---|---|---|---|---|---|
-| JVM（Java/Kotlin） | **community**（捆绑） | ✅ | ✅ | ✅ | ✅ | ⚠️ 需 monster 插件 | ✅ | [langs/java/setup.md](langs/java/setup.md) |
-| Python | **community**（官方 "Python Community Edition" 可装，**2026-11-22 实测 L0-L5 全通**） | ✅ | ✅ | ✅ | ✅ | ⚠️ 需 monster 插件 | ✅ | [langs/python/setup.md](langs/python/setup.md) |
-| TS / JavaScript | **ultimate**（社区版装不了；侧载能加载但运行期缺 33 个专有类 → 不可用） | ✅ | ✅ | ⚠️ **静默失效** | ⚠️ **恒空** | ⚠️ | ⚠️ | [langs/ts/runtime.md](langs/ts/runtime.md) |
-| Go | **ultimate**（社区版不提供 `go-capable` 能力模块 → 插件硬装不上） | ✅ | ✅ | ⚠️ **结构性不可用**（见 §3.4） | ⚠️ | ⚠️ | ⚠️ | 无分册 |
-| Rust | **ultimate**（插件级硬依赖 `com.intellij.modules.ultimate` + `rust-capable` 不提供） | ✅ | ✅ | ⚠️ **结构性不可用**（见 §3.4） | ⚠️ | ⚠️ | ⚠️ | 无分册 |
+| JVM（Java/Kotlin） | ✅ 捆绑 | ✅ | ✅ | ✅ | ✅ | ⚠️ 需 monster 插件 | ✅ | [langs/java/setup.md](langs/java/setup.md) |
+| Python | ✅ **官方插件**（Python Community Edition，id 7322） | ✅ | ✅ | ✅ | ✅ | ⚠️ 需 monster 插件 | ✅ | [langs/python/setup.md](langs/python/setup.md) |
+| Rust | ✅ **实测可用**（capability shim + Native Debugging Support，见 §3.1/§3.5） | ✅ | ✅ | ✅ | ✅ | ⚠️ 需 monster 插件 | ✅ | [langs/rust/setup.md](langs/rust/setup.md) |
+| Go | ❌ **插件里有显式授权校验**（见 §3.1 形态④） | ✅ | ✅ | ⚠️ 装上插件也**全空** | ⚠️ | ⚠️ | ⚠️ | [langs/go/setup.md](langs/go/setup.md) |
+| TS / JavaScript | ❌ 依赖付费平台模块的 33 个专有类 | ✅ | ✅ | ⚠️ **静默失效** | ⚠️ **恒空** | ⚠️ | ⚠️ | [langs/ts/runtime.md](langs/ts/runtime.md) |
 
-> **L0/L1 与语言插件无关**：文件索引与文本检索走 IDE 的通用索引，任何语言的文件都能查 —— 这也是"社区版没有某语言插件时也不是什么都做不了"的原因。**L2 往上才吃语言插件**。
->
+> **L0/L1 与语言插件无关**：文件索引与文本检索走 IDE 的通用索引 —— 任何语言的文件都能查。这也是"没有某语言插件时也不是什么都做不了"的原因。
 > **L4 一律 ⚠️**：上游 Index 插件（5.20.7）没有 `ide_inspect` → 流水线自动降级到 L3；换 monster 分支可拿回全局批检视。
+
+### §3.1 edition 门禁的**四种形态**（实测判定法）
+
+「社区版支不支持某语言」不是一句话，是**插件 descriptor + 平台能力模块 + 平台专有类 + 授权校验**四处的组合。实测到四种：
+
+| 形态 | 判据 | 实例（2026-11-22 实测） | 能不能绕 | 怎么绕的 |
+|---|---|---|---|---|
+| ① **插件级硬依赖** | descriptor 顶层 `<dependencies>` 里有 `<plugin id="com.intellij.modules.ultimate" />` | Rust（22407）、Go（9568） | ✅ 能（删掉那行） | 改插件 zip 里的 `META-INF/plugin.xml` |
+| ② **能力模块（capability）** | 插件依赖 `<plugin id="com.intellij.modules.go-capable" />` 这类 `-capable` 模块，而社区版平台不提供 | Go（9568）、Rust（22407）、Native Debugging Support | ✅ 能（**声明同名 capability**） | 一个自带 shim 插件 + `<module value="…"/>`（见 §3.5） |
+| ③ **平台模块 / 专有类** | 插件依赖社区版平台没有的平台模块（`intellij.platform.webide` / `intellij.platform.commercial.verifier` / `intellij.platform.duplicatesDetector` …） | TS/JS（22069）、Go（9568） | ⚠️ 删依赖能让插件**加载**，但运行期缺专有类 → **工程不可用** | TS/JS 缺 33 个类（实测 `com.intellij.webcore.*`）→ 不可用；Go 缺 1 个（`com.intellij.ultimate.UltimateVerifier`）→ 走到形态④ |
+| ④ **显式授权校验** | 插件代码里主动调校验器，验不过就拒跑 | **Go**：`com.intellij.ultimate.PluginVerifier.verifyUltimatePlugin()` ← `GoSdkService.<init>`；底层是 `UltimateVerifier.verify(BigInteger)`（**RSA 公钥签名校验**） | ❌ **不做**（这是有意的付费门禁，不是配置问题） | — |
+
+> **③ 与 ④ 的区别很重要**：③ 是「意外依赖了付费平台的类」（删掉依赖后插件能跑，只是功能残缺），
+> ④ 是「插件主动校验授权并拒绝运行」——**绕过它等于绕过许可校验，本技能不做、也不建议做**。
 >
-> **Python 那行是 2026-11-22 的新实测**（此前记的"社区版没有 Python"是**错的**）：装上 Marketplace 的 **Python Community Edition**（id 7322，xmlId `PythonCore`）后 —— ① 插件加载成功；② Index 插件日志打出 `Python plugin detected via plugin ID (PythonCore)` 与 `Registered SymbolReferenceHandler for Python`；③ L2 实测 `resolvedSymbol.kind = "function"` 且 4 处真实引用；④ L3 实测报出 2 条真语法错；⑤ L5 `ide_refactor_rename --dryRun` 返回 `canApply:true` + 受影响文件清单。明细见 [langs/python/runtime.md](langs/python/runtime.md)。
+> **实测链（Go，逐步推进）**：`go-capable`（形态②）→ `intellij.platform.duplicatesDetector`（形态③）→ 删掉后 → `com.intellij.ultimate.UltimateVerifier`（形态④）→ **到此为止**。
 
-### §3.1 edition 门禁的**三种形态**（实测判定法）
-
-「社区版支不支持某语言」不是一句话，是**插件 descriptor + 平台能力模块**两处组合出来的。实测到三种形态：
-
-| 形态 | 判据 | 实例（2026-11-22 实测） | 能不能绕 |
-|---|---|---|---|
-| ① **插件级硬依赖** | descriptor 顶层 `<dependencies>` 里有 `<plugin id="com.intellij.modules.ultimate" />` | Rust（id 22407） | 摘掉后插件能加载，但立刻撞上形态 ② |
-| ② **能力模块（capability）** | 插件依赖 `<plugin id="com.intellij.modules.go-capable" />` 这类 `-capable` 模块，而社区版平台不提供它 | Go（id 9568）、Rust（id 22407） | 社区版**装不上**（IDEA 加载器直接拒），且该模块由平台裁剪包声明 → 不是插件能补的 |
-| ③ **平台模块** | 插件依赖某个社区版平台不提供的平台模块（如 `intellij.platform.webide`） | JS/TS（id 22069） | 摘掉后插件**能加载**（TS 处理器真的注册上了），但运行期缺 33 个 `com.intellij.webcore.*` 专有类 → 每次开文件都抛 → **工程实际不可用** |
-
-**判定法（三条命令，不靠记忆、不靠 README）**
+**判定法（四条命令，不靠记忆、不靠 README）**
 
 ```bash
 # ① 社区版平台到底提供哪些 capability 模块（只有 -capable 那些是"语言准入"开关）
-unzip -p <IDEA>/lib/intellij.idea.community.customization.jar META-INF/IdeaPlugin.xml | grep 'module value'
+unzip -p <IDEA安装根>/lib/intellij.idea.community.customization.jar META-INF/IdeaPlugin.xml | grep 'module value'
 
 # ② 插件 descriptor 的顶层硬依赖（把插件 zip 里 */lib/*.jar 的 META-INF/plugin.xml 读出来）
 #    顶层 <dependencies> 里出现 com.intellij.modules.ultimate 或 *-capable ⇒ 硬门禁
 
 # ③ IDEA 自己怎么说 —— 权威判据（本节所有结论都由它给出）
 #    idea.log 搜 "Problems found loading plugins:"，它逐条列出哪个插件缺哪个模块
-```
+#    （技能脚本：bash scripts/install-lang-plugin.sh verify）
 
-**IDEA 社区版提供的 capability 模块全表（IC 2026.2.5 实测，只有 3 个）**：
-
+# ④ 插件会不会在运行期自己校验授权 —— 加载后查 idea.log 有没有 NoClassDefFoundError
+#    栈里出现 com.intellij.ultimate.* ⇒ 形态④
 ```
-com.intellij.modules.java-capable
-com.intellij.modules.python-core-capable
-com.intellij.modules.python-in-non-pycharm-ide-capable
-```
-
-⇒ **Python 能进社区版**（社区版自己声明了 `python-core-capable`）；
-⇒ **Go/Rust 进不了**（社区版不声明 `go-capable` / `rust-capable`）—— 这是**产品定位**（Go 归 GoLand、Rust 归 RustRover），不是配置问题。
 
 ### §3.2 逐插件门禁（Marketplace API + descriptor + 加载日志三方交叉）
 
@@ -89,10 +97,11 @@ com.intellij.modules.python-in-non-pycharm-ide-capable
 |---|---|---|---|---|
 | **Python Community Edition** | **7322** | `PythonCore` | ✅ **能**（**实测**） | 兼容列表含 `IDEA`；插件级依赖的 `python-core-capable` 社区版提供；实测加载成功且 L0-L5 全通 |
 | Python（完整版） | 631 | `Pythonid` | ❌ | 兼容列表只有 `IDEA_PRO` / `JBCLIENT` |
-| JavaScript and TypeScript | 22069 | `JavaScript` | ❌ | 兼容列表只有 `IDEA_PRO` / `PYCHARM_PRO`；侧载可加载但运行期缺 33 个专有类（§3.1 形态③） |
-| Go | 9568 | `org.jetbrains.plugins.go` | ❌ | 依赖 `com.intellij.modules.go-capable`，社区版不提供 |
+| **Rust** | **22407** | `com.jetbrains.rust` | ⚠️ **实测可用**（要 shim + Native Debugging Support，见 §3.5） | 插件级硬依赖 `ultimate`（形态①）+ `rust-capable`（形态②）；两者都能解 |
+| **Native Debugging Support** | — | `com.intellij.nativeDebug` | ⚠️ 同上（Rust 2026.2 起的前置依赖） | 依赖 `nativeDebug-plugin-capable`（形态②） |
+| Go | 9568 | `org.jetbrains.plugins.go` | ❌ | 形态①②③ 都能解，但最后撞**形态④ 授权校验** |
 | Go（2017 遗留插件） | 5047 | `ro.redeul.google.go` | ❌ | until-build `171.*`（2017），装不上 build 262 |
-| Rust | 22407 | `com.jetbrains.rust` | ❌ | 插件级硬依赖 `com.intellij.modules.ultimate` + `rust-capable` 不提供；另需 `com.intellij.nativeDebug` |
+| JavaScript and TypeScript | 22069 | `JavaScript` | ❌ | 依赖 `intellij.platform.webide`（形态③）；删掉后缺 33 个 `com.intellij.webcore.*` 专有类 → 工程不可用 |
 | Rust（已弃用） | 8182 | `org.rust.lang` | ❌ | 已被 RustRover 取代，until-build `233.*` |
 | Ruff（Python 工具插件，非语言插件） | 20574 | — | ✅ | 兼容列表含 `IDEA` |
 | LSP4IJ（LSP 客户端） | 23257 | `com.redhat.devtools.lsp4ij` | ✅ | 兼容列表含 `IDEA`；给**编辑器级**智能（补全/诊断/改名/调用层级），**不喂 IDE 符号索引** → 两个 MCP 的语义工具都不受益 |
@@ -101,34 +110,24 @@ com.intellij.modules.python-in-non-pycharm-ide-capable
 
 ### §3.3 平替表（"这门语言该用哪个 IDE"）
 
-| 语言 | 社区版 IDEA 行不行 | 平替 | 费用（2026-11 核对官方页面） |
+| 语言 | 社区版 IDEA | 平替 | 费用（2026-11 核对官方页面） |
 |---|---|---|---|
 | Java / Kotlin | ✅ 全档位 | — | — |
-| Python | ✅ **官方社区版插件**（7322） | — | — |
+| Python | ✅ 官方社区版插件 | — | — |
+| Rust | ✅ **实测可用**（§3.5 配方） | 官方路线 **RustRover** | **非商业免费** |
 | TS / JavaScript | ❌ | **WebStorm** | **非商业免费**（学习/自用/开源/爱好；商业用途要付费订阅） |
-| Rust | ❌ | **RustRover** | **非商业免费** |
-| Go | ❌ | **GoLand** | 付费（30 天试用；**没有**非商业免费档） |
+| Go | ❌（授权校验） | **GoLand** | 付费（30 天试用；**没有**非商业免费档） |
 | 全部语言 | ❌ | IntelliJ IDEA Ultimate | 付费（30 天试用；**没有**非商业免费档） |
 
 **为什么平替比硬凑有效**：这些 JetBrains IDE **都自带内置 MCP server**（2025.2 起，IDEA/WebStorm/GoLand/RustRover 一家）→ 换过去之后 `search_symbol` / `analyze_calls` / `get_file_problems` 有**真 PSI** 可用；而在社区版里，这些工具对没有语言插件的语言**返回空而不是报错**（静默给错，见 §2 铁律）。
-⚠️ 换 IDE ≠ 换插件：语言插件、检视规则集、运行配置、项目模型都要在新 IDE 里重做一遍。
 
 ### §3.4 Index 插件的 `language` 枚举是**运行时算的**（不是写死的）
 
-`ide_find_references` 等工具的 `language` 参数枚举 = **该插件注册了 SymbolReferenceHandler、且对应语言插件被探测到**的语言集合。实测证据：
+枚举 = **注册了 SymbolReferenceHandler、且对应语言插件被探测到**的语言集合。实测证据：
 
 - 装上 Python CE → 日志 `Registered SymbolReferenceHandler for Python` → 枚举多出 `Python`；
-- 侧载 JS/TS 成功那一次 → 日志 `Registered SymbolReferenceHandler for JavaScript` + `TypeScript` → 枚举多出两门。
-
-⇒ **枚举里没有某语言 = 该语言没有 SymbolReferenceHandler**，与"插件装没装"是两件事：
-
-| 有 SymbolReferenceHandler | 没有（无论装什么插件都不会进枚举） |
-|---|---|
-| Java、Kotlin（走 Java 那个 handler）、JavaScript、TypeScript、Python、PHP | **Go、Rust**、Scala、Markdown |
-
-（Go/Rust 的 handler 注册项经插件 jar 字节码核实：`GoHandlers` 只注册 CallHierarchy + TypeHierarchy；`RustHandlers` 只多一个 Implementations。）
-
-⇒ **Go/Rust 的语义能力只能走内置 MCP**（`search_symbol` / `analyze_calls`，语言无关、走 IDE 自己的 PSI），且需要在装了对应语言插件的 IDE 里（GoLand / RustRover / Ultimate）。
+- 装上 Rust → 日志 `Rust plugin detected via plugin ID (com.jetbrains.rust)` → 但**没有** SymbolReferenceHandler → 枚举里**没有 Rust**（枚举实测 = `["Java","Python"]`）；
+- ⇒ 「枚举里没有某语言」有两种成因：**① 插件没装**（可解）/ **② 插件没给这门语言注册 handler**（不可解，但**位置法照样能用**，见 §2.1）。
 
 ---
 
@@ -136,18 +135,47 @@ com.intellij.modules.python-in-non-pycharm-ide-capable
 
 | 想要 | 动作 | 代价 |
 |---|---|---|
-| **Python ↑ 到 L2-L5** | 装 **Python Community Edition**（Marketplace id **7322**，xmlId `PythonCore`），**版本必须匹配 IDE build**（本机 262.12573.28 对应 `262.12573.28`） | 免费；**重启 IDEA** 后确认索引就绪 |
-| TS/JS ↑ | 换 **WebStorm**（非商业免费）。侧载 JS/TS 插件进社区版**实测不可用**（§3.1 形态③） | 换 IDE + 重做项目配置 |
-| Rust ↑ | 换 **RustRover**（非商业免费） | 换 IDE |
-| Go ↑ | 换 **GoLand** 或 IDEA Ultimate（**无免费档**） | 付费 |
-| L2 ↑（插件侧） | 等 Index 插件给该语言加 SymbolReferenceHandler（Go/Rust 排在这个队列外，见 §3.4） | 等插件版本 |
-| L3 ↑ | 该语言插件在位 + 该语言文件在 source root 内 + 检视规则集启用该语言 inspection | 免费 |
-| L4 ↑ | 换 monster 分支的 Index 插件 | 侧载 + 重启 + 跑一遍 `mcp-call.sh list index` 核对工具面 |
+| **Python ↑ 到 L2-L5** | 装 **Python Community Edition**（Marketplace id **7322**，xmlId `PythonCore`），**版本必须匹配 IDE build** | 免费；**重启 IDEA** 后确认索引就绪 |
+| **Rust ↑ 到 L2-L5** | 按 §3.5 的配方：shim 声明 `rust-capable` + `nativeDebug-plugin-capable` → 装 Rust 插件 + Native Debugging Support → 删插件 descriptor 里的 `ultimate` 硬依赖 → 重启 | 免费；**非官方配置**，IDEA 升级可能失效 |
+| TS/JS ↑ | 换 **WebStorm**（非商业免费）。侧载 JS/TS 插件进社区版**实测不可用**（形态③，缺 33 个专有类） | 换 IDE + 重做项目配置 |
+| Go ↑ | 换 **GoLand** 或 IDEA Ultimate。**社区版不可用**：插件有授权校验（形态④） | 付费 |
+| L2 ↑（插件侧） | 等 Index 插件给该语言加 SymbolReferenceHandler（那只影响 **symbol 路由**） | 等插件版本 |
+| L3 ↑ | 该语言插件在位 + 文件在 source root 内 + inspection 启用 | 免费 |
+| L4 ↑ | 换 monster 分支的 Index 插件 | 侧载 + 重启 + `mcp-call.sh list index` 核对工具面 |
 | 任意档 ↑ | 工具面核对 | `bash scripts/setup-env.sh plugins <root>` + `bash scripts/mcp-call.sh list index` |
 
 ---
 
-## §5 新增一门语言分册要交的东西（契约）
+## §5 在社区版里让一门语言可用的**完整配方**（以 Rust 为样板，2026-11-22 全程实测）
+
+```bash
+# 1) 问门禁：读插件 descriptor 的硬依赖 + 社区版平台提供哪些 capability
+bash scripts/install-lang-plugin.sh gate 22407
+
+# 2) 造 shim：声明社区版平台不提供的 capability 模块（自带插件，不改 IDE 安装目录）
+bash scripts/install-lang-plugin.sh shim \
+  com.intellij.modules.rust-capable \
+  com.intellij.modules.nativeDebug-plugin-capable
+
+# 3) 装插件（按 IDE build 选 marketplace 版本 → 解到用户插件目录）
+bash scripts/install-lang-plugin.sh install 22407
+bash scripts/install-lang-plugin.sh install com.intellij.nativeDebug   # 或 pluginManager?action=download&id=<xmlId>
+
+# 4) 删掉插件 descriptor 里的插件级 ultimate 硬依赖（形态①）
+#    —— 需要改 zip 里的 META-INF/plugin.xml，保留 .orig 备份
+
+# 5) 把要打开的工程加进「受信任工程」列表（否则 IDE 会卡在看不见的信任弹框上）
+bash scripts/setup-env.sh trust /abs/path/to/project
+
+# 6) 重启 IDEA，看真实结论
+bash scripts/install-lang-plugin.sh verify
+```
+
+⚠️ **非官方配置**：JetBrains 不支持这种组合；IDE 升级后 shim 可能失效；**形态④（授权校验）不在此列 —— 不做**。
+
+---
+
+## §6 新增一门语言分册要交的东西（契约）
 
 ```
 references/langs/<lang>/
@@ -167,4 +195,4 @@ templates/<lang>-*/                # 可选：脚手架模板
 2. `source` + `quote` 必须能在 `sources.md` 里逐字命中 —— **引文不许凭记忆写**；
 3. 清单条目要能被**真实项目回归**（TS 分册那次回归改掉了 6 条自己的误报）；
 4. 运行期能力档位要**实测**，不照抄别的语言；
-5. **edition 门禁必须按 §3.1 的三条命令取证**，不照抄 Marketplace 的 `compatible-products` 列表（那是 JetBrains 的**声明**，实测的加载日志才是**事实** —— 例如 Python 631 的声明是 IDEA_PRO，但社区版另有 7322 这条官方路）。
+5. **edition 门禁必须按 §3.1 的判定法取证**，不照抄 Marketplace 的 `compatible-products`（那是 JetBrains 的**声明**，实测的加载日志才是**事实** —— 例如 Python 631 的声明是 IDEA_PRO，但社区版另有 7322 这条官方路）。

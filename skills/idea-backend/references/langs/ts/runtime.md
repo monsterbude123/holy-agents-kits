@@ -11,14 +11,17 @@
 |---|---|---|
 | 文件索引 / 按名找文件 | ✅ 可用 | `ide_find_file` 能列出 .ts/.tsx |
 | 文本检索 | ✅ 可用 | `ide_search_text` + `wholeWord` + `context=code` → 13/13 真命中 |
-| 符号级（定义/引用/调用链） | ⚠️ **静默失效** | 位置法解析到**目录符号**；`language` 参数**当前只放行 Java**（枚举是运行时算的，见 §6.1） |
+| 符号级（定义/引用/调用链） | ⚠️ **静默失效** | 位置法解析到**目录符号** —— 根因是**本机没装 JS/TS 插件 → .ts 文件没有 PSI**（不是 `language` 枚举不放行，见 §6.1） |
 | 文件级检视 | ⚠️ **恒空** | `ide_diagnostics` 对 TS 文件连语法错误都不报 |
 | 语义重构 | ⚠️ 不可靠 | 改名/抽方法内部同样走位置法 |
 
-⇒ **在当前插件构建下，TS/JS 的运行期可靠面 = 文本级 + 文件级索引**；语义级与检视级要等插件支持（见 §6）。这不是"TS 不行"，是**这一档位的边界**，换个 IDE 版本/插件构建可能就升档了。
+⇒ **在当前插件构建下，TS/JS 的运行期可靠面 = 文本级 + 文件级索引**；语义级与检视级要等**语言插件在位**（见 §6）。
 
 > ⚠️ **不要把"社区版装不了 JS/TS 插件"当成终点** —— 2026-11-22 实测：侧载官方 JS/TS 插件进社区版**确实能加载**（见 §6.2），
 > 但运行期缺 33 个专有类 → 每次开文件都抛 → **工程实际不可用**。平替是 **WebStorm**（非商业免费），矩阵见 [../../capability-matrix.md](../../capability-matrix.md) §3.3。
+>
+> 💡 **对照实测（Rust）**：装了 Rust 插件后，尽管 `language` 枚举里**没有** Rust（插件没注册 SymbolReferenceHandler），
+> **位置法照样能用**（`resolvedSymbol.kind = "function"`）。→ 判定 L2 的口径是「**文件有没有 PSI**」，不是「枚举放不放行」。
 
 ---
 
@@ -121,7 +124,12 @@ bash scripts/mcp-call.sh index ide_search_text \
 - 实测证据：装上 **Python Community Edition** → 日志 `Registered SymbolReferenceHandler for Python` → 枚举多出 `Python`；
 - 有 SymbolReferenceHandler 的语言：Java、Kotlin（走 Java 那个）、JavaScript、TypeScript、Python、PHP；
   **没有的**：Go、Rust、Scala、Markdown —— 这几门**装什么插件都不会进枚举**（`GoHandlers` 只注册 CallHierarchy+TypeHierarchy，`RustHandlers` 只多一个 Implementations）；
-- ⇒ 「枚举里没有这门语言」有两种成因，要分开判：**① 语言插件没装**（可解）vs **② 插件没有这门的 handler**（不可解）。
+- ⇒ 「枚举里没有这门语言」有两种成因，要分开判：**① 语言插件没装**（可解）vs **② 插件没有这门的 handler**（只影响 **symbol 路由**，位置法照样能用）。
+
+> **2026-11-22 的关键更正（本分册此前的归因是错的）**：TS 位置法失效的根因是**「本机没装 JS/TS 插件 → .ts 文件没有 PSI → 位置法落到目录符号」**，
+> **不是**「`language` 枚举只放行 Java」。证据：同一天实测 Rust —— 枚举里同样没有 Rust（插件没注册 SymbolReferenceHandler），
+> 但**位置法返回真代码符号**（`kind = "function"`）。
+> ⇒ **判定 L2 的正确口径**：看「该语言的文件有没有 PSI」，不看枚举；枚举只决定 **symbol/qualifiedName 路由**能不能用。
 
 ### §6.2 侧载 JS/TS 插件进社区版：能加载，但**不可用**（2026-11-22 实测全过程）
 
