@@ -1,7 +1,8 @@
 # npm 打包忽略清单
 #
-# 语义：npm 优先读 .npmignore（有它就不读 .gitignore）⇒ **这里的规则要写全**
-#       —— 根 .gitignore 里的条目该抄的抄过来，否则换 npm 版本/去掉 files 白名单时会漏。
+# 实测（2026-11-23）：package.json 有 files 白名单时，npm 会把**根** .npmignore 与**根** .gitignore 整个置空
+#       ⇒ 本文件当前是**惰性兜底**（只在没有 files 白名单的场景起作用）；真正挡机器本地产物的是
+#       package.json 的 files 白名单里的反向模式（见 package.json 的 files 字段）。
 # 口径：机器本地产物一律不进包；**项目模板自带的配置该发**（templates/**/.idea/ 是模板的一部分，
 #       不是机器本地产物 ⇒ 下面挡 .idea/.codegraph 的规则只限 fixtures/ 下）。
 #

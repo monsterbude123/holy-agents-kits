@@ -31,6 +31,12 @@
 
 ⇒ 结论：**单文件诊断这条路，VS Code 侧本轮没有能用的腿** —— 只剩 IDEA 腿与外部 linter（pyright CLI / ruff）。
 
+### 已知限制（读文档前先知道）
+
+- **两处 reference 较长** —— `skills/vscode-backend/references/runtime.md`（约 620 行）与 `skills/idea-backend/references/capability-matrix.md`（约 730 行）：**决策表在各文件的 §8 / §7（第 90 行上下）**，读完表即可停；其后的数百行是**机器可读块**（JSON），供仓内对账门禁逐格核对用的。拆成独立 json 归后续（要改门禁契约 + 重验）。
+- **改名只验到干跑** —— 全局改名的实测全程 `dry_run`（预览覆盖 247 文件 / 740 处），**落盘**的端到端没做过。
+- **只覆盖 Python 与 TypeScript 的同题对照** —— JVM / Rust 侧是单边腿既有实测，本期没做同题对照。
+
 ### 怎么用（三条腿各自装什么）
 
 | 腿 | 装什么 | 怎么调 | 代价 |
