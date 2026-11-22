@@ -39,8 +39,8 @@
 | **`doctor` 报 ok 不等于 daemon 链路可用** | doctor 走**直连**路径且 autodetect 自带 `--stdio` ⇒ 测不出上面那个坑（本轮踩过） |
 | **诊断的成本** | agent-lsp 的 `get_diagnostics` 单文件 **25s**（daemon 已 ready 状态）—— 大仓里按文件逐个问诊断会很贵 |
 | **影响面的成本** | agent-lsp 的 `blast_radius` **18.9s**（446 符号 / 445 条边）；BifrostMCP 侧**没有**等价工具（L5 不可用） |
-| ⚠️ **影响面会静默少报** | agent-lsp 的 `blast_radius` 在 **daemon 索引不全**时返回**残缺图**且**不给任何提示**（实测：新起的 daemon 上只给 11 符号 / 9 边，而 `agent-lsp daemon-status` 同时报 `ready`）⇒ **拿影响面当真答案前必须双确认**：`daemon-status` 报 ready **且**图的规模与预期量级相符（对大仓，几十个符号的图基本就是残缺）。这是静默错数据，比报错危险 |
-| **两条腿的引用数差 1** | 同一锚点同一工程：BifrostMCP 740 条 / agent-lsp 739 条 —— **口径差异的具体机制未复核**（实测 BifrostMCP 带不带 `includeDeclaration` 都是 740，所以那个归因不成立）；差 1 的来源待查 |
+| ⚠️ **daemon 报 ready ≠ 结果可用** | tsserver 建 project graph 要 **~60-100s**；这期间 `daemon-status` **已经报 ready**，但 `find_references` **静默返 0**（不报错，实测 uptime 22s→1m18s 全是 0，1m38s 才首次 739），`blast_radius` 同样**静默少报**（新 daemon 上只给 11 符号 / 9 边 vs 凭证里的 446）⇒ **拿 0 条引用或残缺图当真答案前必须双确认**：daemon 已跑够时间 **且**结果的规模与预期量级相符（对大仓，几十个符号的图基本就是残缺）。这是静默错数据，比报错危险 |
+| **两条腿的引用数差 1** | 同一锚点同一工程：BifrostMCP 740 条 / agent-lsp 739 条 —— **机制已复核**：agent-lsp 侧 `find_references` 默认 739、带 `include_declaration: true` 是 740（多的那条是定义本身）；BifrostMCP 侧带不带该参数都是 740 |
 | **VS Code 侧诊断从哪来** | 只有 `get_code_actions` 里，而该工具实测坏了 ⇒ **这一轮 VS Code 侧拿不到诊断** |
 | **VS Code 的 TS 跑什么协议** | 跑 **tsserver 自有协议**，不跑 LSP ⇒ 跨语言引用在 TS 上结构性不可能 |
 | **两个协议级缺口** | ① **跨语言统一符号空间**：LSP 规范原文 "The protocol currently assumes that one server serves one tool."；② **全项目批检视**：`textDocument/codeAction` 无 scope 参数，协议层没有这个能力 |

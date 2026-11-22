@@ -134,11 +134,13 @@ get_declaration      get_document_highlights get_workspace_symbols
 | 前置依赖（TS） | `typescript-language-server` + **TypeScript 5.x**（TS 7 是原生 Go 版，没有 `lib/tsserver.js`，会报 `Could not find a valid TypeScript installation`） |
 | 工具面（实测 66 个） | `find_references{file_path, line(1-based), language_id?}`、`get_diagnostics{file_path?, group_by?}`、`blast_radius{changed_files:[绝对路径], include_transitive?, scope?}`、`preview_edit` / `safe_apply_edit`（只在 `net_delta==0` 时落盘）、`rename_symbol` … |
 | **调用顺序** | 先 `start_lsp{root_dir, language_id}`，再调其它工具（没起就调会返回 `LSP client not initialized; call start_lsp first`） |
-| **本机已知坑（实测踩过）** | **server spec 必须带 `,--stdio`**：`agent-lsp typescript:typescript-language-server`（少了它）会挂在 `daemon: broker did not start within 45s` —— 根因**不是** Windows 的 daemon 缺陷，而是 broker 按逗号拆参数后没给 server 传 `--stdio`，`typescript-language-server` 启动即退出（`error: required option '--stdio' not specified`），broker 初始化失败自杀并清掉现场。正确写法 `agent-lsp typescript:typescript-language-server,--stdio` ⇒ 实测 `start_lsp` 成功、`find_references` 出 739 条引用 |
-| **失败现场在哪看** | `~/.cache/agent-lsp/spawn-logs/<语言>.log`（**不是** `~/.agent-lsp/`，那是 cache 目录）—— 上面那句 `--stdio` 的原文就在里面 |
-| **`doctor` 报 ok ≠ daemon 链路可用** | doctor 走**直连**路径（不经过 broker），且 autodetect 模式自带 `--stdio` ⇒ doctor 测不出这个坑（踩过） |
-| **`find_references` 的入参** | `file_path` + `line`（1-based）+ **`column`（1-based，必填）** —— 只给 line 会报 `column: missing required argument "column"` |
-| **daemon 冷热** | daemon 跨会话存活（本机实测 uptime 20 分钟+）；首次 `start_lsp` 要等工程索引，期间 `find_references` 可能返回 "workspace is still being indexed by the daemon"，用 `agent-lsp daemon-status` 看是否 ready |
+| **本机已知坑（实测踩过）** | **server spec 必须带 `,--stdio`**：`agent-lsp typescript:typescript-language-server`（少了它）会挂在 `daemon: broker did not start within 30s`（默认 30s，可用 `AGENT_LSP_BROKER_TIMEOUT_MS` 覆盖）—— 根因**不是** Windows 的 daemon 缺陷，而是 broker 按逗号拆参数后没给 server 传 `--stdio`，`typescript-language-server` 启动即退出（`error: required option '--stdio' not specified`），broker 初始化失败自杀并**清空 daemon 目录**（所以别去 `~/.agent-lsp/` 找现场）。正确写法 `agent-lsp typescript:typescript-language-server,--stdio` ⇒ 实测 `start_lsp` 成功、`find_references` 出 739 条引用 |
+| **失败现场在哪看** | `~/.cache/agent-lsp/spawn-logs/<语言>.log`（**不是** `~/.agent-lsp/`，那里只有 cache/ 与 audit.jsonl）—— 上面那句 `--stdio` 的原文就在里面；daemon 的状态文件在 `~/.cache/agent-lsp/daemons/<hash>/{daemon.json,daemon.pid,daemon.sock}` |
+| **`doctor` 报 ok ≠ daemon 链路可用** | doctor 走**直连**路径（不经过 broker），且 autodetect 模式自带 `--stdio` ⇒ doctor 测不出这个坑（踩过）。实测对照：`doctor`（autodetect）报 ok；`doctor "typescript:typescript-language-server"` 报 `required option '--stdio' not specified`；`doctor "typescript:typescript-language-server,--stdio"` 报 ok |
+| **`find_references` 的入参** | `file_path` + `line`（1-based）+ **`column`（1-based，必填）** —— 只给 line 会报 `column: missing required argument "column"`；`apiFetch` 在 line=78 / column=23 |
+| **引用数的口径** | `find_references` 默认 **739** 条；带 `include_declaration: true` 是 **740** 条（多的是定义本身）—— 这就是两条腿 740/739 的差 1 的来源 |
+| **`start_lsp` 必须带 `language_id`** | 不带就走「全部语言直连」路径（每次新起一个冷 tsserver ⇒ 恒返 0 条）；带 `language_id: "typescript"` 才进 daemon 复用路径 |
+| ⚠️ **daemon 报 ready ≠ 引用已可用** | tsserver 建 project graph 要 **~60-100s**；这期间 `daemon-status` **已经报 ready**，但 `find_references` **静默返回 0 条**（不报错）—— 实测 uptime 22s→1m18s 全是 0，1m38s 才首次返回 739。⇒ **引用数返 0 时先确认 daemon 已跑够 ~60s 再下「死代码」判断**（工具自己也提示 "This may be dead code, or the language server could not resolve references"） |
 
 ## 7. 把这条通道挂进 agent 会话（`.mcp.json`）
 

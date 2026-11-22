@@ -33,7 +33,7 @@
 |---|---|---|---|---|---|---|
 | **agent-lsp** | **66 工具 / 33 语言 / 23 个 skill**；`blast_radius`（一次调用替代 20+ 次 LSP 往返）、`preview_edit` / `simulate_chain` / `safe_apply_edit`（只在 `net_delta==0` 时落盘）、**phase enforcement**（运行期阻断违规调用）；持久 warm daemon，Python/TS 冷启动 ~10s | 否 | MCP（stdio 或 `--http`） | **2026-11-22（当天）** | **MIT** | ✅ 已装 0.24.4（⚠️ server spec 必须带 `,--stdio`，见 §0.4） |
 | serena | LSP 后端 40+ 语言；自带 **LSP vs JetBrains 能力差异表**（可作横向对照） | 否 | MCP（stdio / HTTP） | 2026-11-19 | SolidLSP=**MIT** + 应用=GPL-3.0 | ⬜ 未装 |
-| mcp-language-server | definition / references / rename / diagnostics | 否 | MCP（stdio / HTTP） | 2026-03-01（⚠️ 停更 8.5 月） | BSD-3 | ⬜ 未装 |
+| mcp-language-server | definition / references / rename / diagnostics | 否 | MCP（stdio / HTTP） | 2026-03-01（⚠️ 停更 8.5 月） | BSD-3 | ⚠️ 实测 **Windows 上不可用**：`references` 拼路径时得到 `/d:/workspace/...`（前导斜杠）读不到文件；`hover`/`definition` 可用 |
 | codegraph | 跨语言符号图 / 影响面 | 否 | MCP（stdio） | 2026-11-20 | MIT | ✅ 已装 1.7.0 |
 | ast-grep-mcp | 结构化模式匹配 | 否 | MCP（stdio） | 2026-11-21 | MIT | ⬜ 未装（`ast-grep` 本体也没装） |
 | microsoft/DebugMCP | 调试（断点/单步/变量） | 是（VS Code） | MCP + 独立 CLI | 2026-11 | **MIT** | ⬜ 未装 |
