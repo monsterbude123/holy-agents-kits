@@ -63,7 +63,7 @@ const REPO_TAIL = 'skills/idea-backend/fixtures/experiment/repo';
 const RAW_MIN_LEN = 16;
 // 「问题类型属语法类」的机器判据（判据写死在门禁里 —— 凭证不许自带判据）：
 //   · 反向：任何一条消息命中「类型 / 风格类」措辞 ⇒ 不是语法错，判红；
-//   · 正向：至少一条消息命中「解析器措辞」⇒ 这批诊断确实是解析器吐的。
+//   · 正向：每条消息都要命中「解析器措辞」⇒ 这批诊断确实是解析器吐的。
 // 措辞来源：IDEA PyPsi（Formal parameter name expected / ':' expected）与 pyright 1.1.414
 //           （Expected parameter name / "(" was not closed / Statements must be separated by ...）。
 const PARSER_MSG_RES = [
@@ -146,17 +146,10 @@ function checkNoLocalPath(tag, value, problems) {
   if (m) problems.push(`本机绝对路径泄漏：${tag} 里有「${m[0]}」—— 机器本地绝对路径要归一化成 <repo> / <project>`);
 }
 
-/** 这条问题消息是不是解析器（语法）措辞 */
-function isParserMessage(msg) {
-  const s = String(msg);
-  if (NON_SYNTAX_MSG_RES.some((re) => re.test(s))) return false;
-  return PARSER_MSG_RES.some((re) => re.test(s));
-}
-
 /**
  * 诊断格（scope=diagnostics）的判定 —— D-07 事先写死的判据：
- * 「条数 ≥ 1 且类型属语法类」⇒ 机器判法 = 条数 ≥ gold 的 min_count，且每条问题消息都像解析器诊断
- * （不得命中类型/风格类措辞），且至少一条命中解析器措辞。
+ * 「条数 ≥ 1 且类型属语法类」⇒ 机器判法 = 条数 ≥ gold 的 min_count，且**每条**问题消息都是解析器措辞
+ * （命中解析器措辞、且不命中类型/风格类措辞）。
  */
 function checkDiagnosticsDetail(tag, anchor, cell, problems) {
   const ep = (anchor && anchor.expect_problems) || {};
