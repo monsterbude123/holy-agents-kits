@@ -3,21 +3,21 @@
 #
 #   bash scripts/install-vscode-mcp.sh [--check] [<工作区路径>]
 #
-#   --check   只校验不改动（扩展在不在 / 端点通不通 / 工具面达不达标）
-#   默认      装扩展 → 起 VS Code → 校验 → 把端口与传输写进机器本地 config.json
+# --check   **只校验不改动**（扩展在不在 / 端点通不通；不写任何文件）
+# 默认      装扩展 → 起 VS Code → 解析端口 → 写 config.json → 按 config 生成/合并工作区 .mcp.json
+#            （安装模式**必须给工作区路径**：没有工作区就没有 .mcp.json 的落点，端点事实也会多出第二处）
+#
+# **只做缺口那部分**：装 + 起 + 把端点事实落成机器本地配置 + 翻译成宿主的 .mcp.json。
+# **不实现 MCP 协议**（不握手、不自己发工具列表请求）—— 调用与工具面核对走平台原生 MCP 通道
+# （.mcp.json → 宿主自带 MCP 客户端），本脚本不重复造那一层。
 #
 # 端点事实只有一处来源：机器本地 config.json（skills/*/config.json，仓内 .gitignore 覆盖，不入库）。
 # 端口的**来源**是工作区的 bifrost.config.json（扩展自己读的那份），缺省 8008。
-# 工具面判定规则见 references/setup.md 的「机器可读事实块」。
 set -uo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="$SKILL_DIR/config.json"
 EXT_ID="connorhallman.bifrost-mcp"
-# 符号级工具：判定规则要求这 6 个里命中 >=4（见 references/setup.md）
-SYMBOL_TOOLS=(find_usages go_to_definition get_workspace_symbols get_document_symbols get_rename_locations get_type_definition)
-DIAG_TOOL="get_code_actions"
-MIN_SYMBOL_TOOLS=4
 
 MODE="install"; WORKSPACE=""
 while [ $# -gt 0 ]; do
@@ -54,38 +54,11 @@ resolve_port() {
 # --- 扩展在不在 ---------------------------------------------------------------------
 ext_installed() { "$CODE_CMD" --list-extensions 2>/dev/null | grep -qi "^${EXT_ID}$"; }
 
-# --- 端点 + tools/list（返回工具名，一行一个；失败则非 0）------------------------------
-probe_tools() { # <port>
-  local port="$1" out out_win ep pid i
-  out="$(mktemp)"; out_win="$(cygpath -m "$out" 2>/dev/null || echo "$out")"
-  curl -s -N -m 60 "http://127.0.0.1:${port}/sse" > "$out" 2>&1 &
-  pid=$!
-  for i in $(seq 1 15); do sleep 1; grep -q "sessionId=" "$out" && break; done
-  ep="$(grep -m1 'sessionId=' "$out" | sed 's/.*data: //' | tr -d '\r')"
-  if [ -z "$ep" ]; then kill $pid 2>/dev/null; rm -f "$out"; return 1; fi
-  post() { curl -s -m 30 -X POST "http://127.0.0.1:${port}${ep}" -H 'Content-Type: application/json' -d "$1" -o /dev/null; }
-  post '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"idea-backend-vscode","version":"1"}}}' >/dev/null
-  sleep 2
-  post '{"jsonrpc":"2.0","method":"notifications/initialized"}' >/dev/null
-  sleep 1
-  post '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' >/dev/null
-  local waited=0
-  while [ "$waited" -lt 30 ]; do grep -q '"id":2' "$out" && break; sleep 1; waited=$((waited+1)); done
-  kill $pid 2>/dev/null
-  node -e "
-    const fs=require('fs');
-    const raw=fs.readFileSync(process.argv[1],'utf8');
-    let tools=null;
-    for(const line of raw.split('\n')){
-      if(!line.startsWith('data: ')||!line.includes('\"id\":2')) continue;
-      try{const j=JSON.parse(line.slice(6)); if(j.result&&j.result.tools) tools=j.result.tools;}catch(e){}
-    }
-    if(!tools){console.error('未拿到 tools/list');process.exit(1);}
-    for(const t of tools) console.log(t.name);
-  " "$out_win"
-  local rc=$?
-  rm -f "$out"
-  return $rc
+# --- 端点存活（SSE 端点会一直挂着连接 ⇒ curl 超时是正常的，看状态码即可）------------
+endpoint_alive() { # <port>
+  local code
+  code="$(curl -s -o /dev/null -m 3 -w '%{http_code}' "http://127.0.0.1:$1/sse" 2>/dev/null)"
+  [ "$code" = "200" ]
 }
 
 # --- 写机器本地 config.json（端点事实的唯一落点）--------------------------------------
@@ -96,11 +69,43 @@ write_config() { # <port> <transport>
     const file=process.argv[1], port=Number(process.argv[2]), transport=process.argv[3];
     let j={};
     try{ j=JSON.parse(fs.readFileSync(file,'utf8')); }catch(e){}
-    j._comment='机器本地运行时配置（不入库、不分发；.gitignore 的 skills/*/config.json 覆盖）。端口来源：工作区 bifrost.config.json，缺省 8008；URL 由脚本拼。';
-    j.vscode={port, transport, extension:'connorhallman.bifrost-mcp'};
+    j._comment='机器本地运行时配置（不入库、不分发；.gitignore 的 skills/*/config.json 覆盖）。端口来源：工作区 bifrost.config.json，缺省 8008；url 由本文件拼出，.mcp.json 由它生成 —— 端点只有这一处事实源。';
+    j.vscode={port, transport, extension:'connorhallman.bifrost-mcp', url:'http://127.0.0.1:'+port+'/sse'};
     fs.writeFileSync(file, JSON.stringify(j,null,2)+'\n');
   " "$(cygpath -m "$CONFIG" 2>/dev/null || echo "$CONFIG")" "$1" "$2"
 }
+
+# --- 按 config.json 生成/合并工作区 .mcp.json（宿主原生 MCP 通道的落点）----------------
+write_mcp_json() { # <workspace>
+  local ws="$1"
+  [ -n "$ws" ] || return 0
+  node -e "
+    const fs=require('fs'),path=require('path');
+    const ws=process.argv[1], cfg=process.argv[2];
+    const j=JSON.parse(fs.readFileSync(cfg,'utf8'));
+    const v=j.vscode||{};
+    if(!v.url){ console.error('config.json 里没有 vscode.url'); process.exit(1); }
+    const f=path.join(ws,'.mcp.json');
+    let doc={};
+    try{ doc=JSON.parse(fs.readFileSync(f,'utf8')); }catch(e){ doc={}; }
+    doc.mcpServers=doc.mcpServers||{};
+    doc.mcpServers.vscode={type:'sse', url:v.url, timeoutMs:60000};
+    fs.writeFileSync(f, JSON.stringify(doc,null,2)+'\n');
+    // 机器本地文件：写进 .git/info/exclude（不动 .gitignore —— 那是仓内规则）
+    try{
+      const ex=path.join(ws,'.git','info','exclude');
+      if(fs.existsSync(path.dirname(ex))){
+        const cur=fs.existsSync(ex)?fs.readFileSync(ex,'utf8'):'';
+        if(!cur.includes('.mcp.json')) fs.appendFileSync(ex,(cur===''||cur.endsWith('\n')?'':'\n')+'.mcp.json\n');
+      }
+    }catch(e){}
+    console.log(f);
+  " "$(cygpath -m "$ws" 2>/dev/null || echo "$ws")" "$(cygpath -m "$CONFIG" 2>/dev/null || echo "$CONFIG")"
+}
+
+if [ "$MODE" = "install" ] && [ -z "$WORKSPACE" ]; then
+  fail "安装模式要给工作区路径（.mcp.json 写在那里）：bash scripts/install-vscode-mcp.sh <工作区路径>"
+fi
 
 PORT="$(resolve_port "$WORKSPACE")"
 
@@ -113,7 +118,7 @@ if [ "$MODE" = "install" ]; then
   ext_installed || fail "扩展装完仍不在：code --list-extensions | grep $EXT_ID"
   note "扩展在位"
   # 起 VS Code（服务跑在扩展宿主里，窗口必须活着）
-  if ! curl -s -o /dev/null -m 3 "http://127.0.0.1:${PORT}/sse" 2>/dev/null; then
+  if ! endpoint_alive "$PORT"; then
     if [ -n "$WORKSPACE" ]; then
       note "起 VS Code（工作区 $WORKSPACE）..."
       "$CODE_CMD" "$WORKSPACE" >/dev/null 2>&1 &
@@ -126,25 +131,19 @@ fi
 
 # ================= 校验 =================
 ext_installed || fail "扩展不在：code --list-extension $EXT_ID（--check 模式不装扩展，请先跑一次不带 --check 的安装）"
+endpoint_alive "$PORT" || fail "端点不通（http://127.0.0.1:$PORT/sse 无响应）—— VS Code 窗口开着没？扩展服务在跑没？"
 
-TOOLS="$(probe_tools "$PORT")" || fail "endpoint unreachable —— 扩展服务没起（VS Code 窗口开着没？端口 $PORT 监听没？）"
-
-COUNT="$(printf '%s\n' "$TOOLS" | grep -c . || true)"
-[ "$COUNT" -ge 1 ] || fail "tools/list 返回空"
-
-HIT=0
-for t in "${SYMBOL_TOOLS[@]}"; do
-  printf '%s\n' "$TOOLS" | grep -qx -- "$t" && HIT=$((HIT+1))
-done
-if [ "$HIT" -lt "$MIN_SYMBOL_TOOLS" ]; then
-  echo "ERROR: symbol tools $HIT/$MIN_SYMBOL_TOOLS —— 工具面不达标" >&2
-  printf '%s\n' "$TOOLS" | sed 's/^/    /' >&2
-  exit 1
+if [ "$MODE" = "check" ]; then
+  echo "通道就绪：sse=http://127.0.0.1:${PORT}/sse（--check 不写任何文件）"
+  echo "  工具面核对走原生 MCP 通道（会话里 list 一次工具）—— 判定规则见 references/setup.md 的事实块"
+  exit 0
 fi
-printf '%s\n' "$TOOLS" | grep -qx -- "$DIAG_TOOL" || { echo "ERROR: no diagnostics tool（缺 $DIAG_TOOL）" >&2; exit 1; }
 
-# 写 config.json（--check 模式也写：让端点事实始终有落点；机器本地文件，不入库）
+# 写 config.json（机器本地文件，不入库）—— 端点事实的唯一落点
 write_config "$PORT" "sse"
 
-echo "通道就绪：sse=http://127.0.0.1:${PORT}/sse  tools=$COUNT  symbol_tools=$HIT/$MIN_SYMBOL_TOOLS  diagnostics=$DIAG_TOOL"
+echo "通道就绪：sse=http://127.0.0.1:${PORT}/sse"
 echo "  config: $CONFIG"
+OUT="$(write_mcp_json "$WORKSPACE")" || fail "写 .mcp.json 失败"
+echo "  mcp.json: $OUT（机器本地，已加进 .git/info/exclude）"
+echo "  工具面核对走原生 MCP 通道（会话里 list 一次工具）—— 判定规则见 references/setup.md 的事实块"

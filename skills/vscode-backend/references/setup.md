@@ -10,10 +10,10 @@
   "extension": "connorhallman.bifrost-mcp",
   "version": "0.0.14",
   "requires_vscode": "^1.93.0",
-  "port": 8008,
+  "default_port_measured": 8008,
   "transport": "sse",
-  "sse_url": "http://127.0.0.1:8008/sse",
-  "message_url": "http://127.0.0.1:8008/message",
+  "sse_url_pattern": "http://127.0.0.1:<port>/sse",
+  "message_url_pattern": "http://127.0.0.1:<port>/message",
   "window_required": true,
   "auto_start": true,
   "start_commands": [
@@ -32,8 +32,13 @@
     "get_type_definition"
   ],
   "diagnostics_tool": "get_code_actions",
+  "diagnostics_tool_availability": "实测 2026-11-22（扩展 0.0.14）：get_code_actions 报 Illegal argument —— **工具面规则达标 ≠ 工具在本机可用**；诊断走 agent-lsp 那条腿（见 runtime.md）",
+  "symbol_tools_availability": "实测 2026-11-22（扩展 0.0.14）：6 个符号级工具里 5 个可用；get_rename_locations 报 Unexpected type（改名/影响面走 agent-lsp 那条腿）",
   "diagnostics_limitation": "没有独立的 problems/diagnostics 工具；诊断只能从 get_code_actions 返回的 codeAction.diagnostics 里拿",
   "position_convention": "position.line 零基准、position.character 零基准；扩展自己的 schema 文本写的是 One-based line number —— 与实现不符，以实现为准",
+  "position_line_base": "zero",
+  "uri_form": "file:///<drive-letter-lowercase>/<path-with-forward-slashes>",
+  "endpoint_source": "端口来自工作区的 bifrost.config.json（缺省 8008）；**活的端点值只写在机器本地的 config.json**，本块只记默认值与实测事实",
   "measured_at": "2026-11-22"
 }
 ```
@@ -64,14 +69,16 @@ code --list-extensions | grep bifrost
 
 ⇒ **窗口必须常开**（这是这条路线与 IDEA 那条最大的运维差别：IDEA 的 MCP 端口可以独立于窗口存在，扩展宿主里的服务不行）。
 
-## 4. 怎么调（MCP 握手 + 入参形状）
+## 4. 协议事实（排障用；日常调用不需要手写这一层）
 
-握手（标准 MCP SSE 两步）：
+通道是标准 MCP SSE 两步握手：
 
 1. `GET /sse` → 服务推 `event: endpoint` + `data: /message?sessionId=<id>`；
 2. `POST /message?sessionId=<id>` 发 `initialize` → 响应从 **SSE 流**上回来（不是 POST 的返回体）；
 3. `POST` 同一地址发 `notifications/initialized`；
 4. 之后 `tools/list` / `tools/call` 同理。
+
+**日常不需要手写这些**：`.mcp.json` 指过来之后，宿主自带的 MCP 客户端会做握手（见 §7）。
 
 **各工具的入参形状（实测自扩展包内的 inputSchema）**：
 
@@ -103,6 +110,7 @@ get_declaration      get_document_highlights get_workspace_symbols
 
 - **符号级 6 个**：`find_usages` / `go_to_definition` / `get_workspace_symbols` / `get_document_symbols` / `get_rename_locations` / `get_type_definition`（判定规则：命中 ≥4 算符号级成立）；
 - **诊断级**：`get_code_actions`（**没有独立的 diagnostics/problems 工具** —— 这是 VS Code 侧与 IDEA 侧 `get_file_problems` 的关键差距）。
+- ⚠️ **实测可用性（2026-11-22，扩展 0.0.14）**：上面 19 个工具里，符号级 6 个有 5 个可用（`get_rename_locations` 报 `Unexpected type`）、诊断级那 1 个不可用（`get_code_actions` 报 `Illegal argument`）⇒ **这一轮 VS Code 侧拿不到诊断、也不能改名**；替代路线见 `references/runtime.md`。
 
 ## 6. 已知限制（实测，别踩）
 
@@ -114,7 +122,52 @@ get_declaration      get_document_highlights get_workspace_symbols
 | **扩展型 MCP server 要求宿主进程活着** | VS Code 窗口关了，服务就没了 |
 | **目标工作区会被扩展读** | 扩展读工作区根的 `bifrost.config.json`；实测**没有**被写出 `.vscode/` 或 `bifrost.config.json`（但探针仍须只调只读工具） |
 
-## 7. 排障
+## 6.5 窗口外那条腿：agent-lsp（不依赖 VS Code 窗口）
+
+「VS Code 开着时用它的能力」是上一节；**语义后端的本来需求是「窗口关着也能查」** —— 那条腿用现成的 **agent-lsp**（MIT、活跃、直跑 LSP、66 工具 / 23 个 skill），本机已装 0.24.4。
+
+| 动作 | 命令 / 事实 |
+|---|---|
+| 装 | `npm install -g @blackwell-systems/agent-lsp`（也有 `winget` / `pip` / `go install` 四种装法） |
+| 起（当 MCP server） | `agent-lsp typescript:typescript-language-server,--stdio`（stdio）—— **逗号后的 `,--stdio` 不能少**，见下方「本机已知坑」；或 `agent-lsp --http --port 8080`（HTTP+SSE） |
+| 挂进会话 | `.mcp.json` 里加 `{"agent-lsp": {"type": "stdio", "command": "agent-lsp", "args": ["typescript:typescript-language-server,--stdio"]}}` |
+| 前置依赖（TS） | `typescript-language-server` + **TypeScript 5.x**（TS 7 是原生 Go 版，没有 `lib/tsserver.js`，会报 `Could not find a valid TypeScript installation`） |
+| 工具面（实测 66 个） | `find_references{file_path, line(1-based), language_id?}`、`get_diagnostics{file_path?, group_by?}`、`blast_radius{changed_files:[绝对路径], include_transitive?, scope?}`、`preview_edit` / `safe_apply_edit`（只在 `net_delta==0` 时落盘）、`rename_symbol` … |
+| **调用顺序** | 先 `start_lsp{root_dir, language_id}`，再调其它工具（没起就调会返回 `LSP client not initialized; call start_lsp first`） |
+| **本机已知坑（实测踩过）** | **server spec 必须带 `,--stdio`**：`agent-lsp typescript:typescript-language-server`（少了它）会挂在 `daemon: broker did not start within 45s` —— 根因**不是** Windows 的 daemon 缺陷，而是 broker 按逗号拆参数后没给 server 传 `--stdio`，`typescript-language-server` 启动即退出（`error: required option '--stdio' not specified`），broker 初始化失败自杀并清掉现场。正确写法 `agent-lsp typescript:typescript-language-server,--stdio` ⇒ 实测 `start_lsp` 成功、`find_references` 出 739 条引用 |
+| **失败现场在哪看** | `~/.cache/agent-lsp/spawn-logs/<语言>.log`（**不是** `~/.agent-lsp/`，那是 cache 目录）—— 上面那句 `--stdio` 的原文就在里面 |
+| **`doctor` 报 ok ≠ daemon 链路可用** | doctor 走**直连**路径（不经过 broker），且 autodetect 模式自带 `--stdio` ⇒ doctor 测不出这个坑（踩过） |
+| **`find_references` 的入参** | `file_path` + `line`（1-based）+ **`column`（1-based，必填）** —— 只给 line 会报 `column: missing required argument "column"` |
+| **daemon 冷热** | daemon 跨会话存活（本机实测 uptime 20 分钟+）；首次 `start_lsp` 要等工程索引，期间 `find_references` 可能返回 "workspace is still being indexed by the daemon"，用 `agent-lsp daemon-status` 看是否 ready |
+
+## 7. 把这条通道挂进 agent 会话（`.mcp.json`）
+
+通道起来之后，让 agent 会话用上它 —— **`.mcp.json` 由 `scripts/install-vscode-mcp.sh` 按 `config.json` 生成**（端点事实只有一处来源：**别手抄 url** —— 下面这段是**结构说明**，url 一栏是占位符；真文件由脚本写）：
+
+```json
+{
+  "mcpServers": {
+    "vscode": { "type": "sse", "url": "<config.json 里的 vscode.url>", "timeoutMs": 60000 }
+  }
+}
+```
+
+- **新 MCP server 在会话启动时加载** —— 改完 `.mcp.json` 要重启会话，首次可能弹信任确认；
+- `.mcp.json` 属于机器本地：脚本把它加进 `.git/info/exclude`（不动仓内 `.gitignore`）；
+- **端点事实不随分发**：机器本地的 `config.json`（含实际端口）不入库、不进 npm 包 ⇒ 目标机器要先跑一次 `scripts/install-vscode-mcp.sh` 生成它；
+- 端口被改过（工作区的 `bifrost.config.json` 写了 `port`）时，**重跑一次 install 脚本**即可（它按新端口重写 config.json 与 .mcp.json）。
+
+## 7.1 怎么复核通道与工具面（REQ-1 / REQ-2 的验收路径）
+
+装完之后，**不需要手写协议**就能复核两件事：**通道能不能列工具并调工具**（REQ-2）、**工具面达不达标**（REQ-1）：
+
+1. 在会话里（或任意 MCP 客户端里）对 `vscode` 这个 server 列一次工具；
+2. 对照 §0 事实块判定：**符号级工具 ≥4 个**（判定锚 = `symbol_tools` 那 6 个里的命中数 ≥4，且诊断工具必须正是 `get_code_actions`）；
+3. 端点是否通：`bash scripts/install-vscode-mcp.sh --check`（HTTP 存活探测，不发 MCP 协议）。
+
+> 为什么不是脚本自己发 `tools/list`：手写的 SSE + JSON-RPC 客户端已退役（见 `reuse-survey.md` §2 的 `why_drop`）—— 协议层交给宿主原生 MCP 客户端，脚本只留「装 + 起 + 配 + 探测存活」这段缺口。
+
+## 8. 排障
 
 | 现象 | 查什么 |
 |---|---|
@@ -123,3 +176,5 @@ get_declaration      get_document_highlights get_workspace_symbols
 | `Unable to read file '\'` | uri 形状错了（要 `file:///...`）或位置没落在符号上 |
 | 查出来是别的符号 | **位置基准**：line 是零基准（schema 文本骗人） |
 | 符号查不到 | 该仓是否装了对应语言扩展；VS Code 的 TS 索引是否就绪 |
+| agent-lsp 报 `LSP client not initialized` | 先调 `start_lsp{root_dir, language_id}` |
+| agent-lsp 报 `broker did not start` | Windows 上的 daemon 层问题（§6.5 末行）；`agent-lsp doctor` 能过说明 server 本身没问题 |
