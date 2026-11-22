@@ -36,7 +36,8 @@
     "agent-lsp 的 blast_radius 在 daemon 索引不全时静默少报（新起的 daemon 上 11 符号/9 边，而 daemon-status 报 ready）—— 复测时这条数字会变小，属索引不全而非数据错。",
     "agent-lsp 的 find_references 默认 739 条、带 include_declaration=true 是 740 条（多的是定义本身）—— 这就是两条腿 740/739 的差 1 来源。",
     "daemon 报 ready 不等于引用已可用：tsserver 建 project graph 需 ~60-100s，这期间 find_references 静默返 0（实测 uptime 22s→1m18s 全 0，1m38s 才首次 739）；本凭证的 739 是 daemon 跑够之后的数。",
-    "耗时都是单次样本：复测 find_usages 得 1019/1351/1481ms 三个值，冷索引会话里同一调用还可能挂死 >150s —— 表里的毫秒数不是性能承诺。"
+    "耗时都是单次样本：复测 find_usages 得 1019/1351/1481ms 三个值，冷索引会话里同一调用还可能挂死 >150s —— 表里的毫秒数不是性能承诺。",
+    "改名范围：daemon 索引就绪后 rename_symbol(dry_run) 预览覆盖整个 project（247 文件 / 740 处）；冷 daemon 时只给 1 处 —— 那是 project graph 没建好的假象，**不是**「只改已打开的文件」（实测两次打开前后预览一致）。"
   ],
   "records": [
     {
@@ -170,6 +171,24 @@
       "raw_ms": 18887.7,
       "net_ms": 18882.8,
       "evidence": "GCF profile=graph tool=blast_radius symbols=446 edges=445\n## targets\n@0 fn src/lib.LOCALE_PATH_PATTERN 1.00 lsp_resolved\n@1 fn src/lib.resolveLocaleFromPath 1.00 lsp_resolved\n@2 fn src/lib.getPageLocale 1.00 lsp_resolved\n@3 fn src/lib.resolveRequestPathname 1.00 lsp_resolved\n@4 fn src/lib.shouldInjectLocaleHeader 1.00 lsp_resolved\n@5 fn src/lib.SESSION_CACHE_TTL_MS 1.00 lsp_resolved\n@6 fn src/lib."
+    },
+    {
+      "tier": "L5-rename",
+      "route": "agent-lsp",
+      "tool": "rename_symbol",
+      "lang": "typescript",
+      "args": {
+        "file_path": "<project>/src/lib/api-fetch.ts",
+        "line": 78,
+        "column": 23,
+        "new_name": "apiFetchV2",
+        "dry_run": true
+      },
+      "status": "ok",
+      "hits": 740,
+      "raw_ms": 14169.8,
+      "net_ms": 14164.9,
+      "evidence": "rename_symbol(dry_run) 在 daemon 索引就绪后（find_references 已返 739）的预览：preview.files=247 locations=740；同一 daemon 上「打开引用到的文件」前后两次预览一致 ⇒ **改名范围由 project graph 决定，不是由已打开文件数决定**；对照：daemon 冷、project graph 未建好时，改名预览只有 1 处（看起来像「只改打开的文件」，实为索引没就绪的假象）；本记录只写 dry_run 预览，未落盘任何改名。"
     }
   ]
 }
