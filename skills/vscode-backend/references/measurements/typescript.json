@@ -85,7 +85,7 @@
       "hits": 1,
       "raw_ms": 9.1,
       "net_ms": 2.3,
-      "evidence": "[{\"uri\":\"file:///d%3A/workspace/ai-collaborate/ai-short-studio-monster-2/src/lib/api-fetch.ts\",\"range\":{\"start\":{\"line\":77,\"character\":0},\"end\":{\"line\":82,\"character\":1}},\"preview\":\"export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {\"}]"
+      "evidence": "[{\"uri\":\"file:///<project>/src/lib/api-fetch.ts\",\"range\":{\"start\":{\"line\":77,\"character\":0},\"end\":{\"line\":82,\"character\":1}},\"preview\":\"export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {\"}]"
     },
     {
       "tier": "L2-ref",
@@ -105,7 +105,7 @@
       "hits": 740,
       "raw_ms": 1150.8,
       "net_ms": 1144.1,
-      "evidence": "[{\"uri\":\"file:///d%3A/workspace/ai-collaborate/ai-short-studio-monster-2/src/app/%5Blocale%5D/admin/_components/AdminArtStyleEditorDrawer.tsx\",\"range\":{\"start\":{\"line\":9,\"character\":9},\"end\":{\"line\":9,\"character\":17}},\"preview\":\"import { apiFetch } from '@/lib/api-fetch'\"},{\"uri\":\"file:///d%3A/workspace/ai-collaborate/ai-short-studio-monster-2/src/app/%5Blocale%5D/admin/_components/AdminArtStyleEd"
+      "evidence": "[{\"uri\":\"file:///<project>/src/app/%5Blocale%5D/admin/_components/AdminArtStyleEditorDrawer.tsx\",\"range\":{\"start\":{\"line\":9,\"character\":9},\"end\":{\"line\":9,\"character\":17}},\"preview\":\"import { apiFetch } from '@/lib/api-fetch'\"},{\"uri\":\"file:///<project>/src/app/%5Blocale%5D/admin/_components/AdminArtStyleEd"
     },
     {
       "tier": "L2-ws",
