@@ -33,7 +33,8 @@ const STATUS = ['完成', 'flaky', '能力缺席', '未取', '环境未就绪'];
 const FAILURE_MODES = ['无失败', '工具报错', '索引未就绪', '漏引用', '误报', '超时', '静默失效', '能力缺席', '残缺图', '环境未就绪'];
 const NUMBER_EXEMPT = ['能力缺席', '未取', '环境未就绪'];
 const STATUS_FAILURE_PAIR = {
-  '完成': ['无失败'],
+  // 完成 = 答出来了（对不对由召回/精度说话，缺陷记在失败模式里）
+  '完成': ['无失败', '漏引用', '误报', '静默失效'],
   '能力缺席': ['能力缺席'],
   '环境未就绪': ['环境未就绪'],
   '未取': ['环境未就绪', '索引未就绪', '工具报错', '超时'],
@@ -292,18 +293,30 @@ function checkResults(results, gold, problems) {
         problems.push(`字段缺失：${tag} 的锚点 ${anchor.id} 不属于任务 ${c.task}（该任务的锚点是 ${(spec.anchors || []).join('、')}）`);
     }
     checkRecallBlock(tag, anchor, c.metrics || {}, c.recall, problems, scope);
-    // flaky 标注与实测判据一致
+    // flaky 标注与实测判据一致（命中数不一致 **或** 耗时极差到判据）
     if (c.metrics && Array.isArray(c.metrics.raw_ms) && c.metrics.raw_ms.length === 3) {
       const byTime = isFlakyByTime(c.metrics.raw_ms);
-      if (c.status === 'flaky' && !byTime)
-        problems.push(`失败模式取值非法：${tag} 标了 flaky，但三轮耗时没到极差判据（>${FLAKY_REL * 100}% 且 ≥${FLAKY_ABS_MS}ms）`);
-      if (c.status === '完成' && byTime)
-        problems.push(`失败模式取值非法：${tag} 满足 flaky 的耗时极差判据，却标成了「完成」`);
+      const rh = c.metrics.raw_hits;
+      const hitsVary = Array.isArray(rh) && rh.length === 3 && new Set(rh.map((x) => JSON.stringify(x))).size > 1;
+      if (c.status === 'flaky' && !byTime && !hitsVary)
+        problems.push(`失败模式取值非法：${tag} 标了 flaky，但三轮命中数一致且耗时没到极差判据（>${FLAKY_REL * 100}% 且 ≥${FLAKY_ABS_MS}ms）`);
+      if (c.status === '完成' && (byTime || hitsVary))
+        problems.push(`失败模式取值非法：${tag} 满足 flaky 判据（${hitsVary ? '命中数不一致' : '耗时极差'}），却标成了「完成」`);
+      if (Array.isArray(rh) && rh.length === 3) {
+        const common = rh.every((x) => JSON.stringify(x) === JSON.stringify(rh[0])) ? rh[0] : null;
+        if (JSON.stringify(c.metrics.hits_reported) !== JSON.stringify(common))
+          problems.push(`字段缺失：${tag} 的 metrics.hits_reported（${JSON.stringify(c.metrics.hits_reported)}）与三轮实测（${JSON.stringify(rh)}）对不上`);
+      }
     }
     // T6 的分语言明细
     if (c.metrics && c.metrics.by_lang) {
       for (const [lang, v] of Object.entries(c.metrics.by_lang)) {
         const t2 = `${tag} 的 by_lang.${lang}`;
+        if (!v || v.absent) {
+          if (!NUMBER_EXEMPT.includes(c.status))
+            problems.push(`失败模式取值非法：${t2} 记了能力缺席，但整格状态是「${c.status}」（该状态必须是能力缺席/未取/环境未就绪）`);
+          continue;
+        }
         const a2 = findAnchor(gold, v.symbol, v.file);
         if (!a2) { problems.push(`字段缺失：${t2} 的锚点 ${v.symbol}@${v.file} 不在 gold.json 里`); continue; }
         checkRecallBlock(t2, a2, v, v.recall, problems, 'references');
@@ -357,6 +370,45 @@ function renderTable(results) {
     ];
     lines.push('| ' + cells.join(' | ') + ' |');
   });
+  // 附表：T6 的分语言明细（按语言分列，不合并成一个数）
+  const langCells = results.cells.filter((c) => c.task === 'T6' && c.metrics && c.metrics.by_lang);
+  if (langCells.length) {
+    lines.push('');
+    lines.push('## T6 · 分语言明细（按语言分列，不合并成一个数）');
+    lines.push('');
+    lines.push('| 任务 | 配置 | 语言 | 锚点 | 状态 | 命中 | 命中文件 | 召回·文件 | 精度·文件 | 召回·命中 | 精度·命中 | 备注 |');
+    lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|');
+    langCells.forEach((c) => {
+      for (const [lang, v] of Object.entries(c.metrics.by_lang)) {
+        if (!v || v.absent) {
+          lines.push('| ' + [c.task, c.config, lang, '—', '能力缺席', '—', '—', '—', '—', '—', '—', String((v && v.absent) || '').split('|').join('/')].join(' | ') + ' |');
+          continue;
+        }
+        const r = v.recall || {};
+        const note = (v.hits_normalized === null || v.hits_normalized === undefined)
+          ? '命中口径不适用（口径不同义）' : ('命中口径归一后 ' + v.hits_normalized + ' 次');
+        lines.push('| ' + [c.task, c.config, lang, anchorText(v), c.status,
+          v.hits_reported === null ? '—' : v.hits_reported, (v.files_reported || []).length,
+          fmtRatio(r.by_files), fmtRatio(r.precision_by_files), fmtRatio(r.by_hits), fmtRatio(r.precision_by_hits), note].join(' | ') + ' |');
+      }
+    });
+  }
+  // 附表：T5 的诊断明细（问题条数与类型）
+  const diagCells = results.cells.filter((c) => c.task === 'T5');
+  if (diagCells.length) {
+    lines.push('');
+    lines.push('## T5 · 单文件诊断明细（问题条数与类型；判定口径 = 条数 ≥ 1 且类型属语法类）');
+    lines.push('');
+    lines.push('| 任务 | 配置 | 状态 | 失败模式 | 问题条数 | 问题类型 / 备注 | 证据指针 |');
+    lines.push('|---|---|---|---|---|---|---|');
+    diagCells.forEach((c) => {
+      const i = results.cells.indexOf(c);
+      const d = (c.metrics && c.metrics.detail) || {};
+      const n = d.problem_count === undefined ? '—' : d.problem_count;
+      const types = Array.isArray(d.problem_types) ? d.problem_types.join(' / ') : (d.note || '—');
+      lines.push('| ' + [c.task, c.config, c.status, c.failure_mode, n, String(types).split('|').join('/'), 'cells[' + i + '].evidence'].join(' | ') + ' |');
+    });
+  }
   return lines.join('\n') + '\n';
 }
 

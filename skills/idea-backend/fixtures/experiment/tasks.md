@@ -247,3 +247,18 @@
 | 6 | `get_diagnostics` | `{"file_path":"<repo>/py/src/probe_broken.py"}` | `diagnostics[]` 条数 ≥ 1 且类型属语法类 |
 
 > **官方 MCP SDK 客户端**：Python MCP SDK（本机 1.26.0）的 `mcp.client.sse.sse_client` / `mcp.client.stdio.stdio_client`；驱动脚本**只在本机临时目录**，不入库 —— 原始输出片段入库（`results.json` 的 `evidence[]`），本文件即「怎么重测」的清单。
+
+## 7. 本轮实测到的事实（重测前先看 —— 都是「不预热就会静默给错」的坑）
+
+| 臂 | 事实 | 处置 |
+|---|---|---|
+| A IDEA | IDEA 把 `<repo>` 当 content root（**没有**把 `py/src` 标成 source root，`qualifiedName` 是 `py.src.probe_item.ProbeItem`），但 `from probe_item import ProbeItem` **仍解析得通** —— `ide_find_references` 的结果里有一条 `type:"IMPORT"` 的用法 ⇒ 引用面完整 | 就绪判据按**功能口径**写（引用结果里出现 IMPORT 用法），不按「目录被标成 source root」写 |
+| A IDEA | 冷起后第一轮 `ide_find_class` 要 1.7~2.2s，后续轮 1.5~1.8s ⇒ **不热身会把第一轮的冷启动算进极差** | 每臂先跑 **1 轮热身（不计分）**（协议原文的「热身 1 次不计分」）；IDEA 的热身调用走同一条序列 |
+| B BifrostMCP | **端口是按工作区配的**：`bifrost.config.json`（工作区根）里的 `port`，缺省 8008 —— 两个窗口同时开时，8008 归先开的那个窗口 ⇒ 「静默测错对象」 | 夹具工作区根放 `bifrost.config.json`（`port: 8011`，机器本地、已 gitignore），VS Code 用 `--new-window` 开在 `<repo>`；**就绪判据 = `get_workspace_symbols` 返回的路径属于 `<repo>`** |
+| B BifrostMCP | **TS 工程没加载时 `find_usages` 只返同文件内的引用**（实测：alpha.ts 内 3 条，缺 beta/gamma/alpha.test 的 6 条）⇒ 静默少报 | 热身先把 4 个 ts 文件逐个 `get_document_symbols` 过一遍（强制 VS Code 建 TS project graph），之后命中数才是 9 条（= gold） |
+| B BifrostMCP | `get_rename_locations` **本轮可用**（返回改名编辑、影响文件 2 个），与 phase 02 记的「Unexpected type」矛盾；换会话状态又会报 Unexpected type | 该格按本轮实测记「完成」，**不记「能力缺席」**；出处里写明矛盾与波动（protocol §5「已实测存在的能力不得写成能力缺席」） |
+| B BifrostMCP | `get_code_actions` 本轮仍报 `Illegal argument`（与 phase 02 一致）⇒ 诊断这条腿拿不到 | 记「能力缺席 + 来源」 |
+| C agent-lsp | **冷状态下 `find_symbol` 静默返 0**（GCF 符号索引没建），`find_references` 也只返同文件内的引用（pyright 的工程图没扫完）⇒ 两处静默错数据 | 热身 = `list_symbols`（锚点文件 + 引用文件）+ 本题调用序列，**重复到结果规模与 gold 同量级为止（上限 3 次，间隔 20s）** —— 这就是 protocol 的「预热 + 结果规模双确认」 |
+| C agent-lsp | `get_diagnostics` 对 `probe_broken.py` **返 0 条**（工具自己写明「the server has not published any for this document; this does not confirm the file is clean」），而同一 pyright 1.1.414 的 CLI 对同一文件报 **7 条**语法错 | 按 protocol「返 0 不许下结论」记「索引未就绪 / 未取」；CLI 的对照数写进该格出处 |
+| D codegraph | `impact` 的**符号**集合含 import 边与成员（6 个受影响符号）⇒ 与 gold 的「整词命中数」不同义 | 命中口径记 `null`，只比文件口径；文件口径 2 个 = gold ✓ |
+| D codegraph | `impact` 不带 `-f` 时会把同名的 py 类与 ts 接口**合并**（`ambiguous:true`，`aggregation:"union"`）⇒ 跨语言引用会被混在一起 | py/ts 分开查时带 `-f <该语言的声明文件>`；只有 T6（统一符号空间）才用不带 `-f` 的根级查询 |

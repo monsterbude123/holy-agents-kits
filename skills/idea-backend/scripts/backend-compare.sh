@@ -95,9 +95,17 @@ function declColumn(a) {
 
 // ---------- 能力缺席的既定来源（协议级 / 实现级事实，逐条可核对） ----------
 const ABSENT = {
-  'B:T4': '能力缺席 —— 实测 BifrostMCP 0.0.14 的 get_rename_locations 报 Unexpected type（见 skills/vscode-backend/references/setup.md §0 事实块）',
-  'B:T5': '能力缺席 —— 实测 BifrostMCP 0.0.14 的 get_code_actions 报 Illegal argument（见 skills/vscode-backend/references/setup.md §0 事实块）',
+  'B:T5': '能力缺席 —— 实测 BifrostMCP 0.0.14 的 get_code_actions 报 Illegal argument（与 phase 02 记录一致，见 skills/vscode-backend/references/setup.md §0 事实块）',
   'D:T5': '能力缺席 —— codegraph 1.7.0 的 CLI 没有检视/诊断子命令（命令表见 `codegraph --help`）',
+};
+// 逐格的出处补充（协议级 / 实现级事实 + 本轮实测的出入都要写清）
+const NOTE = {
+  'B:T4': '本机实测：BifrostMCP 0.0.14 的 get_rename_locations 本轮**可用**（返回改名编辑清单、影响文件 2 个）—— 与 phase 02 记的「Unexpected type」矛盾（见 skills/vscode-backend/references/setup.md §0 事实块）；该工具的可用性随会话状态波动 ⇒ 按本轮实测记「完成」，不记「能力缺席」',
+  'C:T5': 'agent-lsp 的 get_diagnostics 返 0 条；工具自己写明「the server has not published any for this document; this does not confirm the file is clean」—— 同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 空结果按「索引未就绪」记（protocol：C 臂返 0 不许下结论）',
+  'D:T3': 'codegraph 的口径是**受影响符号**（含 import 边与成员）⇒ 与 gold 的「整词命中数」不同义，命中口径记 null，只比文件口径',
+  'D:T4': 'codegraph 的口径是**受影响符号**（含 import 边与成员）⇒ 命中口径不适用（记 null），只比文件口径',
+  'D:T6': '根级索引（<repo> 一次 codegraph init）⇒ 一次 impact 同时覆盖 py/ 与 ts/ 两个子工程 —— 跨语言统一符号空间在 codegraph 上成立',
+  'B:T6': '一次 get_workspace_symbols 同时返回 py 与 ts 两侧的 ProbeItem（VS Code provider 并集）⇒ 跨语言统一符号空间在 VS Code 窗口内成立',
 };
 const ABSENT_LANG = {
   'A': { ts: '能力缺席 —— IDEA 社区版 2026.2.5 装不了 JS/TS 插件 ⇒ .ts 无 PSI（结构事实，见 skills/idea-backend/references/langs/ts/runtime.md）' },
@@ -204,6 +212,14 @@ function runA(t, a, rounds) {
   const plan = planA(t, a);
   const calls = [];
   const measure = [];
+  // 热身 1 轮（round 0，不计分）：协议里的「热身 1 次不计分」—— 第一轮常带冷启动开销
+  for (const step of plan) {
+    const t0 = process.hrtime.bigint();
+    const res = spawnSync('bash', [path.join(SKILL, 'scripts', 'mcp-call.sh'), 'index', step.tool, JSON.stringify(step.args)], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+    const raw = (res.stdout || '') + (res.stderr || '');
+    calls.push({ round: 0, name: step.tool, arguments: step.args, at: nowIso(), elapsed_ms: Math.round(ms * 10) / 10, payload_bytes: Buffer.byteLength(raw, 'utf8'), raw: raw.slice(0, 4000), role: 'warmup' });
+  }
   for (let r = 1; r <= rounds; r++) {
     const perRound = [];
     for (const step of plan) {
@@ -234,6 +250,14 @@ function runD(t, a, rounds, tsAnchor) {
   const plan = planD(t, a, tsAnchor);
   const calls = [];
   const measure = [];
+  // 热身 1 轮（round 0，不计分）
+  for (const step of plan) {
+    const t0 = process.hrtime.bigint();
+    const res = spawnSync(CG, [step.cmd, ...step.args], { encoding: 'utf8', cwd: REPO, maxBuffer: 64 * 1024 * 1024, shell: true });
+    const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+    const raw = (res.stdout || '') + (res.stderr || '');
+    calls.push({ round: 0, name: 'codegraph ' + step.cmd, arguments: { cmd: 'codegraph', args: step.args }, at: nowIso(), elapsed_ms: Math.round(ms * 10) / 10, payload_bytes: Buffer.byteLength(raw, 'utf8'), raw: raw.slice(0, 4000), role: 'warmup' });
+  }
   for (let r = 1; r <= rounds; r++) {
     const perRound = [];
     for (const step of plan) {
@@ -288,12 +312,24 @@ function summarize(record, spec, anchor) {
   const metrics = {
     calls, payload_bytes: payload, prereq_steps: prereq, setup_calls: record.setup_calls || 0,
     raw_ms, median_ms: gate.median(raw_ms),
+    raw_hits: hits,
     hits_reported: hitsReported,
     hits_normalized: firstSrc.hits_normalized === undefined ? null : firstSrc.hits_normalized,
     files_reported: files, by_lang: first.by_lang_detail || null,
   };
+  const hitsVary = hits.some((h) => JSON.stringify(h) !== JSON.stringify(hits[0]));
+  // T6 的分语言明细：每一半边按 references 口径自带召回/精度
+  if (metrics.by_lang) {
+    const bl = {};
+    for (const [lang, v] of Object.entries(metrics.by_lang)) {
+      if (!v || v.absent) { bl[lang] = v; continue; }
+      const a = (gold.anchors || []).find((x) => x.symbol === v.symbol && x.decl_file === v.file);
+      bl[lang] = Object.assign({}, v, { recall: a ? gate.recallOf(a, v, 'references') : null });
+    }
+    metrics.by_lang = bl;
+  }
   const recall = gate.recallOf(anchor, metrics, spec.scope);
-  return { metrics, recall };
+  return { metrics, recall, hitsVary };
 }
 
 // ---------- 主流程 ----------
@@ -322,7 +358,10 @@ if (absent) {
   const bad = record.measure.find((m) => m.failure_mode && m.failure_mode !== '无失败');
   if (bad) {
     failure_mode = bad.failure_mode;
-    status = (failure_mode === '漏引用' || failure_mode === '误报') ? 'flaky' : '完成';
+    // 答不出来 ⇒ 未取 / 环境未就绪；答出来但有缺陷（漏引用/误报/静默失效）⇒ 完成（缺陷记在失败模式里）
+    if (failure_mode === '环境未就绪') status = '环境未就绪';
+    else if (['索引未就绪', '工具报错', '超时'].includes(failure_mode)) status = '未取';
+    else status = '完成';
     source = '本机实测记录；本轮失败模式：' + failure_mode;
   }
 }
@@ -342,8 +381,17 @@ if (TASK === 'T6' && !absent) {
   }
 }
 
-const { metrics, recall } = summarize(record, spec, anchor);
+const note = NOTE[CONFIG + ':' + TASK];
+if (note && source.indexOf('本机实测记录') === 0) source = note;
+
+const { metrics, recall, hitsVary } = summarize(record, spec, anchor);
 const goldRecount = gate.recountAnchor(REPO, anchor);
+// flaky：三轮命中数不一致 **或** 耗时极差到判据（>20% 且 ≥100ms）
+if (status === '完成' && (hitsVary || gate.isFlakyByTime(metrics.raw_ms))) {
+  status = 'flaky';
+  if (failure_mode === '无失败') failure_mode = '无失败';
+  source = source + '；本格标 flaky（' + (hitsVary ? '三轮命中数不一致' : '耗时极差超判据') + '）';
+}
 
 const out = {
   task: TASK, config: CONFIG, rounds: ROUNDS, transport: record.transport,
@@ -354,7 +402,10 @@ const out = {
     gold_recount: goldRecount,
   },
 };
-if (OUT) fs.writeFileSync(OUT, JSON.stringify(out, null, 2), 'utf8');
+if (OUT) {
+  fs.mkdirSync(path.dirname(OUT), { recursive: true });
+  fs.writeFileSync(OUT, JSON.stringify(out, null, 2), 'utf8');
+}
 
 const r2 = (v) => (v === null || v === undefined ? '—' : Number(v).toFixed(2));
 console.log('### 对照实验测量台：' + TASK + ' · 配置 ' + CONFIG + ' · 锚点 ' + anchor.symbol + ' @ ' + anchor.decl_file + ':' + anchor.decl_line);

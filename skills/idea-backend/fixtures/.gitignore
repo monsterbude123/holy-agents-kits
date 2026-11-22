@@ -1,2 +1,8 @@
 # 测量夹具跑 codegraph init 时会生成的本地索引目录（不入库）
 .codegraph/
+# IDEA 把夹具当工程打开时会写的项目配置（不入库）
+.idea/
+# VS Code 侧的宿主 MCP 通道配置文件（臂 B 的 install-vscode-mcp.sh 会写它）
+.mcp.json
+# VS Code 侧的扩展端口配置（臂 B 的工作区根配置，机器本地）
+bifrost.config.json
