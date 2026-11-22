@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、IDEA 的 TypeScript 开发环境、选择性分支同步、规则层治理、文档内容管理、知识可视化、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、VS Code / 语言服务器语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -25,6 +25,11 @@ mindmap
       语言分册 多语言通用
       版本门禁 / 能力档位
       可溯源配置清单 逐条 verify
+    vscode-backend
+      VS Code 能力经 MCP 通道
+      窗口外走 agent-lsp 直跑 LSP
+      能力档位表 逐格实测
+      代价与边界 写清窗口依赖
     git-selective-branch-sync
       三方合并保两侧改动
       不同步台账
@@ -75,6 +80,7 @@ mindmap
 |---|---|---|
 | `analysis-codegraph` | 按符号与调用链查代码，一次调用拿到源码与影响面 | 「这个函数谁在调」「改这个字段会影响哪」 |
 | `idea-backend` | 把本机 IDEA 当 agent 的**多语言**语义后端：一段是「把项目接进 IDEA」（按语言分册：版本门禁、项目侧清单、IDE 侧设置、模板，每条带真跑的 verify 与官方出处），一段是「用 IDEA 的语义能力干活」（PSI 检索、inspection 门禁含阿里 P3C、审查 → 修复流水线、IDE 级重构与运行配置）。语言不是前提：装上对应插件就应对应语言，能到哪一档由能力矩阵判定并可探测 | 「用 IDEA 查这个符号」「按 P3C 审一遍」「这个仓怎么接进 IDEA」「tsconfig 改了 IDE 不生效」「社区版能不能跑 TS」 |
+| `vscode-backend` | 把 VS Code 与语言服务器当 agent 的语义后端，两条腿并行用：一条借用 VS Code 自己的能力（BifrostMCP 原生 MCP 通道，要窗口开着），一条不依赖窗口（agent-lsp 直跑 LSP，给引用/诊断/影响面）。能力到哪一档以实测数字为准，每格都有出处 | 「用 VS Code 查这个符号」「这个仓的引用有哪些」「改名会影响哪些文件」「关掉 VS Code 还能查吗」 |
 | `git-selective-branch-sync` | 两个分支差距大时只搬指定部分，保住目标分支已有改动 | 「把这个分支的功能并过来，文档不要」 |
 | `jenkins-cli` | 写/改/校验 Jenkinsfile，DooD 构建部署，接 GitLab | 「帮我写条流水线」「这个 Jenkinsfile 报错」 |
 | `jenkins-controller` | 控制器容器的部署、迁移、切流、口令轮换、体检 | 「Jenkins 容器起不来」「切回宿主机」 |
@@ -119,7 +125,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 **卸载**：删除 `~/.agents/skills/<skill-name>` 目录即可。安装器不会写注册表，不会留残留。
 
-## 十一个技能分别做什么
+## 十二个技能分别做什么
 
 ### analysis-codegraph —— 按符号查代码
 
@@ -203,6 +209,14 @@ npx holy-agents-kits install jenkins-cli --force
 
 **边界**：只管「结构 → 图 → 披露」的呈现范式；不做检索索引、不产出内容。语料超过 800 节点要按组拆多张图，不是硬塞一张画布。
 
+### vscode-backend —— 把 VS Code 与语言服务器当语义后端
+
+**可观察行为**：两条腿并行用 —— ① 窗口开着时借 VS Code 自己的能力（BifrostMCP 扩展的原生 MCP 通道：定义/引用/工作区符号/文档符号/语义 token）；② 窗口关着也能查（agent-lsp 直跑 LSP：引用/单文件诊断/改名删除前的影响面）。能力按 L0-L5 档位逐格实测，数字与凭证入库可对账；没有的能力写清「无此能力 + 可核对的来源」。
+
+**用法**：说「这个仓里谁在调这个符号」「关掉 VS Code 还能查吗」「改名会影响哪些文件」，agent 走 `skills/vscode-backend/references/runtime.md` 的档位表选腿，再按 `setup.md` 装好对应通道（`install-vscode-mcp.sh` 生成 `.mcp.json`；agent-lsp 的 server spec 必须带 `,--stdio`）。
+
+**边界**：要 VS Code 窗口开着的那条腿，诊断与改名两个工具在扩展 0.0.14 实测是坏的；窗口外那条腿的诊断单文件要 25 秒。全项目批检视是协议级缺口（LSP 没有 scope 参数）。
+
 ### skill-creator-v2 —— 技能本身的开发与评测
 
 **可观察行为**：生成技能骨架（`--runtime node/python/uv`，脚本模板自带 .env 三级查找、BOM 兼容与 stdout 单行 JSON 契约）；把超长正文拆到 `references/` 并在原处留指针；跑规范校验（行数、frontmatter、引用完整性、代码外泄、.env 密钥泄漏）；按反馈迭代 `description`。
@@ -218,6 +232,7 @@ holy-agents-kits/
 ├── skills/
 │   ├── analysis-codegraph/         SKILL.md + references/
 │   ├── idea-backend/               SKILL.md + references/（含 langs/<语言> 分册）+ scripts/（含 langs/<语言>）+ templates/
+│   ├── vscode-backend/             SKILL.md + references/（含 measurements/）+ scripts/
 │   ├── git-selective-branch-sync/  SKILL.md + references/ + scripts/
 │   ├── jenkins-cli/                SKILL.md + references/ + scripts/
 │   ├── jenkins-controller/         SKILL.md + references/ + scripts/
@@ -261,6 +276,7 @@ npx holy-agents-kits feedback
 - `analysis-codegraph` 需要目标仓库已装 codegraph 并建好索引；没有索引时按技能内的降级路径处理。
 - `idea-backend` 需要本机装好 IDEA 2026.2.5（社区版）与 MCP server；**用什么语言还要装对应插件**（P3C / Lombok / Index 插件按语言分册需要什么就装什么，社区版装不了的语言插件要换 Ultimate/WebStorm 等对应产品）；机器事实由技能内 `setup-env.sh` 探测并写入本地 `config.json`（不入库、不分发），没有 IDEA 时只能读 `references/` 里的做法。
 - `git-selective-branch-sync` 针对同一仓库内的两个分支，跨仓库搬运不适用。
+- `vscode-backend` 需要本机装好 VS Code（BifrostMCP 扩展）与语言服务器（agent-lsp + typescript-language-server + TypeScript 5.x）；窗口开着那条腿依赖 VS Code 窗口活着，窗口外那条腿不需要；机器事实写在技能内的 `config.json`（不入库、不分发），`.mcp.json` 由安装脚本生成。
 - `skill-creator-v2` 的触发率评测脚本依赖 `claude` CLI；本机没有时走人工跑用例的降级路径，技能里写明了。
 - `rules-layer-governance` 与 `human-docs` 是纯方法论技能，不需要外部服务、机器或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改。
 - `knowledge-surface` 的构建脚本零依赖，只需 Node ≥ 18；`--echarts` 指定本地 `echarts.min.js` 则产物离线自包含，不给则走 CDN（需联网打开）。
