@@ -1,0 +1,36 @@
+# npm 打包忽略清单
+#
+# 语义：npm 优先读 .npmignore（有它就不读 .gitignore）⇒ **这里的规则要写全**
+#       —— 根 .gitignore 里的条目该抄的抄过来，否则换 npm 版本/去掉 files 白名单时会漏。
+# 口径：机器本地产物一律不进包；**项目模板自带的配置该发**（templates/**/.idea/ 是模板的一部分，
+#       不是机器本地产物 ⇒ 下面挡 .idea/.codegraph 的规则只限 fixtures/ 下）。
+#
+# —— 机器本地产物（全局）——
+__pycache__/
+*.pyc
+node_modules/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+skills/**/*.zip
+
+# —— 测量夹具的 IDE / VS Code 宿主本地产物（只限 fixtures/ 下）——
+skills/idea-backend/fixtures/**/.idea/
+skills/idea-backend/fixtures/**/.codegraph/
+skills/idea-backend/fixtures/**/.mcp.json
+skills/idea-backend/fixtures/**/bifrost.config.json
+
+# —— 技能机器本地配置与密钥（不入库、不分发）——
+skills/*/config.json
+skills/**/.env
+.agents/skills/*/.env
+
+# —— 本机日志与临时产物 ——
+*.log
+.DS_Store
+.screenshots/
+.trae/prompt-logs/
+.auto/*
+autoresearch-dashboard.html
+.planning/
