@@ -1,0 +1,2 @@
+# 测量夹具跑 codegraph init 时会生成的本地索引目录（不入库）
+.codegraph/

@@ -133,6 +133,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 | `scripts/verify-quotes.mjs` | **溯源门禁**：每条清单/设置条目的 `quote` 必须能在该分册 `sources.md` 里逐字命中（`--lang <lang>` 可限分册） |
 | `scripts/check-registry-entry.sh` | IDE 侧设置条目结构校验（`--lang <lang> <id>`：路径/期望/断言/出处/引文齐全） |
 | `scripts/init-project.sh` | 按分册脚手架建新项目（`--lang <lang> [--template <name>]`） |
+| `scripts/backend-compare.sh` + `scripts/tsserver-probe.js` | **语义后端同题对比台**：同一符号跑 IDEA/codegraph/tsserver 多引擎，出可比表（引用命中 / 耗时 / 判据）—— 选型别靠感觉，见 [references/semantic-backend-options.md](references/semantic-backend-options.md) |
 | `scripts/audit-brief.md` | 子代理共用简报模板（工具用法/硬约束/判断原则/豁免/交付格式）——派发时引用它，别复制粘贴 |
 | `scripts/selftest.sh` | 脚本自检（路径桥接 / 工具面探测 / 清单解析）——改完脚本跑一遍 |
 
@@ -140,11 +141,11 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 
 - **语言 × 能力档位矩阵（档位定义 / 探测判据 / 升档动作 / 新增分册契约）** → [references/capability-matrix.md](references/capability-matrix.md)
 - **分册内部件**：TS 分册的引文快照 [references/langs/ts/sources.md](references/langs/ts/sources.md)、运行期档位与侧载实验留档 [references/langs/ts/runtime.md](references/langs/ts/runtime.md)、真实仓库回归记录 [references/langs/ts/field-test.md](references/langs/ts/field-test.md)、逐步操作手册 [references/langs/ts/setup-manual.md](references/langs/ts/setup-manual.md)；Python 分册的引文快照 [references/langs/python/sources.md](references/langs/python/sources.md)、运行期档位实测 [references/langs/python/runtime.md](references/langs/python/runtime.md)；JVM 分册的引文快照 [references/langs/java/sources.md](references/langs/java/sources.md)、档位与检视噪声 [references/langs/java/profile.md](references/langs/java/profile.md)；Go/Rust 分册的门禁与平替 [references/langs/go/setup.md](references/langs/go/setup.md) / [references/langs/rust/setup.md](references/langs/rust/setup.md)、档位 [references/langs/go/runtime.md](references/langs/go/runtime.md) / [references/langs/rust/runtime.md](references/langs/rust/runtime.md)、引文底账 [references/langs/go/sources.md](references/langs/go/sources.md) / [references/langs/rust/sources.md](references/langs/rust/sources.md)；分册探测器 [scripts/langs/ts/detect.mjs](scripts/langs/ts/detect.mjs) / [scripts/langs/java/detect.mjs](scripts/langs/java/detect.mjs) / [scripts/langs/python/detect.mjs](scripts/langs/python/detect.mjs) / [scripts/langs/go/detect.mjs](scripts/langs/go/detect.mjs) / [scripts/langs/rust/detect.mjs](scripts/langs/rust/detect.mjs)（通用分发器按语言调用，新增语言照它的形状写）
+- **语义后端选型（IDEA vs VS Code/LSP/代码图：实测对照、协议级硬墙、平替清单、对比实验设计）** → [references/semantic-backend-options.md](references/semantic-backend-options.md)
 - **审查→修复流水线（方法论 + 时间预算 + 反例集 + 子代理模板 + MCP 授权清单）** → [references/audit-fix-playbook.md](references/audit-fix-playbook.md)
 - **运维备忘（工具面实测、降级能力差距、终端真实语义、路径坑、索引归属）** → [references/ops-memo.md](references/ops-memo.md)
 - **IDEA 安装与部署（版本事实、目录、踩坑实录）** → [references/setup-0to1.md](references/setup-0to1.md)
-- **质量工具评估（Live Template/时序图/Coverage 判定与替代路径）** → [references/quality-tools-assessment.md](references/quality-tools-assessment.md)；coverage 数据管道：`scripts/jacoco-report.sh`（devcontainer JaCoCo；**前置：项目测试须先绿**）
-- **IDEA 基础操作套件盘点（已覆盖/候选/不做的判定与进程托管结论）** → [references/foundation-suite-inventory.md](references/foundation-suite-inventory.md)
+- **质量工具评估（Live Template/时序图/Coverage 判定与替代路径）** → [references/quality-tools-assessment.md](references/quality-tools-assessment.md)（coverage 数据管道：`scripts/jacoco-report.sh`，devcontainer JaCoCo，**前置：项目测试须先绿**）｜ **IDEA 基础操作套件盘点（已覆盖/候选/不做的判定与进程托管结论）** → [references/foundation-suite-inventory.md](references/foundation-suite-inventory.md)
 - **Inspection 规则与 Profile 配置权威参考（新增/调整 inspect 规则前必读）** → [references/inspection-profiles.md](references/inspection-profiles.md)
 - **给 MCP 插件加工具 / 改引擎调用的守则与避坑反例** → [references/ide-inspect-extension.md](references/ide-inspect-extension.md) §0.5-§0.6（动维护仓前必读）
 - 社区版 Releases（正主）：https://github.com/JetBrains/intellij-community/releases ｜ 内置 MCP 文档：https://www.jetbrains.com/help/idea/mcp-server.html

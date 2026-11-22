@@ -69,7 +69,7 @@ else
 fi
 
 echo "C. 契约检查"
-for f in mcp-call.sh audit-baseline.sh inspect-diff.sh audit-parse.js audit-brief.md selftest.sh setup-env.sh inspect-project.mjs verify-item.sh verify-quotes.mjs install-lang-plugin.sh lang-caps-shim.py trusted-paths.py; do
+for f in mcp-call.sh audit-baseline.sh inspect-diff.sh audit-parse.js audit-brief.md selftest.sh setup-env.sh inspect-project.mjs verify-item.sh verify-quotes.mjs install-lang-plugin.sh lang-caps-shim.py trusted-paths.py backend-compare.sh tsserver-probe.js; do
   if [ -f "$SKILL_DIR/scripts/$f" ]; then ok "scripts/$f 存在"; else bad "scripts/$f 缺失"; fi
 done
 for f in ../references/ops-memo.md ../references/capability-matrix.md ../references/langs/ts/runtime.md ../references/langs/ts/setup.md ../references/langs/java/profile.md ../references/langs/python/setup.md; do
