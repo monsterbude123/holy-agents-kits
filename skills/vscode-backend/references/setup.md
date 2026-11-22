@@ -33,7 +33,7 @@
   ],
   "diagnostics_tool": "get_code_actions",
   "diagnostics_tool_availability": "实测 2026-11-22（扩展 0.0.14）：get_code_actions 报 Illegal argument —— **工具面规则达标 ≠ 工具在本机可用**；诊断走 agent-lsp 那条腿（见 runtime.md）",
-  "symbol_tools_availability": "实测 2026-11-22（扩展 0.0.14）：6 个符号级工具里 5 个可用；get_rename_locations 报 Unexpected type（改名/影响面走 agent-lsp 那条腿）",
+  "symbol_tools_availability": "实测 2026-11-22（扩展 0.0.14）：6 个符号级工具里 5 个可用；**get_rename_locations 的可用性随会话波动** —— phase 02 实测报 Unexpected type，phase 03 复测**可用**（返回改名编辑清单、影响文件 2 个，与 gold 一致）⇒ 用前先自检：跑一次 dry-run，看返回的是不是编辑清单，不是就换 agent-lsp 那条腿",
   "diagnostics_limitation": "没有独立的 problems/diagnostics 工具；诊断只能从 get_code_actions 返回的 codeAction.diagnostics 里拿",
   "position_convention": "position.line 零基准、position.character 零基准；扩展自己的 schema 文本写的是 One-based line number —— 与实现不符，以实现为准",
   "position_line_base": "zero",

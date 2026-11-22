@@ -52,6 +52,7 @@ description: 把 VS Code 与语言服务器当 agent 的语义后端，两条腿
 | 现成方案清单（社区/官方有什么、许可、活跃度、为什么复用哪条） | `references/reuse-survey.md` |
 | 装扩展、起服务、端点、工具面、协议事实、agent-lsp 的坑 | `references/setup.md` |
 | 档位表（实测数字）、代价与边界、人工项、怎么重测、证据边界 | `references/runtime.md` |
+| **跨后端选型决策表**（任务类型 × 语言 → 推荐后端 + 何时别选） | `references/runtime.md` §8（与另一技能 idea-backend 的 capability-matrix §7 逐字同源） |
 | 档位口径（L0-L5 判据）与机器可读缺口清单 | `references/tiers.md` |
 | 实测凭证（原始输出 + 调用参数 + 耗时口径） | `references/measurements/typescript.json` |
 
