@@ -32,7 +32,7 @@
     "get_type_definition"
   ],
   "diagnostics_tool": "get_code_actions",
-  "diagnostics_tool_availability": "实测 2026-11-22（扩展 0.0.14）：get_code_actions 报 Illegal argument —— **工具面规则达标 ≠ 工具在本机可用**；诊断走 agent-lsp 那条腿（见 runtime.md）",
+  "diagnostics_tool_availability": "实测 2026-11-22（扩展 0.0.14）：get_code_actions 报 Illegal argument —— **工具面规则达标 ≠ 工具在本机可用**；诊断的替代路线见 runtime.md 的决策表「单文件诊断」一行 —— **注意：agent-lsp 那条腿的 get_diagnostics 也不通**（实测 2026-11-23：daemon 预热 130s + 先 open_document，get_diagnostics 仍返 0 条，而同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净）⇒ 本机单文件诊断只剩 IDEA 腿与外部 linter（pyright CLI / ruff）",
   "symbol_tools_availability": "实测 2026-11-22（扩展 0.0.14）：6 个符号级工具里 5 个可用；**get_rename_locations 的可用性随会话波动** —— phase 02 实测报 Unexpected type，phase 03 复测**可用**（返回改名编辑清单、影响文件 2 个，与 gold 一致）⇒ 用前先自检：跑一次 dry-run，看返回的是不是编辑清单，不是就换 agent-lsp 那条腿",
   "diagnostics_limitation": "没有独立的 problems/diagnostics 工具；诊断只能从 get_code_actions 返回的 codeAction.diagnostics 里拿",
   "position_convention": "position.line 零基准、position.character 零基准；扩展自己的 schema 文本写的是 One-based line number —— 与实现不符，以实现为准",
@@ -132,7 +132,7 @@ get_declaration      get_document_highlights get_workspace_symbols
 | 起（当 MCP server） | `agent-lsp typescript:typescript-language-server,--stdio`（stdio）—— **逗号后的 `,--stdio` 不能少**，见下方「本机已知坑」；或 `agent-lsp --http --port 8080`（HTTP+SSE） |
 | 挂进会话 | `.mcp.json` 里加 `{"agent-lsp": {"type": "stdio", "command": "agent-lsp", "args": ["typescript:typescript-language-server,--stdio"]}}` |
 | 前置依赖（TS） | `typescript-language-server` + **TypeScript 5.x**（TS 7 是原生 Go 版，没有 `lib/tsserver.js`，会报 `Could not find a valid TypeScript installation`） |
-| 工具面（实测 66 个） | `find_references{file_path, line(1-based), language_id?}`、`get_diagnostics{file_path?, group_by?}`、`blast_radius{changed_files:[绝对路径], include_transitive?, scope?}`、`preview_edit` / `safe_apply_edit`（只在 `net_delta==0` 时落盘）、`rename_symbol` … |
+| 工具面（实测 66 个） | `find_references{file_path, line(1-based), language_id?}`、`get_diagnostics{file_path?, group_by?}`、`open_document{file_path, language_id?}`（**取诊断 / 悬停 / 补全前先把文件在 server 里打开** —— 工具自己的描述就是这么写的）、`blast_radius{changed_files:[绝对路径], include_transitive?, scope?}`、`preview_edit` / `safe_apply_edit`（只在 `net_delta==0` 时落盘）、`rename_symbol` … |
 | **调用顺序** | 先 `start_lsp{root_dir, language_id}`，再调其它工具（没起就调会返回 `LSP client not initialized; call start_lsp first`） |
 | **本机已知坑（实测踩过）** | **server spec 必须带 `,--stdio`**：`agent-lsp typescript:typescript-language-server`（少了它）会挂在 `daemon: broker did not start within 30s`（默认 30s，可用 `AGENT_LSP_BROKER_TIMEOUT_MS` 覆盖）—— 根因**不是** Windows 的 daemon 缺陷，而是 broker 按逗号拆参数后没给 server 传 `--stdio`，`typescript-language-server` 启动即退出（`error: required option '--stdio' not specified`），broker 初始化失败自杀并**清空 daemon 目录**（所以别去 `~/.agent-lsp/` 找现场）。正确写法 `agent-lsp typescript:typescript-language-server,--stdio` ⇒ 实测 `start_lsp` 成功、`find_references` 出 739 条引用 |
 | **失败现场在哪看** | `~/.cache/agent-lsp/spawn-logs/<语言>.log`（**不是** `~/.agent-lsp/`，那里只有 cache/ 与 audit.jsonl）—— 上面那句 `--stdio` 的原文就在里面；daemon 的状态文件在 `~/.cache/agent-lsp/daemons/<hash>/{daemon.json,daemon.pid,daemon.sock}` |
@@ -141,6 +141,7 @@ get_declaration      get_document_highlights get_workspace_symbols
 | **引用数的口径** | `find_references` 默认 **739** 条；带 `include_declaration: true` 是 **740** 条（多的是定义本身）—— 这就是两条腿 740/739 的差 1 的来源 |
 | **`start_lsp` 必须带 `language_id`** | 不带就走「全部语言直连」路径（每次新起一个冷 tsserver ⇒ 恒返 0 条）；带 `language_id: "typescript"` 才进 daemon 复用路径 |
 | ⚠️ **daemon 报 ready ≠ 引用已可用** | tsserver 建 project graph 要 **~60-100s**；这期间 `daemon-status` **已经报 ready**，但 `find_references` **静默返回 0 条**（不报错）—— 实测 uptime 22s→1m18s 全是 0，1m38s 才首次返回 739。⇒ **引用数返 0 时先确认 daemon 已跑够 ~60s 再下「死代码」判断**（工具自己也提示 "This may be dead code, or the language server could not resolve references"） |
+| ⚠️ **`get_diagnostics` 恒返 0 条** | 实测 2026-11-23（agent-lsp 0.24.4 + pyright 1.1.414）：daemon 预热 **130s**（远超上面那条的 60-100s 窗口）后 `get_diagnostics` **仍返 0 条**；**先 `open_document` 把该文件在 server 里打开也一样返 0**（`open_document` 确实回了 "Document opened"）。同一次会话里 `list_symbols` 能解析出该文件的符号（⇒ daemon 是活的），而**同一 pyright 的 CLI 对同一文件报 7 条语法错**。⇒ **0 条 ≠ 文件干净**（工具自己也写明 "this does not confirm the file is clean"）—— 诊断别指望这条腿，走法见 runtime.md 决策表「单文件诊断」一行 |
 
 ## 7. 把这条通道挂进 agent 会话（`.mcp.json`）
 
