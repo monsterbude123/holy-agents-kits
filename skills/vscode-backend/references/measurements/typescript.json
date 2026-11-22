@@ -31,7 +31,7 @@
   "notes": [
     "两条腿都实测过；同一锚点同一工程：BifrostMCP 得 740 条引用、agent-lsp 得 739 条（差 1 = includeDeclaration 口径不同）。",
     "agent-lsp 的输出是 GCF 紧凑格式（## [739]{...} / symbols=446 edges=445），不是 JSON。",
-    "agent-lsp 的 get_diagnostics 在本机单文件要 ~25s（daemon 已 ready），返回 0 条诊断 —— 该文件没有 tsserver 语义错误。",
+    "agent-lsp 的 get_diagnostics 在本机单文件要 ~25s（daemon 已 ready），get_diagnostics 对 TS 腿**恒返 0 条**（静默失效）—— **0 条 ≠ 文件干净**：2026-11-23 在一个确有 TS2322 语义错的工程上实测：tsc 报 1 条错、find_references 返 1（project graph 是活的）、get_diagnostics 连测 2 次都是 0 条（各 25s）⇒ 这条通道不可信，诊断走 IDEA 腿或外部 linter。",
     "BifrostMCP 的 get_code_actions / get_rename_locations 在 0.0.14 实测报错，所以这两档在它身上是缺口行（不进凭证）。",
     "agent-lsp 的 blast_radius 在 daemon 索引不全时静默少报（新起的 daemon 上 11 符号/9 边，而 daemon-status 报 ready）—— 复测时这条数字会变小，属索引不全而非数据错。",
     "agent-lsp 的 find_references 默认 739 条、带 include_declaration=true 是 740 条（多的是定义本身）—— 这就是两条腿 740/739 的差 1 来源。",
@@ -188,7 +188,23 @@
       "hits": 740,
       "raw_ms": 14169.8,
       "net_ms": 14164.9,
-      "evidence": "rename_symbol(dry_run) 在 daemon 索引就绪后（find_references 已返 739）的预览：preview.files=247 locations=740；同一 daemon 上「打开引用到的文件」前后两次预览一致 ⇒ **改名范围由 project graph 决定，不是由已打开文件数决定**；对照：daemon 冷、project graph 未建好时，改名预览只有 1 处（看起来像「只改打开的文件」，实为索引没就绪的假象）；本记录只写 dry_run 预览，未落盘任何改名。"
+      "evidence": "rename_symbol(dry_run) 在 daemon 索引就绪后（find_references 已返 739）的预览：preview.files=247 locations=740；同一 daemon 上「打开引用到的文件」前后两次预览一致 ⇒ **改名范围由 project graph 决定，不是由已打开文件数决定**；对照：daemon 冷、project graph 未建好时，改名预览只有 1 处（看起来像「只改打开的文件」，实为索引没就绪的假象）；本记录只写 dry_run 预览，未落盘任何改名。",
+      "preview_files": 247,
+      "preview_locations": 740
+    },
+    {
+      "tier": "L3-ts",
+      "route": "agent-lsp",
+      "tool": "get_diagnostics",
+      "lang": "typescript",
+      "args": {
+        "file_path": "<probe>/src/broken.ts"
+      },
+      "status": "ok",
+      "hits": 0,
+      "raw_ms": 25010.0,
+      "net_ms": 25005.1,
+      "evidence": "复测（2026-11-23，在一个**确有语义错**的 TS 工程上）：`tsc --noEmit` 报 1 条 TS2322（Type 'string' is not assignable to type 'number'）✓；同工程 `find_references` 返 1 ⇒ **project graph 是活的**（不是索引没就绪 ✓）；`open_document` 后 `get_diagnostics` 连测 2 次 **都是 0 条**（各 25.0s）⇒ **该通道对 TS 腿恒返 0（静默失效）**，0 条不代表文件干净 ✓"
     }
   ]
 }
