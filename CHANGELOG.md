@@ -4,6 +4,26 @@
 
 > ⚠️ **口径**：0.8.0 是 npm 上的第一个带本文件的版本。**已装 0.7.0 的用户看不到本期之前的增量**（0.7.0 及更早没有本文件）—— 这里不假装有历史，往后每版往下追加。
 
+## 0.8.1
+
+> **这一版只做一件事**：把 0.8.0 里两条**被复测推翻的结论**改回来 —— 上一版的「VS Code 侧无抽方法」「诊断这条路 VS Code 侧没有腿」是**把一条腿的失败当成了能力不存在**。0.8.0 已发布不可重发，修正走本版。
+
+### 变更
+
+- **选型决策表三行改口径**（`skills/vscode-backend/references/runtime.md` §8 与 `skills/idea-backend/references/capability-matrix.md` §7 **逐字同源**，两份都改了）：
+  - **抽方法 / Extract Method** —— 原文写「VS Code 侧无此能力（实现层）」，**错**：该结论来自 agent-lsp `refactor` 工具的一次失败（一个位置 30s 超时、另一个位置直接崩 tsserver）。**2026-11-23 直连 `typescript-language-server` 的 `textDocument/codeAction`(kind=refactor) 实测返 4 个抽方法 action**（`refactor.extract.function` ×2 / `refactor.extract.constant` / `refactor.move.newFile`），每个 action 自带 `_typescript.applyRefactoring` 命令可落盘 ⇒ **VS Code 侧有抽方法，缺的是腿的封装、不是能力**；本机 Python 侧（pyright）不声明 refactor ⇒ 实测 0 个（VS Code + Pylance 有，未在本机实测）。推荐主备也据此调整：TS 走 VS Code 侧直连，JVM / Python 走 IDEA。
+  - **全项目规范审查 / Inspect Code** —— 原文写「协议层没有 scope 级检视」，**归因不准**：inspection + scope + 批量修复这套语义 LSP **从未定义**（结论不变），但诊断侧的工作区级请求 `workspace/diagnostic`（LSP 3.17）**协议层存在、实现缺席**（实测 TS 腿 `-32601`、Python 腿超时）⇒ 是「协议有、实现缺席」，不是「协议没有」；VS Code 的 Problems 面板是**客户端聚合** push 诊断的结果，agent 走 MCP 拿不到。
+  - **单文件诊断** —— 原文写「VS Code 侧诊断这条路没有腿」，**只对 TS 腿成立**：**Python 腿直连 pyright 的 LSP 3.17 `textDocument/diagnostic` 实测坏文件返 7 条、与同版本 pyright CLI 同数** ⇒ agent-lsp 的 `get_diagnostics` 恒 0 是**那条封装坏了**。TS 腿仍拿不到诊断（两条 MCP 腿 + 直连都不通）⇒ 走 `tsc --noEmit`。
+- **新增两条实测凭证 + 四行档位**（`references/measurements/typescript.json`、`references/tiers.md`）：实测 `L5-extract@typescript-ls`（4 个 action）、`L3-pull@pyright`（7 条）；缺口 `L5-extract@pyright`、`L3-pull@typescript-ls`。
+- **`vscode-backend` 的 SKILL.md / `setup.md` / `reuse-survey.md` 同步改口径**，并新增 **§6.6「抽方法与诊断怎么走（直连 LSP 那条路，不经 MCP）」** 与 SKILL 里的**第④条腿**（直连语言服务器）。
+- **BifrostMCP `get_code_actions` 报 `Illegal argument` 的根因定位**：扩展把 `position` 缺省成 `undefined` 传给 `vscode.executeCodeActionProvider`，而它的 `rangeOrSelection` 参数**必填** ⇒ **补上 position 就能拿到动作列表**（但扩展不返回 edit，落盘仍要直连路）。
+
+### 已知限制
+
+- **抽方法只验到「拿到 action」** —— 落盘那步（`workspace/executeCommand` 调 `_typescript.applyRefactoring`）本轮**没有实测**。
+- **Python 侧的抽方法只在 VS Code + Pylance 下存在**（本机 pyright 腿实测 0 个），Pylance 那条路**未在本机实测**。
+- **TS 腿的诊断仍然没有路** —— 直连 `typescript-language-server` 既不实现 pull 诊断（`-32601`）也不推 `publishDiagnostics` ⇒ 只能走 `tsc --noEmit` / ESLint。
+
 ## 0.8.0
 
 ### 新增

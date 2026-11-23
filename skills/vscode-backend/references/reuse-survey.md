@@ -90,12 +90,14 @@
 | **跨语言量化锚点** | codegraph 的「Measured cross-file coverage」（21 语言 + 12 框架） | §1.2 |
 | **冒烟回归集** | mcp-language-server `integrationtests/{workspaces,snapshots}/`（go/rust/python/typescript 各一套 golden 输出） | §1.2 |
 | **持久化索引协议** | **SCIP**（Apache-2.0，rust-analyzer 等原生产出）—— 要跨会话/跨机复用索引就用 SCIP 格式，别自研 schema | §1.2 |
+| **抽方法 / 重构 action（TS）** | **VS Code 内置的 `typescript-language-features` 扩展**（注册 CodeActionProvider → tsserver `getApplicableRefactors`）+ **`typescript-language-server`** 把同一能力包成 LSP `textDocument/codeAction`（kind=`refactor.extract.function`）—— 两者是同源能力 | 本机实测（2026-11-23） |
+| **单文件 pull 诊断（Python）** | **pyright 的 LSP 3.17 `textDocument/diagnostic`**（本机实测坏文件 7 条、与 CLI 同数）—— 不必经 agent-lsp 那层封装 | 本机实测（2026-11-23） |
 
 ### ❌ 确实缺，需要自建（或明确接受缺口）
 
 1. **官方路径缺失**：没有任何官方 API 把 VS Code 自身语义暴露成 MCP（只有 gateway 代理，且是 proposed API）⇒ 只能靠社区实现，**无官方背书/稳定性承诺**。这是「VS Code 当后端」最大的选型风险。
 2. **跨语言统一符号空间 + 统一 FQN 身份**：LSP 规范原文 "The protocol currently assumes that **one server serves one tool**." agent-lsp 用「一个进程路由多语言 server」绕开，但仍**没有统一 FQN** ⇒ 要跨语言得在 agent 侧自建符号映射表。
-3. **全项目批检视**（inspection profile + scope + 跨文件 quick fix）：LSP 只有 `Diagnostic.severity`，`textDocument/codeAction` 只挂单文件、**无 scope 参数** ⇒ 协议层没有「一次批检视整个项目」这个能力（LSP 规范原文可核）。
+3. **全项目规范审查**（inspection profile + scope + 跨文件 quick fix）：LSP **从未定义**这套语义（`textDocument/codeAction` 只有 uri+range+context.only，**无 scope 参数**）—— 但**归因要分清（2026-11-23 更正）**：诊断侧的**工作区级请求 `workspace/diagnostic`（LSP 3.17）在协议层存在**（语义正是「服务器算全工作区诊断」），缺的是**实现** —— 实测 TS 腿 `-32601`、Python 腿超时；VS Code 的工作区级问题清单是**客户端聚合 push 诊断**的结果（Problems 面板），agent 走 MCP 拿不到 ⇒ 只能外部 linter 自己汇总。
 4. **诊断的独立入口**：BifrostMCP **没有** problems 工具（诊断混在 `get_code_actions` 的 `codeAction.diagnostics` 里）⇒ 要「一次调用列出本文件全部问题」，用 **agent-lsp 的 `get_diagnostics`** 更直接。
 5. **公开 benchmark**：**查不到**任何公开的「agent + VS Code MCP vs agent + IDEA MCP」对比数据。serena 官方自评用的是 JetBrains 后端，并明说 LSP 后端版「can easily be repeated」（= 还没做）⇒ 对照实验必须自跑。
 
@@ -117,3 +119,6 @@
 - LSP4IJ（在 IntelliJ 内跑任意语言服务器）：<https://github.com/eclipse-lsp4ij/lsp4ij>（EPL-2.0）。
 - codegraph：<https://github.com/colbymchenry/codegraph>。
 - 汇总清单：`punkpeye/awesome-mcp-servers`（5450 行，Coding Agents 节 line 885 / Developer Tools 节 line 1520）。
+- 抽方法（TS）：VS Code 内置扩展 <https://github.com/microsoft/vscode/blob/main/extensions/typescript-language-features/src/languageFeatures/refactor.ts>（`TypeScriptRefactorProvider` → tsserver `getApplicableRefactors` / `getEditsForRefactor`）；`typescript-language-server` 的 codeAction 包装 <https://github.com/typescript-language-server/typescript-language-server/blob/master/src/lsp-server.ts>（`context.only` 含 refactor 时调 `getRefactors`）与 <https://github.com/typescript-language-server/typescript-language-server/blob/master/src/refactor.ts>（kind 映射 + `_typescript.applyRefactoring`）；LSP 3.17 的 codeActionKind 原文（`refactor.extract` 的例子就写着 "Extract method / Extract function"）<https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind>；Pylance 的 Extract method / Extract variable <https://github.com/microsoft/pylance-release/blob/main/FAQ.md>。
+- 范围级诊断：`workspace/diagnostic`（LSP 3.17 pull 诊断）原文 <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_diagnostic>；VS Code 客户端实现 <https://github.com/microsoft/vscode-languageserver-node/blob/main/client/src/common/diagnostic.ts>；Problems 面板的**客户端跨 uri 聚合** <https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/markers/browser/markersView.ts>。
+- BifrostMCP 的 `get_code_actions` 报 `Illegal argument` 的根因：VS Code 内置命令 `vscode.executeCodeActionProvider` 的 `rangeOrSelection` **必填** <https://github.com/microsoft/vscode/blob/main/src/vs/workbench/api/common/extHostApiCommands.ts>。

@@ -220,21 +220,21 @@ templates/<lang>-*/                # 可选：脚手架模板
 | 按位置找定义 × TypeScript | 主：BifrostMCP（go_to_definition） ｜ 备：agent-lsp（这条腿的定义检索本轮未测） | VS Code 侧既有实测：BifrostMCP 的 go_to_definition 命中 1（原始 9.1ms / 净 2.3ms）（技能 vscode-backend 的 references/measurements/typescript.json（records[]））；IDEA 侧无此能力 —— 社区版装不了 JS/TS 插件 ⇒ .ts 无 PSI ⇒ 位置法解析到目录符号（resolvedSymbol.kind = directory）⇒ 结果作废 | 既有实测 · 未测 | 位置零基准（扩展实现是零基准，它的 schema 文本写 One-based）；uri 必须是 file:/// 小写盘符 + 正斜杠路径；C 腿的定义检索本轮未测（这条腿只测了引用 / 诊断 / 影响面三档）⇒ 用前先自检 | IDEA 侧查 TS 定义 ⇒ 别试（无 PSI，返回的是目录符号）；要按名字找定义又不想开窗口 ⇒ 先用文本检索拿位置 |
 | 影响面 / 改名前的安全清单 × TypeScript | 主：agent-lsp（blast_radius） ｜ 备：codegraph（impact，口径是受影响符号） | VS Code 侧既有实测：agent-lsp 的 blast_radius 一次调用给 446 个符号 / 445 条边（原始 18887.7ms / 净 18882.8ms）（技能 vscode-backend 的 references/measurements/typescript.json（records[]））；daemon 索引不全时静默少报（新起的 daemon 上只给 11 符号 / 9 边） | 既有实测 | 一次调用约 18.9s；大仓里按文件逐个问更贵 ⇒ 先用 blast_radius 拿规模再决定 | 别把 blast_radius 当引用清单（它是 GCF 图的受影响符号，与 grep 命中数不同义）；结果规模与预期量级不符就当残缺图，不当真答案 |
 | 符号级检索 / 引用 / 影响面 × JVM（Java / Kotlin） | 主：IDEA（A 腿，PSI 统一符号空间 + 持久化索引） ｜ 备：VS Code 侧未测（需装 Red Hat Java 扩展，本机未装） | IDEA 侧既有实测（单边腿）：ide_find_references 1.6s / 95 条引用零假命中（技能 idea-backend 的 references/langs/java/profile.md（§1 能力档位））；VS Code 侧未测 —— 本机没装 Red Hat Java 扩展，且 IDEA 侧的 Maven 导入在 40 模块工程上卡死 ⇒ JVM 的同题对照没做 | 既有实测 · 未测 | IDEA 侧 JVM 捆绑在社区版里（门槛最低的一档）；VS Code 侧要装 Red Hat Java 扩展 + 一个能导入的 Maven / Gradle 工程 | 要跟 Python / TS 同题对照时别拿 JVM 的单边腿数字当同题数据（语言与口径都不同）；要在窗口外跑 JVM 语义查询 ⇒ 本 phase 没有可用路线 |
-| 单文件诊断（这个文件有没有问题） × Python | 主：IDEA（A 腿，ide_diagnostics） ｜ 备：外部 linter（pyright CLI / ruff）—— 不是 MCP 语义后端 | 本 phase 只有 IDEA 真拿到：ide_diagnostics 报 2 条语法错（Formal parameter name expected / ':' expected）；BifrostMCP 的 get_code_actions 报 Illegal argument（能力缺席）；agent-lsp 的 get_diagnostics 恒返 0 条（2026-11-23 复测：daemon 预热 130s + 先 open_document 仍 0 条，同会话 list_symbols 能解析该文件 ⇒ 排除「索引未就绪」；同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净）；codegraph 的 CLI 没有检视子命令（能力缺席）（技能 idea-backend 的 fixtures/experiment/results.md（§T5 · 单文件诊断明细）） | 实测 | IDEA 侧要 IDE 在跑 + 索引就绪；.py 不在 source root 时 ide_diagnostics 走 closed_batch（弱告警 / quick-fix 不可用）；agent-lsp 那格一次 25017.4ms 还没拿到数据（复测每次约 25s 且恒返 0 条）⇒ 这条腿不能当诊断路线 | 要的是「全项目规范审查」而不是单文件 ⇒ 见「全项目规范审查」那一行；BifrostMCP 侧别再试 get_code_actions（扩展 0.0.14 实测坏）；agent-lsp 侧也别指望 get_diagnostics（实测恒返 0 条 —— 0 条 ≠ 文件干净） |
-| 全项目规范审查 / Inspect Code × 全部语言 | 主：IDEA（A 腿，ide_inspect 批量检视 = L4） ｜ 备：VS Code 侧只能靠外部 linter（ruff / eslint / tsc 逐文件跑）—— 协议层没有 scope 级检视 | 结构事实：LSP 的 textDocument/codeAction 请求没有 scope 参数，协议里没有「一次批检视一个范围」这个能力，VS Code 侧 19 个工具面里也没有对应工具（技能 vscode-backend 的 references/tiers.md（§2 机器可读缺口清单））；实测侧本 phase 的单文件诊断只有 IDEA 真拿到（2 条）⇒ 范围级检视只有 IDEA 侧有协议外能力 | 实测 · 结构事实 | ide_inspect 只在 monster 分支的 Index 插件里 —— 上游 5.20.7 的 16 个工具没有它 ⇒ 没装 monster 分支时流水线降级到 L3 文件级 ide_diagnostics（拿不到 P3C / 阿里规范与 global 批处理项）；换分支要重启 IDEA（技能 idea-backend 的 references/ops-memo.md（§1 工具面以 tools/list 为准）） | 要的是「这个文件有没有问题」⇒ ide_diagnostics 就够；VS Code 侧不要指望 MCP 协议层给范围检视 ⇒ 改走外部 linter 并自己汇总 |
-| 抽方法 / Extract Method × 全部语言（IDEA 侧限有 PSI 的语言：JVM / Python） | 主：IDEA（A 腿，ide_refactor_extract_method） ｜ 备：VS Code 侧无此能力 —— 实现层 | VS Code 侧实测不通：agent-lsp 的 refactor 工具在 tsserver 侧走 textDocument/codeAction，一个位置 30s 超时，另一个位置直接崩 tsserver（Cannot read properties of undefined (reading 'kind')）⇒ 实现层无此能力（原始记录见 技能 vscode-backend 的 references/runtime.md（§8 附：VS Code 侧抽方法的实测原始记录（2026-11-22）））；IDEA 侧有 ide_refactor_extract_method，但它只在 monster 分支的 Index 插件里（上游 5.20.7 的 16 个工具没有它） | 实测 · 结构事实 | IDEA 侧要 monster 分支 + 重启 IDEA；VS Code 侧没有等价入口（19 个工具面里没有抽方法，协议层对应的能力是 textDocument/codeAction 而它没有 scope 参数） | 只是想改个名 ⇒ 走「全局改名与影响面」那一行（agent-lsp 的 rename_symbol 可用）；要的是批量模式重写 ⇒ 用 ast-grep，别指望抽方法 |
+| 单文件诊断（这个文件有没有问题） × Python | 主：IDEA（A 腿，ide_diagnostics） ｜ 备：直连 pyright 的 LSP 3.17 textDocument/diagnostic（实测坏文件 7 条，与 CLI 同数）｜ 外部 linter（pyright CLI / ruff） | 本 phase IDEA 真拿到：ide_diagnostics 报 2 条语法错（Formal parameter name expected / ':' expected）；**2026-11-23 复测更正**：Python 腿**有**一条能用的诊断路 —— 直连 pyright-langserver 的 LSP 3.17 `textDocument/diagnostic`（pull 诊断）对坏文件返 **7** 条，与同版本 pyright CLI 的 7 条一致（技能 vscode-backend 的 references/measurements/typescript.json（records[]））⇒ agent-lsp 的 `get_diagnostics` 恒 0 条（2026-11-23 复测：daemon 预热 130s + 先 open_document 仍 0 条，同会话 list_symbols 能解析该文件 ⇒ 排除「索引未就绪」；同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净）是**那条封装坏了**，不是能力没有；BifrostMCP 的 get_code_actions 报 Illegal argument（能力缺席）；**TS 腿两条路都拿不到** —— BifrostMCP 坏 + agent-lsp 恒 0 + 直连 typescript-language-server 不实现 pull 诊断（-32601）也不推 publishDiagnostics ⇒ TS 的诊断只能走 tsc CLI；codegraph 的 CLI 没有检视子命令（能力缺席）（技能 idea-backend 的 fixtures/experiment/results.md（§T5 · 单文件诊断明细）） | 实测 · 结构事实 | IDEA 侧要 IDE 在跑 + 索引就绪；.py 不在 source root 时 ide_diagnostics 走 closed_batch（弱告警 / quick-fix 不可用）；**Python 走 pyright 的 LSP pull 诊断**不需要 IDE 在跑，但要走 LSP stdio 直连（不是 MCP 语义后端）；agent-lsp 那格一次 25017.4ms 还没拿到数据（复测每次约 25s 且恒返 0 条）⇒ 别把 agent-lsp 当诊断路线 | 要的是「全项目规范审查」而不是单文件 ⇒ 见「全项目规范审查」那一行；BifrostMCP 侧别再试 get_code_actions（扩展 0.0.14 实测坏）；agent-lsp 侧也别指望 get_diagnostics（实测恒返 0 条 —— 0 条 ≠ 文件干净）；**语言是 TypeScript** ⇒ 这条路只剩 tsc CLI |
+| 全项目规范审查 / Inspect Code × 全部语言 | 主：IDEA（A 腿，ide_inspect 批量检视 = L4） ｜ 备：VS Code 侧 UI 有近似物（Problems 面板 = 客户端聚合各服务器的 push 诊断；ESLint / SonarLint / CodeQL 做项目级扫描）｜ agent 侧只能靠外部 linter（ruff / eslint / tsc）逐文件跑、自己汇总 | **2026-11-23 复测后的精确口径**：① VS Code **没有**叫 Inspect Code 的命令（microsoft/vscode 代码库全文搜索 0 命中），近似物只有三种且都不是 inspection —— Problems 面板是**客户端聚合**的诊断清单、Refactor / Quick Fix 是选区级 code action、ESLint 的项目级形态是**跑一个 CLI task**；② 协议层**没有**「inspection + scope + 批量修复」这套语义（`textDocument/codeAction` 只有 uri+range+context.only）；③ 诊断侧的工作区级请求 `workspace/diagnostic`（LSP 3.17）在**协议层存在**（语义正是「服务器算全工作区诊断」），但**实现缺席** —— 实测 TS 腿 -32601、Python 腿超时未实现 ⇒ 是「协议有、实现缺席」；④ VS Code 侧 19 个工具面里也没有对应工具（技能 vscode-backend 的 references/tiers.md（§2 机器可读缺口清单）） | 实测 · 结构事实 | ide_inspect 只在 monster 分支的 Index 插件里 —— 上游 5.20.7 的 16 个工具没有它 ⇒ 没装 monster 分支时流水线降级到 L3 文件级 ide_diagnostics（拿不到 P3C / 阿里规范与 global 批处理项）；换分支要重启 IDEA（技能 idea-backend 的 references/ops-memo.md（§1 工具面以 tools/list 为准））；VS Code 侧的近似物要人开面板或跑扩展，**agent 拿不到** | 要的是「这个文件有没有问题」⇒ ide_diagnostics 就够（Python 侧还能走 pyright 的 textDocument/diagnostic）；要的是**agent 直接拿到一份可编程消费的全项目清单** ⇒ VS Code 侧别指望 MCP 腿，走外部 linter 自己汇总 |
+| 抽方法 / Extract Method × 全部语言（IDEA 侧限有 PSI 的语言：JVM / Python；VS Code 侧本机实测通的是 TypeScript） | 主：TS：VS Code 侧直连 typescript-language-server（实测 4 个 action）｜ JVM / Python：IDEA（A 腿，ide_refactor_extract_method） ｜ 备：IDEA（A 腿，ide_refactor_extract_method）｜ 本机 Python 侧的 pyright 腿没有（pyright 不声明 refactor；VS Code + Pylance 有，未在本机实测） | **首测结论已被复测推翻**（原文照录）：2026-11-22 首测 —— agent-lsp 的 refactor 工具在 tsserver 侧一个位置 30s 超时、另一个位置直接崩 tsserver（Cannot read properties of undefined (reading 'kind')）⇒ 当时记「实现层无此能力」；**错在把一条腿的失败当成能力不存在** —— 2026-11-23 直连同一个 `textDocument/codeAction`（`context.only=["refactor"]`）**一次返 4 个抽方法 action**（Extract to inner function / Extract to function in module scope / Extract to constant / Move to a new file），每个 action 带 `command: _typescript.applyRefactoring` 可落盘（技能 vscode-backend 的 references/measurements/typescript.json（records[]））；**Python 侧本机不成立**：pyright 的 `codeActionProvider.codeActionKinds` 只有 `quickfix` 与 `source.organizeImports`、不声明 refactor ⇒ 实测 0 个（VS Code 编辑器 + Pylance 另有 Extract method，未在本机实测）；IDEA 侧有 ide_refactor_extract_method，但它只在 monster 分支的 Index 插件里（上游 5.20.7 的 16 个工具没有它） | 实测 · 结构事实 | IDEA 侧要 monster 分支 + 重启 IDEA；**VS Code 侧 TS 要直连 typescript-language-server（stdio）并等 tsserver 建 project graph** —— 这条腿**没有现成的 MCP 封装**（BifrostMCP 那 19 个工具面里没有抽方法入口，agent-lsp 的 refactor 工具实测超时/崩）⇒ 落盘靠 action 自带的 `_typescript.applyRefactoring` 命令；**本机 Python 侧这条腿没有** ⇒ 要抽方法只能回 IDEA 或自己用 ast-grep 重写 | 只是想改个名 ⇒ 走「全局改名与影响面」那一行（agent-lsp 的 rename_symbol 可用）；要的是**批量模式重写**（一次改多处）⇒ 用 ast-grep（抽方法是单点重构，不解决批量）；语言是 Python 且没有 IDEA ⇒ 别在 LSP 这条腿上找抽方法 |
 | 跨语言统一符号空间（同名符号在两种语言里各在哪、各被谁引用） × Python + TypeScript | 主：codegraph（IDE 无关，根级索引一次 impact 覆盖两个子工程） ｜ 备：BifrostMCP（VS Code 窗口内，一次 get_workspace_symbols 返回两侧同名符号） | 本 phase T6 实测：codegraph 根级索引一次 impact 同时覆盖 py/ 与 ts/（py 侧 6 个受影响符号 / 2 个文件、ts 侧 11 个 / 4 个文件）；BifrostMCP 一次 get_workspace_symbols 同时返回两侧的 ProbeItem（py 侧命中 4 / 2 文件、ts 侧命中 9 / 4 文件）（技能 idea-backend 的 fixtures/experiment/results.md（§T6 · 分语言明细））；IDEA 社区版不成立（装不了 JS/TS 插件 ⇒ .ts 无 PSI）；agent-lsp 不成立（LSP 协议级「one server serves one tool」，本腿只起 pyright）（技能 idea-backend 的 references/semantic-backend-options.md（§3 不可替代的三件事）） | 实测 · 结构事实 | codegraph 要先在仓根 codegraph init（会写 .codegraph/ ⇒ 目标仓要先 ignore）；B 腿要 VS Code 窗口常开 | 要的是「统一 FQN 身份 + 持久化跨会话索引」⇒ 协议层没有替代物（只有 IDEA 的 PSI 统一空间有，而它要该语言插件 + 付费版）；agent-lsp 侧别指望跨语言统一符号空间 |
 | 代码探索 / 代码地图（这仓是干什么的、怎么走通的） × 全部语言 | 主：codegraph（explore） ｜ 备：无同档替代（LSP 协议层没有代码地图这一档） | 既有实测（phase 01）：codegraph 的 explore 一次调用返回 2095 字符 / 60 行，带 blast radius（谁依赖）与测试覆盖提示（技能 idea-backend 的 references/semantic-backend-options.md（§1 本机实测）） | 既有实测 | IDE 无关；先 codegraph init（写 .codegraph/）；探索类不入同题任务（真值难判）⇒ 这一行是既有实测等级，不是本 phase 的对照结果 | 要的是精确的引用 / 影响面清单 ⇒ 走 L2 / L5 那几行（codegraph 的口径是受影响符号，与 grep 命中数不同义）；要结构化模式匹配 ⇒ 用 ast-grep |
 
-### 附：VS Code 侧抽方法的实测原始记录（2026-11-22）
+### 附：VS Code 侧抽方法的实测原始记录（2026-11-22 首测 · 2026-11-23 复测推翻首测结论）
 
-- **工具**：agent-lsp 0.24.4 的 `refactor`（走 tsserver 的 `textDocument/codeAction`）；
-- **现象一（超时）**：请求挂满 30s 没有返回 ⇒ 记「实现层无此能力」；
-- **现象二（崩服务）**：换到另一个位置，tsserver 直接崩，报 `Cannot read properties of undefined (reading 'kind')`；
-- **对照**：VS Code 侧 19 个工具面里没有抽方法入口；LSP 协议层对应的能力是 `textDocument/codeAction`，而它没有 scope 参数（技能 vscode-backend 的 references/tiers.md（§2 机器可读缺口清单））；
-- **复现入口**：起法与调用顺序见 技能 vscode-backend 的 references/setup.md（§6.5 窗口外那条腿：agent-lsp（不依赖 VS Code 窗口））。
-- ⚠️ **证据边界**：这一条的原始输出片段**未入库**（本 phase 入库的凭证是 24 格对照实验）⇒ 复现前先按上面的现象自检，别把「超时 / 崩服务」当成稳定契约。
-
+- **首测（2026-11-22，agent-lsp 0.24.4 的 `refactor` 工具）**：一个位置挂满 30s 不返回；换到另一个位置 tsserver 直接崩，报 `Cannot read properties of undefined (reading 'kind')` ⇒ 当时记「实现层无此能力」；
+- **复测（2026-11-23，直连 `typescript-language-server` 的 LSP stdio 通道，同一个 `textDocument/codeAction` 请求）**：**通** —— 一次返 **4 个**抽方法 action（`Extract to inner function in function 'betaUse'` / `Extract to function in module scope`（都是 `refactor.extract.function`）、`Extract to constant in enclosing scope`（`refactor.extract.constant`）、`Move to a new file`（`refactor.move.newFile`）），首调 26.6ms / 后两次 2.9ms / 3.3ms；每个 action 带 `command: _typescript.applyRefactoring` + 参数（file / startLine / startOffset / endLine / endOffset / refactor / action）⇒ **落盘路径存在**；
+- **首测为什么错**：错在**把一条腿的失败当成能力不存在** —— agent-lsp 的 `refactor` 封装坏了，服务器本身的能力是好的 ⇒ 这条腿的失败不能外推成「VS Code 侧无抽方法」；
+- **同一批复测里 Python 侧不成立**：pyright 的 `codeActionProvider.codeActionKinds` 只有 `quickfix` 与 `source.organizeImports`，**不声明 refactor** ⇒ 实测 0 个抽方法 action（凭证见 技能 vscode-backend 的 references/measurements/typescript.json（records[]））；
+- **VS Code 编辑器侧（人工，非 agent 腿）**：TS/JS 的 `Refactor…` → `Extract to function`、F2 改名是项目范围内跨文件同步 —— 这是 UI 能力，与「agent 能不能通过 MCP 腿调到」是两回事；
+- **复现入口**：起法与调用顺序见 技能 vscode-backend 的 references/setup.md（§6.6 抽方法与诊断怎么走（直连 LSP 那条路））。
+- ⚠️ **证据边界**：首测（agent-lsp 那条腿）的原始输出片段**未入库**；复测数字已入凭证（`references/measurements/typescript.json` 的 `L5-extract@typescript-ls` / `L5-extract@pyright`）。
 <!-- selection-table:begin -->
 ```json
 {
@@ -570,28 +570,24 @@ templates/<lang>-*/                # 可选：脚手架模板
       "task": "单文件诊断（这个文件有没有问题）",
       "lang": "Python",
       "recommend": "IDEA（A 腿，ide_diagnostics）",
-      "backup": "外部 linter（pyright CLI / ruff）—— 不是 MCP 语义后端",
-      "evidence": "本 phase 只有 IDEA 真拿到：ide_diagnostics 报 2 条语法错（Formal parameter name expected / ':' expected）；BifrostMCP 的 get_code_actions 报 Illegal argument（能力缺席）；agent-lsp 的 get_diagnostics 恒返 0 条（2026-11-23 复测：daemon 预热 130s + 先 open_document 仍 0 条，同会话 list_symbols 能解析该文件 ⇒ 排除「索引未就绪」；同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净）；codegraph 的 CLI 没有检视子命令（能力缺席）（技能 idea-backend 的 fixtures/experiment/results.md（§T5 · 单文件诊断明细））",
+      "backup": "直连 pyright 的 LSP 3.17 textDocument/diagnostic（实测坏文件 7 条，与 CLI 同数）｜ 外部 linter（pyright CLI / ruff）",
+      "evidence": "本 phase IDEA 真拿到：ide_diagnostics 报 2 条语法错（Formal parameter name expected / ':' expected）；**2026-11-23 复测更正**：Python 腿**有**一条能用的诊断路 —— 直连 pyright-langserver 的 LSP 3.17 `textDocument/diagnostic`（pull 诊断）对坏文件返 **7** 条，与同版本 pyright CLI 的 7 条一致（技能 vscode-backend 的 references/measurements/typescript.json（records[]））⇒ agent-lsp 的 `get_diagnostics` 恒 0 条（2026-11-23 复测：daemon 预热 130s + 先 open_document 仍 0 条，同会话 list_symbols 能解析该文件 ⇒ 排除「索引未就绪」；同一 pyright 1.1.414 的 CLI 对同一文件报 7 条语法错 ⇒ 0 条 ≠ 文件干净）是**那条封装坏了**，不是能力没有；BifrostMCP 的 get_code_actions 报 Illegal argument（能力缺席）；**TS 腿两条路都拿不到** —— BifrostMCP 坏 + agent-lsp 恒 0 + 直连 typescript-language-server 不实现 pull 诊断（-32601）也不推 publishDiagnostics ⇒ TS 的诊断只能走 tsc CLI；codegraph 的 CLI 没有检视子命令（能力缺席）（技能 idea-backend 的 fixtures/experiment/results.md（§T5 · 单文件诊断明细））",
       "evidence_levels": [
-        "实测"
+        "实测",
+        "结构事实"
       ],
-      "cost": "IDEA 侧要 IDE 在跑 + 索引就绪；.py 不在 source root 时 ide_diagnostics 走 closed_batch（弱告警 / quick-fix 不可用）；agent-lsp 那格一次 25017.4ms 还没拿到数据（复测每次约 25s 且恒返 0 条）⇒ 这条腿不能当诊断路线",
-      "not_when": "要的是「全项目规范审查」而不是单文件 ⇒ 见「全项目规范审查」那一行；BifrostMCP 侧别再试 get_code_actions（扩展 0.0.14 实测坏）；agent-lsp 侧也别指望 get_diagnostics（实测恒返 0 条 —— 0 条 ≠ 文件干净）",
+      "cost": "IDEA 侧要 IDE 在跑 + 索引就绪；.py 不在 source root 时 ide_diagnostics 走 closed_batch（弱告警 / quick-fix 不可用）；**Python 走 pyright 的 LSP pull 诊断**不需要 IDE 在跑，但要走 LSP stdio 直连（不是 MCP 语义后端）；agent-lsp 那格一次 25017.4ms 还没拿到数据（复测每次约 25s 且恒返 0 条）⇒ 别把 agent-lsp 当诊断路线",
+      "not_when": "要的是「全项目规范审查」而不是单文件 ⇒ 见「全项目规范审查」那一行；BifrostMCP 侧别再试 get_code_actions（扩展 0.0.14 实测坏）；agent-lsp 侧也别指望 get_diagnostics（实测恒返 0 条 —— 0 条 ≠ 文件干净）；**语言是 TypeScript** ⇒ 这条路只剩 tsc CLI",
       "numbers": [
         {
           "value": 2,
           "pointer": "技能 idea-backend 的 fixtures/experiment/results.md（§T5 · 单文件诊断明细）",
-          "meaning": "IDEA 报出的语法错条数"
+          "meaning": "本 phase IDEA 单文件诊断拿到的条数"
         },
         {
           "value": 7,
-          "pointer": "技能 idea-backend 的 fixtures/experiment/results.md（§T5 · 单文件诊断明细）",
-          "meaning": "同一 pyright CLI 对同一文件报的语法错条数"
-        },
-        {
-          "value": 25017.4,
-          "pointer": "技能 idea-backend 的 fixtures/experiment/results.json（cells[]）",
-          "meaning": "T5 × C 那格的单次耗时（ms）"
+          "pointer": "技能 vscode-backend 的 references/measurements/typescript.json（records[]）",
+          "meaning": "直连 pyright 的 LSP pull 诊断对坏文件返回的条数（与 CLI 同数）"
         }
       ]
     },
@@ -600,14 +596,14 @@ templates/<lang>-*/                # 可选：脚手架模板
       "task": "全项目规范审查 / Inspect Code",
       "lang": "全部语言",
       "recommend": "IDEA（A 腿，ide_inspect 批量检视 = L4）",
-      "backup": "VS Code 侧只能靠外部 linter（ruff / eslint / tsc 逐文件跑）—— 协议层没有 scope 级检视",
-      "evidence": "结构事实：LSP 的 textDocument/codeAction 请求没有 scope 参数，协议里没有「一次批检视一个范围」这个能力，VS Code 侧 19 个工具面里也没有对应工具（技能 vscode-backend 的 references/tiers.md（§2 机器可读缺口清单））；实测侧本 phase 的单文件诊断只有 IDEA 真拿到（2 条）⇒ 范围级检视只有 IDEA 侧有协议外能力",
+      "backup": "VS Code 侧 UI 有近似物（Problems 面板 = 客户端聚合各服务器的 push 诊断；ESLint / SonarLint / CodeQL 做项目级扫描）｜ agent 侧只能靠外部 linter（ruff / eslint / tsc）逐文件跑、自己汇总",
+      "evidence": "**2026-11-23 复测后的精确口径**：① VS Code **没有**叫 Inspect Code 的命令（microsoft/vscode 代码库全文搜索 0 命中），近似物只有三种且都不是 inspection —— Problems 面板是**客户端聚合**的诊断清单、Refactor / Quick Fix 是选区级 code action、ESLint 的项目级形态是**跑一个 CLI task**；② 协议层**没有**「inspection + scope + 批量修复」这套语义（`textDocument/codeAction` 只有 uri+range+context.only）；③ 诊断侧的工作区级请求 `workspace/diagnostic`（LSP 3.17）在**协议层存在**（语义正是「服务器算全工作区诊断」），但**实现缺席** —— 实测 TS 腿 -32601、Python 腿超时未实现 ⇒ 是「协议有、实现缺席」；④ VS Code 侧 19 个工具面里也没有对应工具（技能 vscode-backend 的 references/tiers.md（§2 机器可读缺口清单））",
       "evidence_levels": [
         "实测",
         "结构事实"
       ],
-      "cost": "ide_inspect 只在 monster 分支的 Index 插件里 —— 上游 5.20.7 的 16 个工具没有它 ⇒ 没装 monster 分支时流水线降级到 L3 文件级 ide_diagnostics（拿不到 P3C / 阿里规范与 global 批处理项）；换分支要重启 IDEA（技能 idea-backend 的 references/ops-memo.md（§1 工具面以 tools/list 为准））",
-      "not_when": "要的是「这个文件有没有问题」⇒ ide_diagnostics 就够；VS Code 侧不要指望 MCP 协议层给范围检视 ⇒ 改走外部 linter 并自己汇总",
+      "cost": "ide_inspect 只在 monster 分支的 Index 插件里 —— 上游 5.20.7 的 16 个工具没有它 ⇒ 没装 monster 分支时流水线降级到 L3 文件级 ide_diagnostics（拿不到 P3C / 阿里规范与 global 批处理项）；换分支要重启 IDEA（技能 idea-backend 的 references/ops-memo.md（§1 工具面以 tools/list 为准））；VS Code 侧的近似物要人开面板或跑扩展，**agent 拿不到**",
+      "not_when": "要的是「这个文件有没有问题」⇒ ide_diagnostics 就够（Python 侧还能走 pyright 的 textDocument/diagnostic）；要的是**agent 直接拿到一份可编程消费的全项目清单** ⇒ VS Code 侧别指望 MCP 腿，走外部 linter 自己汇总",
       "numbers": [
         {
           "value": 19,
@@ -629,21 +625,26 @@ templates/<lang>-*/                # 可选：脚手架模板
     {
       "key": "extract-method",
       "task": "抽方法 / Extract Method",
-      "lang": "全部语言（IDEA 侧限有 PSI 的语言：JVM / Python）",
-      "recommend": "IDEA（A 腿，ide_refactor_extract_method）",
-      "backup": "VS Code 侧无此能力 —— 实现层",
-      "evidence": "VS Code 侧实测不通：agent-lsp 的 refactor 工具在 tsserver 侧走 textDocument/codeAction，一个位置 30s 超时，另一个位置直接崩 tsserver（Cannot read properties of undefined (reading 'kind')）⇒ 实现层无此能力（原始记录见 技能 vscode-backend 的 references/runtime.md（§8 附：VS Code 侧抽方法的实测原始记录（2026-11-22）））；IDEA 侧有 ide_refactor_extract_method，但它只在 monster 分支的 Index 插件里（上游 5.20.7 的 16 个工具没有它）",
+      "lang": "全部语言（IDEA 侧限有 PSI 的语言：JVM / Python；VS Code 侧本机实测通的是 TypeScript）",
+      "recommend": "TS：VS Code 侧直连 typescript-language-server（实测 4 个 action）｜ JVM / Python：IDEA（A 腿，ide_refactor_extract_method）",
+      "backup": "IDEA（A 腿，ide_refactor_extract_method）｜ 本机 Python 侧的 pyright 腿没有（pyright 不声明 refactor；VS Code + Pylance 有，未在本机实测）",
+      "evidence": "**首测结论已被复测推翻**（原文照录）：2026-11-22 首测 —— agent-lsp 的 refactor 工具在 tsserver 侧一个位置 30s 超时、另一个位置直接崩 tsserver（Cannot read properties of undefined (reading 'kind')）⇒ 当时记「实现层无此能力」；**错在把一条腿的失败当成能力不存在** —— 2026-11-23 直连同一个 `textDocument/codeAction`（`context.only=[\"refactor\"]`）**一次返 4 个抽方法 action**（Extract to inner function / Extract to function in module scope / Extract to constant / Move to a new file），每个 action 带 `command: _typescript.applyRefactoring` 可落盘（技能 vscode-backend 的 references/measurements/typescript.json（records[]））；**Python 侧本机不成立**：pyright 的 `codeActionProvider.codeActionKinds` 只有 `quickfix` 与 `source.organizeImports`、不声明 refactor ⇒ 实测 0 个（VS Code 编辑器 + Pylance 另有 Extract method，未在本机实测）；IDEA 侧有 ide_refactor_extract_method，但它只在 monster 分支的 Index 插件里（上游 5.20.7 的 16 个工具没有它）",
       "evidence_levels": [
         "实测",
         "结构事实"
       ],
-      "cost": "IDEA 侧要 monster 分支 + 重启 IDEA；VS Code 侧没有等价入口（19 个工具面里没有抽方法，协议层对应的能力是 textDocument/codeAction 而它没有 scope 参数）",
-      "not_when": "只是想改个名 ⇒ 走「全局改名与影响面」那一行（agent-lsp 的 rename_symbol 可用）；要的是批量模式重写 ⇒ 用 ast-grep，别指望抽方法",
+      "cost": "IDEA 侧要 monster 分支 + 重启 IDEA；**VS Code 侧 TS 要直连 typescript-language-server（stdio）并等 tsserver 建 project graph** —— 这条腿**没有现成的 MCP 封装**（BifrostMCP 那 19 个工具面里没有抽方法入口，agent-lsp 的 refactor 工具实测超时/崩）⇒ 落盘靠 action 自带的 `_typescript.applyRefactoring` 命令；**本机 Python 侧这条腿没有** ⇒ 要抽方法只能回 IDEA 或自己用 ast-grep 重写",
+      "not_when": "只是想改个名 ⇒ 走「全局改名与影响面」那一行（agent-lsp 的 rename_symbol 可用）；要的是**批量模式重写**（一次改多处）⇒ 用 ast-grep（抽方法是单点重构，不解决批量）；语言是 Python 且没有 IDEA ⇒ 别在 LSP 这条腿上找抽方法",
       "numbers": [
+        {
+          "value": 4,
+          "pointer": "技能 vscode-backend 的 references/measurements/typescript.json（records[]）",
+          "meaning": "直连 typescript-language-server 的 codeAction(kind=refactor) 返回的抽方法 action 数"
+        },
         {
           "value": 30,
           "pointer": "技能 vscode-backend 的 references/runtime.md（§附：VS Code 侧抽方法的实测原始记录）",
-          "meaning": "textDocument/codeAction 的超时秒数"
+          "meaning": "首测 agent-lsp refactor 工具的超时秒数"
         },
         {
           "value": 16,
@@ -653,7 +654,7 @@ templates/<lang>-*/                # 可选：脚手架模板
         {
           "value": 19,
           "pointer": "技能 vscode-backend 的 references/tiers.md（§2 机器可读缺口清单）",
-          "meaning": "VS Code 侧的工具个数（没有抽方法入口）"
+          "meaning": "VS Code 侧的工具个数（BifrostMCP 工具面里没有抽方法入口）"
         }
       ]
     },

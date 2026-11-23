@@ -118,6 +118,7 @@ get_declaration      get_document_highlights get_workspace_symbols
 |---|---|
 | **诊断没有独立工具** | 只有 `get_code_actions`；要拿「这个文件有哪些问题」得自己找位置逐个问 |
 | **VS Code 的 TS 支持不跑 LSP** | 它跑 **tsserver 自有协议** ⇒ 跨语言引用在 TS 上结构性不可能 |
+| **`get_code_actions` 报 `Illegal argument` 的根因（已定位）** | 扩展把 `position` 缺省成 `undefined` 传给 `vscode.executeCodeActionProvider`，而它的 **`rangeOrSelection` 参数必填** ⇒ **补上 position 就能拿到动作列表**（但扩展只返回 title / kind / isPreferred / diagnostics，**没有 edit** ⇒ 落盘要走 §6.6 的直连路） |
 | **全工程符号检索默认 project-scoped** | `typescript.workspaceSymbols.scope` 默认只搜当前 tsconfig 项目；跨 package 要开 `allOpenProjects`，且结果上限 256 条 |
 | **扩展型 MCP server 要求宿主进程活着** | VS Code 窗口关了，服务就没了 |
 | **目标工作区会被扩展读** | 扩展读工作区根的 `bifrost.config.json`；实测**没有**被写出 `.vscode/` 或 `bifrost.config.json`（但探针仍须只调只读工具） |
@@ -143,6 +144,36 @@ get_declaration      get_document_highlights get_workspace_symbols
 | **`start_lsp` 必须带 `language_id`** | 不带就走「全部语言直连」路径（每次新起一个冷 tsserver ⇒ 恒返 0 条）；带 `language_id: "typescript"` 才进 daemon 复用路径 |
 | ⚠️ **daemon 报 ready ≠ 引用已可用** | tsserver 建 project graph 要 **~60-100s**；这期间 `daemon-status` **已经报 ready**，但 `find_references` **静默返回 0 条**（不报错）—— 实测 uptime 22s→1m18s 全是 0，1m38s 才首次返回 739。⇒ **引用数返 0 时先确认 daemon 已跑够 ~60s 再下「死代码」判断**（工具自己也提示 "This may be dead code, or the language server could not resolve references"） |
 | ⚠️ **`get_diagnostics` 恒返 0 条** | 实测 2026-11-23（agent-lsp 0.24.4 + pyright 1.1.414）：daemon 预热 **130s**（远超上面那条的 60-100s 窗口）后 `get_diagnostics` **仍返 0 条**；**先 `open_document` 把该文件在 server 里打开也一样返 0**（`open_document` 确实回了 "Document opened"）。同一次会话里 `list_symbols` 能解析出该文件的符号（⇒ daemon 是活的），而**同一 pyright 的 CLI 对同一文件报 7 条语法错**。⇒ **0 条 ≠ 文件干净**（工具自己也写明 "this does not confirm the file is clean"）—— 诊断别指望这条腿，走法见 runtime.md 决策表「单文件诊断」一行 |
+
+## 6.6 抽方法与诊断怎么走（直连 LSP 那条路，不经 MCP）
+
+> **为什么有这条路**：phase 02 的两条结论「VS Code 侧无抽方法」「诊断这条路 VS Code 侧没有腿」在 **2026-11-23 被复测推翻** —— 那两次失败的是 **agent-lsp 的 `refactor` / `get_diagnostics` 封装**（超时 / 崩 tsserver / 恒返 0 条），**不是服务器能力**。直连语言服务器的 LSP stdio 通道能拿到这些能力。
+
+**起 server（stdio）**
+
+```bash
+# TS：抽方法走这条（与腿 ② 同一个服务器，只是不经它的 MCP 封装）
+node "<npm-global>/typescript-language-server/lib/cli.mjs" --stdio
+# Python：pull 诊断走这条
+node "<npm-global>/pyright/langserver.index.js" --stdio
+```
+
+**抽方法（TS，实测 2026-11-23 ⇒ 4 个 action）**
+
+1. `initialize`（`rootUri` = 工程根）+ `initialized`；
+2. `textDocument/didOpen` 打开目标文件 —— **不打开就拿不到 refactor**；
+3. `textDocument/codeAction`，`context.only=["refactor"]`，range 选住要抽的那一段 ⇒ 返 **4 个** action：`Extract to inner function` / `Extract to function in module scope`（`refactor.extract.function`）、`Extract to constant`（`refactor.extract.constant`）、`Move to a new file`（`refactor.move.newFile`）；
+4. **落盘**：action 自带 `command: _typescript.applyRefactoring` + 参数（file / startLine / startOffset / endLine / endOffset / refactor / action）⇒ 用 `workspace/executeCommand` 调它拿 edits —— ⚠️ **这一步本轮只验到「拿到 action」，落盘没实测**。
+
+实测口径：首调 26.6ms、后两次 2.9 / 3.3ms；`initialize` 握手基线 313.2ms（3 次中位）。
+
+**单文件诊断（Python，实测 2026-11-23 ⇒ 7 条）**
+
+`textDocument/diagnostic`（LSP 3.17 的 **pull 诊断**）⇒ 对坏文件返 **7 条**语法错，与同版本 pyright CLI 对同一文件的 **7 条一致** ⇒ **Python 腿的诊断是通的**（agent-lsp 的 `get_diagnostics` 恒 0 是那条封装坏了）。
+
+**TS 腿的诊断仍然拿不到**：`typescript-language-server` 不实现 pull 诊断（`textDocument/diagnostic` 与 `workspace/diagnostic` 均 `-32601 Unhandled method`）、也不推 `publishDiagnostics` ⇒ TS 的诊断走 `tsc --noEmit` / ESLint。
+
+**Python 侧的抽方法**：pyright 的 `codeActionProvider.codeActionKinds` 只有 `quickfix` 与 `source.organizeImports`，**不声明 `refactor`** ⇒ 实测 0 个；VS Code 编辑器 + Pylance 有 Extract method（**未在本机实测**）。
 
 ## 7. 把这条通道挂进 agent 会话（`.mcp.json`）
 
