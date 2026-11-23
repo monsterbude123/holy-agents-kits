@@ -22,6 +22,7 @@
 | 方案 | 能暴露什么能力 | 是否需要 IDE 在跑 | 传输形态 | 最近 push | 许可可否复用 | 本机是否已装 |
 |---|---|---|---|---|---|---|
 | **BifrostMCP** | 19 工具；符号级 6（`find_usages` `go_to_definition` `get_workspace_symbols` `get_document_symbols` `get_rename_locations` `get_type_definition`）；诊断仅 `get_code_actions` | 是（扩展宿主） | SSE `:8008/sse` + `/message` | 2026-03-27（**实质功能代码停在 2025-12-15**；无 GitHub Release） | **AGPL-3.0**（可装可用，注意传染性） | ✅ 已装 0.0.14，通道已实测通 |
+| **vsc-lsp-mcp**（`CJL.lsp-mcp`） | **工作区级诊断清单**（`workspace_diagnostics`）+ **带 edit 的 code action**（`code_actions`→`code_action_preview`→`code_action_apply`，含 `document.save()`）+ **rename 三段式**（`prepare_rename`/`rename_preview`/`rename_apply`） | 是 | streamable HTTP `:9527/mcp` | 2026-10-11 | **MIT** | ✅ 已装 0.3.2（本机实测通） |
 | juehang/vscode-mcp-server | `search_symbols_code` `get_symbol_definition_code` `get_diagnostics_code` `rename_file_code` 等 | 是 | streamable HTTP `:3000/mcp`（客户端需 `npx mcp-remote@next` 套壳） | 2026-01-07 | MIT | ⬜ 未装 |
 | tjx666/vscode-mcp | `get-diagnostics` `get-references` `get-symbol-lsp-info` + rename | 是 | stdio | 2026-08-06 | Anti-996 | ⬜ 未装 |
 | acomagu/vscode-as-mcp-server | 命令执行 / 终端 / 调试 / 编辑；**无符号级工具** | 是 | stdio | 2025-10-18 | **无 license**（不可复用） | ⬜ 未装 |
@@ -92,6 +93,9 @@
 | **持久化索引协议** | **SCIP**（Apache-2.0，rust-analyzer 等原生产出）—— 要跨会话/跨机复用索引就用 SCIP 格式，别自研 schema | §1.2 |
 | **抽方法 / 重构 action（TS）** | **VS Code 内置的 `typescript-language-features` 扩展**（注册 CodeActionProvider → tsserver `getApplicableRefactors`）+ **`typescript-language-server`** 把同一能力包成 LSP `textDocument/codeAction`（kind=`refactor.extract.function`）—— 两者是同源能力 | 本机实测（2026-11-23） |
 | **单文件 pull 诊断（Python）** | **pyright 的 LSP 3.17 `textDocument/diagnostic`**（本机实测坏文件 7 条、与 CLI 同数）—— 不必经 agent-lsp 那层封装 | 本机实测（2026-11-23） |
+| **工作区级问题清单（= Inspect Code 等价）** | **`beixiyo/vsc-lsp-mcp`**（VS Code 扩展 `CJL.lsp-mcp`，MIT）—— 底层就是 `vscode.languages.getDiagnostics()` 的无参重载（Problems 面板的数据源） | 本机实测（2026-11-23，7 条 Pylance 错） |
+| **全局改名并落盘** | **同一个 `vsc-lsp-mcp`**：`prepare_rename` → `rename_preview` → `rename_apply`（VS Code 原生 rename provider，`applyEdit` + `save`） | 本机实测（2026-11-23，4 文件 / 8 处 / savedToDisk） |
+| **LSP 协议栈（做抽方法那条路时）** | **微软官方 `vscode-jsonrpc`**（MIT、零依赖）—— 分帧 / JSON-RPC / 取消 / 反向请求全在里面，**别自己写协议栈** | 仓内脚本 `skills/vscode-backend/scripts/lsp-refactor.mjs` |
 
 ### ❌ 确实缺，需要自建（或明确接受缺口）
 
@@ -122,3 +126,5 @@
 - 抽方法（TS）：VS Code 内置扩展 <https://github.com/microsoft/vscode/blob/main/extensions/typescript-language-features/src/languageFeatures/refactor.ts>（`TypeScriptRefactorProvider` → tsserver `getApplicableRefactors` / `getEditsForRefactor`）；`typescript-language-server` 的 codeAction 包装 <https://github.com/typescript-language-server/typescript-language-server/blob/master/src/lsp-server.ts>（`context.only` 含 refactor 时调 `getRefactors`）与 <https://github.com/typescript-language-server/typescript-language-server/blob/master/src/refactor.ts>（kind 映射 + `_typescript.applyRefactoring`）；LSP 3.17 的 codeActionKind 原文（`refactor.extract` 的例子就写着 "Extract method / Extract function"）<https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#codeActionKind>；Pylance 的 Extract method / Extract variable <https://github.com/microsoft/pylance-release/blob/main/FAQ.md>。
 - 范围级诊断：`workspace/diagnostic`（LSP 3.17 pull 诊断）原文 <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_diagnostic>；VS Code 客户端实现 <https://github.com/microsoft/vscode-languageserver-node/blob/main/client/src/common/diagnostic.ts>；Problems 面板的**客户端跨 uri 聚合** <https://github.com/microsoft/vscode/blob/main/src/vs/workbench/contrib/markers/browser/markersView.ts>。
 - BifrostMCP 的 `get_code_actions` 报 `Illegal argument` 的根因：VS Code 内置命令 `vscode.executeCodeActionProvider` 的 `rangeOrSelection` **必填** <https://github.com/microsoft/vscode/blob/main/src/vs/workbench/api/common/extHostApiCommands.ts>。
+- 工作区级诊断清单 + rename 落盘：`beixiyo/vsc-lsp-mcp` <https://github.com/beixiyo/vsc-lsp-mcp>（`src/lsp/diagnostics.ts` 用 `vscode.languages.getDiagnostics()` 无参重载；`src/lsp/codeActions.ts` 走 `workspace/applyEdit` + `document.save()`；`src/lsp/rename.ts` 三段式）；VS Code 侧的 `vscode.languages.getDiagnostics()` 无参重载定义 <https://github.com/microsoft/vscode/blob/main/src/vscode-dts/vscode.d.ts>。
+- 抽方法（command 型 action）的落盘路径：typescript-language-server 的 `src/refactor.ts`（kind 映射 + `_typescript.applyRefactoring`）与 README 的 Apply Refactoring 段 <https://github.com/typescript-language-server/typescript-language-server>；LSP 客户端库用微软官方 `vscode-jsonrpc` <https://github.com/microsoft/vscode-jsonrpc>。

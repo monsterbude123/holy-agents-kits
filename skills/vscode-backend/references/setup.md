@@ -145,35 +145,76 @@ get_declaration      get_document_highlights get_workspace_symbols
 | ⚠️ **daemon 报 ready ≠ 引用已可用** | tsserver 建 project graph 要 **~60-100s**；这期间 `daemon-status` **已经报 ready**，但 `find_references` **静默返回 0 条**（不报错）—— 实测 uptime 22s→1m18s 全是 0，1m38s 才首次返回 739。⇒ **引用数返 0 时先确认 daemon 已跑够 ~60s 再下「死代码」判断**（工具自己也提示 "This may be dead code, or the language server could not resolve references"） |
 | ⚠️ **`get_diagnostics` 恒返 0 条** | 实测 2026-11-23（agent-lsp 0.24.4 + pyright 1.1.414）：daemon 预热 **130s**（远超上面那条的 60-100s 窗口）后 `get_diagnostics` **仍返 0 条**；**先 `open_document` 把该文件在 server 里打开也一样返 0**（`open_document` 确实回了 "Document opened"）。同一次会话里 `list_symbols` 能解析出该文件的符号（⇒ daemon 是活的），而**同一 pyright 的 CLI 对同一文件报 7 条语法错**。⇒ **0 条 ≠ 文件干净**（工具自己也写明 "this does not confirm the file is clean"）—— 诊断别指望这条腿，走法见 runtime.md 决策表「单文件诊断」一行 |
 
-## 6.6 抽方法与诊断怎么走（直连 LSP 那条路，不经 MCP）
+## 6.6 抽方法 / 全项目检视 / 全局改名 怎么走（实测 2026-11-23）
 
-> **为什么有这条路**：phase 02 的两条结论「VS Code 侧无抽方法」「诊断这条路 VS Code 侧没有腿」在 **2026-11-23 被复测推翻** —— 那两次失败的是 **agent-lsp 的 `refactor` / `get_diagnostics` 封装**（超时 / 崩 tsserver / 恒返 0 条），**不是服务器能力**。直连语言服务器的 LSP stdio 通道能拿到这些能力。
+> **为什么有这一节**：phase 02 的两条结论「VS Code 侧无抽方法」「诊断这条路 VS Code 侧没有腿」在 **2026-11-23 被复测推翻** —— 那两次失败的是 **agent-lsp 的 `refactor` / `get_diagnostics` 封装**（超时 / 崩 tsserver / 恒返 0 条），**不是服务器能力**。这一节写三样能力各自该走哪条现成的路。
 
-**起 server（stdio）**
+### （1）全项目问题清单（= Inspect Code 等价）→ vsc-lsp-mcp
+
+**装**（VS Code 扩展，MIT）：
 
 ```bash
-# TS：抽方法走这条（与腿 ② 同一个服务器，只是不经它的 MCP 封装）
-node "<npm-global>/typescript-language-server/lib/cli.mjs" --stdio
-# Python：pull 诊断走这条
-node "<npm-global>/pyright/langserver.index.js" --stdio
+code --install-extension CJL.lsp-mcp
 ```
 
-**抽方法（TS，实测 2026-11-23 ⇒ 4 个 action）**
+**挂进会话**（`.mcp.json`）：
 
-1. `initialize`（`rootUri` = 工程根）+ `initialized`；
-2. `textDocument/didOpen` 打开目标文件 —— **不打开就拿不到 refactor**；
-3. `textDocument/codeAction`，`context.only=["refactor"]`，range 选住要抽的那一段 ⇒ 返 **4 个** action：`Extract to inner function` / `Extract to function in module scope`（`refactor.extract.function`）、`Extract to constant`（`refactor.extract.constant`）、`Move to a new file`（`refactor.move.newFile`）；
-4. **落盘**：action 自带 `command: _typescript.applyRefactoring` + 参数（file / startLine / startOffset / endLine / endOffset / refactor / action）⇒ 用 `workspace/executeCommand` 调它拿 edits —— ⚠️ **这一步本轮只验到「拿到 action」，落盘没实测**。
+```json
+{ "mcpServers": { "lsp-mcp": { "type": "http", "url": "http://127.0.0.1:9527/mcp" } } }
+```
 
-实测口径：首调 26.6ms、后两次 2.9 / 3.3ms；`initialize` 握手基线 313.2ms（3 次中位）。
+**调用**（工具只有一个 `execute_lsp`，能力在 `operation` 枚举里）：
 
-**单文件诊断（Python，实测 2026-11-23 ⇒ 7 条）**
+```json
+{ "operation": "workspace_diagnostics", "uri": "<工作区根的绝对路径>" }
+```
 
-`textDocument/diagnostic`（LSP 3.17 的 **pull 诊断**）⇒ 对坏文件返 **7 条**语法错，与同版本 pyright CLI 对同一文件的 **7 条一致** ⇒ **Python 腿的诊断是通的**（agent-lsp 的 `get_diagnostics` 恒 0 是那条封装坏了）。
+**实测**：坏文件 `probe_broken.py` 返 **7 条** error（`source: Pylance`），与同版本 pyright CLI 的 7 条一致 ⇒ **工作区级清单可达**（底层是 `vscode.languages.getDiagnostics()` 的**无参重载** = Problems 面板的数据源）。
 
-**TS 腿的诊断仍然拿不到**：`typescript-language-server` 不实现 pull 诊断（`textDocument/diagnostic` 与 `workspace/diagnostic` 均 `-32601 Unhandled method`）、也不推 `publishDiagnostics` ⇒ TS 的诊断走 `tsc --noEmit` / ESLint。
+⚠️ **清单只含 VS Code 已分析过的文件** —— 干净仓首次可能是空的 ⇒ 先打开文件或等后台分析。
+⚠️ **TS 上它的 `code_actions` 会报 ENOENT**（VS Code 的 TS 扩展在列 refactor 时去 stat「同名符号.ts」）⇒ **抽方法别走它**；`workspace_diagnostics` 与 rename 三段式不受影响。
 
-**Python 侧的抽方法**：pyright 的 `codeActionProvider.codeActionKinds` 只有 `quickfix` 与 `source.organizeImports`，**不声明 `refactor`** ⇒ 实测 0 个；VS Code 编辑器 + Pylance 有 Extract method（**未在本机实测**）。
+### （2）全局改名（落盘）→ vsc-lsp-mcp 的 rename 三段式
+
+```json
+{ "operation": "prepare_rename",  "uri": "<文件>", "line": 8, "character": 17 }
+{ "operation": "rename_preview",  "uri": "<文件>", "line": 8, "character": 17, "newName": "probeCoreV2" }
+{ "operation": "rename_apply",    "uri": "<文件>", "renameId": "<上一步给的 id>" }
+```
+
+**实测**：改一个方法名 `probeCore` → `probeCoreV2`，预览给 **4 个文件 / 8 处编辑**，apply 返回 **`savedToDisk: true`**，磁盘上 4 个文件（定义 / 类内调用 / import / 测试文件）全部改写 ✓。
+
+⚠️ 位置是 **1-based**（编辑器显示的行号）；`uri` 用原生绝对路径或 `file:///` URI；`rename_apply` **必须带 `uri`**（schema 必填，只带 renameId 会被参数校验拒掉）。
+
+### （3）抽方法（落盘）→ 直连 LSP（仓内脚本）
+
+TS 的「Extract to function」是 **command 型** code action（`_typescript.applyRefactoring`，**不带 edit**）⇒ 凡是「只收 edit 型动作」的 MCP 都给不了它：
+
+- **BifrostMCP** 的 `get_code_actions` 返回映射里没有 `action.edit` / `action.command`（只剩标题）；
+- **vsc-lsp-mcp** 的 `code_actions` 过滤掉无 edit 的动作；
+- **agent-lsp** 的 `refactor` 只列带 edit 的重构（实测只给得出 “Move to a new file”）。
+
+⇒ 走仓内脚本（客户端用**微软官方** `vscode-jsonrpc`，不自造协议栈）：
+
+```bash
+# 先看这个位置有哪些重构
+node skills/vscode-backend/scripts/lsp-refactor.mjs --file <绝对路径> --line 6 --col 3 --list
+# 再执行并落盘
+node skills/vscode-backend/scripts/lsp-refactor.mjs --file <绝对路径> --line 6 --col 3 --apply "Extract to function in module scope"
+```
+
+**实测**：一次返 **4 个** action（`refactor.extract.function` ×2 / `refactor.extract.constant` / `refactor.move.newFile`）；执行后**落盘成功**（语句被抽成新函数、原处换成调用，退出码 0）。
+
+**四个硬规矩（都踩过）**：
+
+1. **选区要盖住整条语句并越过语句结尾一列** —— 少一列就只剩 “Move to a new file”（脚本默认按「整行 + 1 列」选）；
+2. **工程根取最近的 `tsconfig.json` 祖先目录** —— 取成文件所在目录 ⇒ tsserver 不认工程，重构动作只剩 move.newFile（脚本已自动向上找）；
+3. **客户端必须接住服务器的反向请求** —— `workspace/applyEdit`（落盘）与 `_typescript.rename`（applyRefactoring 之后服务器要客户端改名）：不接就报 `Unhandled method` 或一直超时；
+4. **CRLF 文件会被插入 LF 行**（内容对，但变成混合换行）⇒ 仓库统一 LF（`.gitattributes`: `text=auto eol=lf`）。
+
+### （4）单文件诊断（Python）
+
+直连 pyright 的 LSP 3.17 `textDocument/diagnostic`（pull 诊断）⇒ 坏文件返 **7 条**，与 pyright CLI 同数 ⇒ **Python 腿的诊断是通的**（agent-lsp 的 `get_diagnostics` 恒 0 是那条封装坏了）。TS 腿的 pull 诊断不存在（`typescript-language-server` 不实现、也不推 `publishDiagnostics`）⇒ TS 的诊断走 `tsc --noEmit`。
 
 ## 7. 把这条通道挂进 agent 会话（`.mcp.json`）
 
