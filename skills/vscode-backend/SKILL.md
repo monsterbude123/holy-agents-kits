@@ -9,13 +9,14 @@ description: 把 VS Code 与语言服务器当 agent 的语义后端，两条腿
 > **纪律**：**能力面以实测数字为准**（引用命中数 / 耗时 / 判据），表里每个数字都能在 `references/measurements/` 里对账；**没有的能力写清「无此能力 + 可核对的来源」**，不写印象。
 > **机器事实只有一处**：端点、端口写在机器本地的 `config.json`（不入库、不分发），`.mcp.json` 由它生成 —— **别手抄 url**。
 
-## 一、三条腿（各装什么、怎么调）
+## 一、四条腿（各装什么、怎么调）
 
 | 腿 | 干什么 | 装 | 怎么调 | 代价 |
 |---|---|---|---|---|
 | **① VS Code 自己的能力** | 定义 / 引用 / 工作区符号 / 文档符号 / 语义 token | `code --install-extension ConnorHallman.bifrost-mcp`；`bash [scripts/install-vscode-mcp.sh](scripts/install-vscode-mcp.sh) <工作区路径>` | 工程根 `.mcp.json` 指 `type:"sse"` ⇒ 宿主自带 MCP 客户端直接用 | **窗口必须常开**；诊断与改名两个工具在 0.0.14 实测是坏的 |
 | **② 窗口外的语义后端** | 引用 / 单文件诊断 / 改名删除前的影响面 | `npm install -g @blackwell-systems/agent-lsp` + `npm install -g typescript-language-server` + 全局 `typescript@5` | `.mcp.json` 指 `{"command":"agent-lsp","args":["typescript:typescript-language-server,--stdio"]}` ⇒ MCP stdio | **server spec 必须带 `,--stdio`**（少了它 broker 自杀，报 `daemon: broker did not start`）；诊断单文件 25s、影响面 19s |
 | **③ 跨语言代码图** | 跨语言符号图 / 影响面 | `npm install -g @colbymchenry/codegraph` | MCP 工具查符号与影响面 | 本技能**未测**它的档位 |
+| **④ 直连语言服务器**（不经 MCP） | **抽方法**（TS）/ **单文件 pull 诊断**（Python） | 腿 ② 已装好服务器（`typescript-language-server` / `pyright`） | 直接说 LSP：`initialize` → `didOpen` → `textDocument/codeAction`(kind=refactor) / `textDocument/diagnostic` | 要自己写 LSP 客户端（协议细节见 `references/setup.md` §6.6）；**能力最全但没有现成 MCP 工具面** —— 腿 ② 的 `refactor` / `get_diagnostics` 封装实测是坏的，服务器本身是好的 |
 
 > 腿 ② 的 `--stdio` 与「doctor 报 ok 不等于 daemon 链路可用」的坑，写在 `references/setup.md` 的 agent-lsp 段 —— **照抄命令前先读那一段**。
 
@@ -24,15 +25,19 @@ description: 把 VS Code 与语言服务器当 agent 的语义后端，两条腿
 **能**（TS 实测，见 `references/runtime.md` 的档位表）：
 
 - 找定义、找全仓引用、列工作区符号、列文档符号、拿语义 token（腿 ①）；
-- 找引用、拿单文件诊断、算改名/删除前的影响面（腿 ②，窗口无关）；
+- 找引用、算改名/删除前的影响面（腿 ②，窗口无关）；
+- **抽方法**（TS）：直连 `typescript-language-server` 的 `textDocument/codeAction`(kind=refactor) 实测返 **4 个** action，action 自带 `_typescript.applyRefactoring` 可落盘（腿 ④）；
+- **单文件诊断**（Python）：直连 pyright 的 LSP 3.17 `textDocument/diagnostic` 实测坏文件返 **7 条**，与同版本 pyright CLI 同数（腿 ④）；
 - 档位口径（L0-L5）逐档可查，**每一格都有实测数字或可核对的缺口来源**。
 
 **不能**（写清楚比含糊强）：
 
-- **VS Code 侧没有独立诊断入口**：诊断只挂在 `get_code_actions` 里，而该工具在 0.0.14 实测报错 ⇒ 诊断走腿 ②；
-- **VS Code 侧没有改名工具**：`get_rename_locations` 实测报错 ⇒ 改名/影响面走腿 ②；
+- **BifrostMCP 那 19 个工具面里没有独立的诊断入口**：诊断只挂在 `get_code_actions` 里，而该工具在 0.0.14 实测报错（根因已定位：`vscode.executeCodeActionProvider` 的 `rangeOrSelection` 必填，扩展传了 `undefined` ⇒ **补上 position 就能拿到动作列表**，但没有 edit）；
+- **BifrostMCP 那 19 个工具面里的改名工具是坏的**：`get_rename_locations` 实测报错 ⇒ 改名/影响面走腿 ②（VS Code 编辑器自己的 F2 改名不受影响）；
+- **TS 腿的诊断拿不到**（**分语言说，Python 腿是可以的** —— 直连 pyright 的 `textDocument/diagnostic` 实测 7 条）：TS 三条路都不通 —— BifrostMCP 坏、agent-lsp 的 `get_diagnostics` 恒 0 条、直连 `typescript-language-server` 既不实现 pull 诊断（-32601）也不推 `publishDiagnostics` ⇒ TS 的诊断只能走 `tsc --noEmit` / ESLint；
 - **影响面会静默少报**：agent-lsp 的 `blast_radius` 在 daemon 索引不全时返回残缺图且**不给提示**（实测 ready 时也只给 11 符号）⇒ 用它当影响面前，先 `daemon-status` 报 ready **且**图的规模与预期量级相符；
-- **全项目批检视是协议级缺口**：LSP 的 `textDocument/codeAction` 没有 scope 参数，协议里没有「一次批检视一个范围」这个能力；
+- **全项目规范审查（Inspect Code）在 VS Code 侧没有等价命令**：LSP 从未定义「inspection + scope + 批量修复」这套语义（`textDocument/codeAction` 只有 uri+range+context.only）；诊断侧的工作区级请求 `workspace/diagnostic`（LSP 3.17）**协议层存在但实现缺席**（TS 腿 -32601、Python 腿超时）⇒ VS Code 的 Problems 面板是**客户端聚合**的结果，agent 走 MCP 拿不到 ⇒ agent 侧只能走外部 linter 自己汇总；
+- **「VS Code 没有抽方法」是旧结论，已被推翻**（2026-11-23）：TS 直连 `typescript-language-server` 的 codeAction(kind=refactor) 实测返 4 个 action ⇒ **缺的是腿的封装、不是能力**（BifrostMCP 不暴露、agent-lsp 的 `refactor` 实测超时/崩）；本机 Python 侧（pyright）不声明 refactor ⇒ 0 个；
 - **跨语言统一符号空间没有**：LSP 规范原文 "The protocol currently assumes that one server serves one tool."；
 - **VS Code 的 TS 跑 tsserver 自有协议，不跑 LSP** ⇒ 跨语言引用在 TS 上结构性不可能。
 

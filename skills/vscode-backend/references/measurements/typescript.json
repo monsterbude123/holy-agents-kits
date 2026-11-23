@@ -1,5 +1,5 @@
 {
-  "measured_at": "2026-11-22",
+  "measured_at": "2026-11-22（含 2026-11-23 的两批复测）",
   "project": "ai-short-studio-monster-2",
   "project_root": "<project>",
   "routes": [
@@ -20,6 +20,24 @@
       "timing_definition": "raw_ms = 单次 MCP 调用往返耗时（含协议往返）；net_ms = max(0, raw_ms - baseline_ms)，baseline_ms = 3 次 tools/list 的中位数（纯协议往返，不触工程）；cold_start_ms = 首次 start_lsp 的耗时（含 daemon 拉起与工程索引），不计入表里的 raw/net",
       "cold_start_ms": 71.1,
       "baseline_ms": 4.9
+    },
+    {
+      "route": "typescript-ls",
+      "note": "直连 typescript-language-server 的 LSP stdio 通道（不经 MCP）—— agent-lsp 那条腿的底层服务器，也是 VS Code 编辑器那条腿的同源实现",
+      "tool": "typescript-language-server",
+      "client": "Node 直写 JSON-RPC（Content-Length 分帧；一次性探针不入库）",
+      "timing_definition": "raw_ms = 单次 LSP 请求往返耗时；net_ms = max(0, raw_ms - baseline_ms)，baseline_ms = 3 次 initialize 握手的中位数（纯协议往返，不触工程）；cold_start_ms = didOpen 后等 tsserver 建 project graph 的窗口，不计入表里的 raw/net",
+      "cold_start_ms": 3000,
+      "baseline_ms": 313.2
+    },
+    {
+      "route": "pyright",
+      "note": "直连 pyright-langserver 的 LSP stdio 通道（不经 MCP）—— Python 那条腿的底层服务器",
+      "tool": "pyright-langserver 1.1.414",
+      "client": "Node 直写 JSON-RPC（Content-Length 分帧；一次性探针不入库）",
+      "timing_definition": "raw_ms = 单次 LSP 请求往返耗时；net_ms = max(0, raw_ms - baseline_ms)，baseline_ms = 3 次 initialize 握手的中位数；cold_start_ms = didOpen 后等 pyright 建索引的窗口",
+      "cold_start_ms": 4000,
+      "baseline_ms": 227.6
     }
   ],
   "anchor": {
@@ -37,7 +55,9 @@
     "agent-lsp 的 find_references 默认 739 条、带 include_declaration=true 是 740 条（多的是定义本身）—— 这就是两条腿 740/739 的差 1 来源。",
     "daemon 报 ready 不等于引用已可用：tsserver 建 project graph 需 ~60-100s，这期间 find_references 静默返 0（实测 uptime 22s→1m18s 全 0，1m38s 才首次 739）；本凭证的 739 是 daemon 跑够之后的数。",
     "耗时都是单次样本：复测 find_usages 得 1019/1351/1481ms 三个值，冷索引会话里同一调用还可能挂死 >150s —— 表里的毫秒数不是性能承诺。",
-    "改名范围：daemon 索引就绪后 rename_symbol(dry_run) 预览覆盖整个 project（247 文件 / 740 处）；冷 daemon 时只给 1 处 —— 那是 project graph 没建好的假象，**不是**「只改已打开的文件」（实测两次打开前后预览一致）。"
+    "改名范围：daemon 索引就绪后 rename_symbol(dry_run) 预览覆盖整个 project（247 文件 / 740 处）；冷 daemon 时只给 1 处 —— 那是 project graph 没建好的假象，**不是**「只改已打开的文件」（实测两次打开前后预览一致）。",
+    "2026-11-23 的两批复测**推翻了 phase 02 的两条结论**（改的是口径，不是数据）：① 抽方法 —— agent-lsp 的 refactor 工具 30s 超时 / 崩 tsserver 是**那条腿**的失败，直连 typescript-language-server 的 textDocument/codeAction(kind=refactor) 实测返 4 个抽方法 action ⇒ **VS Code 侧有抽方法，缺的是腿的封装**；② 诊断 —— Python 腿直连 pyright 的 textDocument/diagnostic 实测返 7 条、与 CLI 同数 ⇒ 「诊断这条路 VS Code 侧没有腿」**只对 TS 腿成立**。",
+    "这两条新记录的测床是 idea-backend 的 fixture 仓（路径前缀 <fixture>），不是本文件顶部的 project —— 前缀不同即是标记。"
   ],
   "records": [
     {
@@ -205,6 +225,38 @@
       "raw_ms": 25010.0,
       "net_ms": 25005.1,
       "evidence": "复测（2026-11-23，在一个**确有语义错**的 TS 工程上）：`tsc --noEmit` 报 1 条 TS2322（Type 'string' is not assignable to type 'number'）✓；同工程 `find_references` 返 1 ⇒ **project graph 是活的**（不是索引没就绪 ✓）；`open_document` 后 `get_diagnostics` 连测 2 次 **都是 0 条**（各 25.0s）⇒ **该通道对 TS 腿恒返 0（静默失效）**，0 条不代表文件干净 ✓"
+    },
+    {
+      "tier": "L5-extract",
+      "route": "typescript-ls",
+      "tool": "textDocument/codeAction(kind=refactor)",
+      "lang": "typescript",
+      "args": {
+        "method": "textDocument/codeAction",
+        "textDocument": { "uri": "<fixture>/ts/src/beta.ts" },
+        "range": { "start": { "line": 3, "character": 2 }, "end": { "line": 3, "character": 26 } },
+        "context": { "diagnostics": [], "only": ["refactor"] }
+      },
+      "status": "ok",
+      "hits": 4,
+      "raw_ms": 26.6,
+      "net_ms": 0,
+      "evidence": "2026-11-23 直连 typescript-language-server（stdio）实测：对 <fixture>/ts/src/beta.ts 里 `return probeCore(item);` 那一行发 textDocument/codeAction（context.only=[\"refactor\"]）⇒ 一次返 **4 个** action：Extract to inner function in function 'betaUse'（refactor.extract.function）、Extract to function in module scope（refactor.extract.function）、Extract to constant in enclosing scope（refactor.extract.constant）、Move to a new file（refactor.move.newFile）；每个 action 带 command=_typescript.applyRefactoring（参数含 file / startLine / startOffset / endLine / endOffset / refactor / action）⇒ **落盘路径存在**；首调 26.6ms、后两次 2.9ms / 3.3ms（表里按单次样本口径取首调）"
+    },
+    {
+      "tier": "L3-pull",
+      "route": "pyright",
+      "tool": "textDocument/diagnostic",
+      "lang": "python",
+      "args": {
+        "method": "textDocument/diagnostic",
+        "textDocument": { "uri": "<fixture>/py/src/probe_broken.py" }
+      },
+      "status": "ok",
+      "hits": 7,
+      "raw_ms": 2.2,
+      "net_ms": 0,
+      "evidence": "2026-11-23 直连 pyright-langserver（stdio）实测：对坏文件 <fixture>/py/src/probe_broken.py 发 LSP 3.17 的 textDocument/diagnostic（pull 诊断）⇒ 返 **7 条**语法错（Expected parameter name / Expected expression / Position-only parameter separator not allowed as first parameter / \"(\" was not closed / Expected \":\" / Expected expression / Statements must be separated by newlines or semicolons）—— 与同版本 pyright CLI 对同一文件的 **7 条一致** ⇒ **Python 腿的单文件诊断是通的**；agent-lsp 的 get_diagnostics 恒 0 是**那条封装**坏了，不是能力没有"
     }
   ]
 }
