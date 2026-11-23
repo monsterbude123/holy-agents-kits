@@ -24,10 +24,10 @@
 
 ```json
 {
-  "measured_tiers": ["L0", "L1", "L2", "L3", "L5"],
+  "measured_tiers": ["L0", "L1", "L2", "L3", "L4", "L5"],
   "gaps": {
     "L3@bifrost-mcp": "实现层：实测 get_code_actions 报 Illegal argument（内部 vscode.executeCodeActionProvider 收到 undefined 的 rangeOrSelection），扩展 0.0.14",
-    "L4@lsp": "协议层：inspection + scope + 批量修复这套语义 LSP 从未定义（textDocument/codeAction 只有 uri+range+context.only，无 scope 参数）；诊断侧的工作区级请求 workspace/diagnostic（LSP 3.17）在协议层存在但**实现缺席**（TS 腿 -32601、Python 腿超时未实现）；VS Code 侧 19 个工具里也没有对应工具",
+    "L4@lsp": "协议层：inspection + scope + 批量修复这套语义 LSP 从未定义（textDocument/codeAction 只有 uri+range+context.only，无 scope 参数）；诊断侧的工作区级请求 workspace/diagnostic（LSP 3.17）在协议层存在但**实现缺席**（TS 腿 -32601、Python 腿超时未实现）⇒ 工作区级清单靠客户端聚合（VS Code Problems 面板）而不是协议一次性返回",
     "L5@bifrost-mcp": "实现层：实测 get_rename_locations 报 Unexpected type，扩展 0.0.14",
     "L5-extract@pyright": "实现层：实测 pyright 的 codeActionProvider.codeActionKinds 只有 quickfix 与 source.organizeImports，不声明 refactor ⇒ 发 textDocument/codeAction 实测 0 个抽方法 action（VS Code 编辑器 + Pylance 另有 Extract method，未在本机实测）",
     "L3-pull@typescript-ls": "实现层：实测 typescript-language-server 不实现 pull 诊断（textDocument/diagnostic 与 workspace/diagnostic 均 -32601 Unhandled method），也不推 publishDiagnostics ⇒ 直连这条腿拿不到诊断"

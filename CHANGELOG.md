@@ -4,9 +4,16 @@
 
 > ⚠️ **口径**：0.8.0 是 npm 上的第一个带本文件的版本。**已装 0.7.0 的用户看不到本期之前的增量**（0.7.0 及更早没有本文件）—— 这里不假装有历史，往后每版往下追加。
 
-## 0.8.1
+## 0.9.0
 
-> **这一版只做一件事**：把 0.8.0 里两条**被复测推翻的结论**改回来 —— 上一版的「VS Code 侧无抽方法」「诊断这条路 VS Code 侧没有腿」是**把一条腿的失败当成了能力不存在**。0.8.0 已发布不可重发，修正走本版。
+> **这一版做两件事**：① 把 0.8.0 里两条**被复测推翻的结论**改回来 —— 「VS Code 侧无抽方法」「诊断这条路 VS Code 侧没有腿」是**把一条腿的失败当成了能力不存在**；② **把三样 IDEA 级能力真正接通**（抽方法 / 全项目检视 / 全局改名落盘）。0.8.0 已发布不可重发，修正与新能力一起走本版。
+
+### 新增（三样 IDEA 级能力，VS Code 侧全通）
+
+- **全项目问题清单（= Inspect Code 等价）** —— 复用现成的 **vsc-lsp-mcp**（VS Code 扩展 `CJL.lsp-mcp`，MIT）：`execute_lsp{operation:"workspace_diagnostics"}` 底层就是 `vscode.languages.getDiagnostics()` 的无参重载（**Problems 面板的数据源**）⇒ 实测对坏文件返 **7 条** error（source=Pylance），与同版本 pyright CLI 的 7 条一致。
+- **全局改名并落盘** —— 同一个扩展的 `prepare_rename` → `rename_preview` → `rename_apply`（VS Code 原生 rename provider，`applyEdit` + `save`）⇒ 实测改一个方法名 **4 个文件 / 8 处**全部落盘，`savedToDisk: true`。
+- **抽方法并落盘（TS/JS）** —— 仓内新脚本 `skills/vscode-backend/scripts/lsp-refactor.mjs`：TS 的「Extract to function」是 **command 型** code action（`_typescript.applyRefactoring`，不带 edit）⇒ 凡是「只收 edit 型动作」的 MCP（BifrostMCP / vsc-lsp-mcp / agent-lsp）都给不了它，只能直连；脚本用**微软官方 `vscode-jsonrpc`**（不自造协议栈）⇒ 实测一次返 **4 个** action，执行后**落盘成功**（语句抽成新函数、原处换成调用）。
+- **新增依赖**：`vscode-jsonrpc`（MIT、零依赖）—— 只给上面那个脚本用。
 
 ### 变更
 
@@ -20,9 +27,11 @@
 
 ### 已知限制
 
-- **抽方法只验到「拿到 action」** —— 落盘那步（`workspace/executeCommand` 调 `_typescript.applyRefactoring`）本轮**没有实测**。
-- **Python 侧的抽方法只在 VS Code + Pylance 下存在**（本机 pyright 腿实测 0 个），Pylance 那条路**未在本机实测**。
-- **TS 腿的诊断仍然没有路** —— 直连 `typescript-language-server` 既不实现 pull 诊断（`-32601`）也不推 `publishDiagnostics` ⇒ 只能走 `tsc --noEmit` / ESLint。
+- **Python 侧的抽方法仍然没有腿** —— 本机 pyright 腿实测 0 个（不声明 refactor）；VS Code + Pylance 有 Extract method，但它是 command 型、只活在编辑器里 ⇒ agent 侧要抽方法只能回 IDEA（`ide_refactor_extract_method`）。Pylance 那条路**未在本机实测**。
+- **TS 腿的单文件诊断仍然没有路** —— 直连 `typescript-language-server` 既不实现 pull 诊断（`-32601`）也不推 `publishDiagnostics` ⇒ 只能走 `tsc --noEmit` / ESLint（**工作区级清单**走 vsc-lsp-mcp 的 `workspace_diagnostics` 是通的）。
+- **工作区级清单只含 VS Code 已分析过的文件** —— 干净仓首次可能为空 ⇒ 先打开文件或等后台分析。
+- **vsc-lsp-mcp 的 `code_actions` 在 TS 上会 ENOENT**（VS Code 的 TS 扩展列 refactor 时去 stat「同名符号.ts」）⇒ 抽方法别走它（它的 `workspace_diagnostics` 与 rename 三段式不受影响）。
+- **抽方法落盘的四个硬规矩**（写进 `references/setup.md` §6.6）：选区要盖住整条语句并越过结尾一列；工程根取最近的 `tsconfig.json` 祖先目录；客户端必须接住 `workspace/applyEdit` 与 `_typescript.rename` 两个反向请求；CRLF 文件会被插入 LF 行（内容对但变混合换行）⇒ 仓库统一 LF。
 
 ## 0.8.0
 

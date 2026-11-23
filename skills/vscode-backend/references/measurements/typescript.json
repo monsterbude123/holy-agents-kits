@@ -1,5 +1,5 @@
 {
-  "measured_at": "2026-11-22（含 2026-11-23 的两批复测）",
+  "measured_at": "2026-11-22（含 2026-11-23 的四批复测）",
   "project": "ai-short-studio-monster-2",
   "project_root": "<project>",
   "routes": [
@@ -38,6 +38,24 @@
       "timing_definition": "raw_ms = 单次 LSP 请求往返耗时；net_ms = max(0, raw_ms - baseline_ms)，baseline_ms = 3 次 initialize 握手的中位数；cold_start_ms = didOpen 后等 pyright 建索引的窗口",
       "cold_start_ms": 4000,
       "baseline_ms": 227.6
+    },
+    {
+      "route": "vsc-lsp-mcp",
+      "note": "VS Code 扩展 CJL.lsp-mcp（MIT，beixiyo/vsc-lsp-mcp）的 MCP 通道（streamable HTTP 127.0.0.1:9527/mcp）—— 借用 VS Code 宿主里已经聚合好的诊断与原生 rename provider",
+      "tool": "CJL.lsp-mcp 0.3.2",
+      "client": "Python MCP SDK 2.3.0（streamable-http transport）",
+      "timing_definition": "raw_ms = 单次 MCP 调用往返耗时；net_ms = max(0, raw_ms - baseline_ms)，baseline_ms = 同一操作多次调用里的最小值（纯协议往返）；cold_start_ms = VS Code 窗口与扩展就绪的等待",
+      "cold_start_ms": 3000,
+      "baseline_ms": 8.7
+    },
+    {
+      "route": "lsp-refactor",
+      "note": "仓内脚本 skills/vscode-backend/scripts/lsp-refactor.mjs —— 直连 typescript-language-server 执行 command 型重构并落盘（客户端用微软官方 vscode-jsonrpc）",
+      "tool": "typescript-language-server + vscode-jsonrpc 10.0.1",
+      "client": "Node 脚本（官方 LSP 客户端库，不自造协议栈）",
+      "timing_definition": "raw_ms = 脚本一次完整调用（起 server + 建图 + codeAction + 落盘）；net_ms = max(0, raw_ms - baseline_ms)，baseline_ms = 脚本内置的「等 tsserver 建 project graph」窗口（2500ms）；cold_start_ms = 首次起 server 的耗时",
+      "cold_start_ms": 3416.3,
+      "baseline_ms": 2500
     }
   ],
   "anchor": {
@@ -257,6 +275,59 @@
       "raw_ms": 2.2,
       "net_ms": 0,
       "evidence": "2026-11-23 直连 pyright-langserver（stdio）实测：对坏文件 <fixture>/py/src/probe_broken.py 发 LSP 3.17 的 textDocument/diagnostic（pull 诊断）⇒ 返 **7 条**语法错（Expected parameter name / Expected expression / Position-only parameter separator not allowed as first parameter / \"(\" was not closed / Expected \":\" / Expected expression / Statements must be separated by newlines or semicolons）—— 与同版本 pyright CLI 对同一文件的 **7 条一致** ⇒ **Python 腿的单文件诊断是通的**；agent-lsp 的 get_diagnostics 恒 0 是**那条封装**坏了，不是能力没有"
+    },
+    {
+      "tier": "L4",
+      "route": "vsc-lsp-mcp",
+      "tool": "execute_lsp(workspace_diagnostics)",
+      "lang": "python",
+      "args": {
+        "operation": "workspace_diagnostics",
+        "uri": "<workspace>"
+      },
+      "status": "ok",
+      "hits": 7,
+      "raw_ms": 25.2,
+      "net_ms": 16.5,
+      "evidence": "2026-11-23 实测：对工作区根发 execute_lsp{operation:\"workspace_diagnostics\"} ⇒ 一次拿到**工作区级**问题清单，底层是 vscode.languages.getDiagnostics() 的**无参重载**（VS Code Problems 面板的数据源）⇒ 坏文件 <fixture>/py/src/probe_broken.py 返 **7 条** error（source=Pylance），与同版本 pyright CLI 的 7 条一致 ⇒ **Inspect Code 的工作区级清单在 VS Code 侧可达**；三次样本 25.2 / 8.7 / 9.7ms（基线取最小 8.7ms）。⚠️ 清单反映的是 VS Code **已分析过**的文件（干净仓首次可能为空）"
+    },
+    {
+      "tier": "L5-rename",
+      "route": "vsc-lsp-mcp",
+      "tool": "execute_lsp(prepare_rename/rename_preview/rename_apply)",
+      "lang": "typescript",
+      "args": {
+        "operation": "rename_preview + rename_apply",
+        "uri": "<fixture>/ts/src/alpha.ts",
+        "line": 8,
+        "character": 17,
+        "newName": "probeCoreV2"
+      },
+      "status": "ok",
+      "hits": 8,
+      "raw_ms": 46.0,
+      "net_ms": 37.3,
+      "evidence": "2026-11-23 实测（VS Code 原生 rename provider 三段式）：prepare_rename 返回 range 8:17-8:26 ⇒ rename_preview 给 **4 个文件 / 8 处编辑**（filesChanged=4）⇒ rename_apply 返回 **savedToDisk: true** ⇒ 磁盘上 4 个文件（定义 / 类内调用 / import / 测试文件）全部改写 ⇒ **改一个方法名全局一起改，在 VS Code 侧成立**；prepare 123.7ms / preview 46.0ms / apply 65.9ms",
+      "preview_files": 4,
+      "preview_locations": 8
+    },
+    {
+      "tier": "L5-extract",
+      "route": "lsp-refactor",
+      "tool": "textDocument/codeAction(kind=refactor) + _typescript.applyRefactoring",
+      "lang": "typescript",
+      "args": {
+        "method": "textDocument/codeAction",
+        "context": { "only": ["refactor"] },
+        "line": 6,
+        "column": 3,
+        "action": "Extract to function in module scope"
+      },
+      "status": "ok",
+      "hits": 4,
+      "raw_ms": 3790.2,
+      "net_ms": 1290.2,
+      "evidence": "2026-11-23 实测（仓内脚本 skills/vscode-backend/scripts/lsp-refactor.mjs，客户端用微软官方 vscode-jsonrpc）：对 return 语句发 textDocument/codeAction(context.only=[\"refactor\"]) ⇒ 一次返 **4 个** action（refactor.extract.function ×2 / refactor.extract.constant / refactor.move.newFile）；选「Extract to function in module scope」执行 _typescript.applyRefactoring ⇒ **落盘成功**（语句被抽成新函数 newFunction(item)、原处换成调用，退出码 0）。**为什么必须直连**：TS 的抽方法是 **command 型** action（不带 edit）⇒ BifrostMCP / vsc-lsp-mcp / agent-lsp 三个现成 MCP 都只收 edit 型动作，给不了它。**选区规则**：必须盖住整条语句并越过语句结尾一列，否则只剩 Move to a new file；**工程根**：取最近的 tsconfig.json 祖先目录，否则 tsserver 不认工程"
     }
   ]
 }
