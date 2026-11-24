@@ -22,6 +22,16 @@ else
 fi
 cd "$ROOT" || exit 2
 
+# 唯一标准来源：scripts/gates/standards.json（node 边车输出 KEY=VALUE）
+load_harness_standards() {
+  node -e "const s=require('./scripts/gates/standards.json');console.log('DEAD_REFS_ENABLED='+(s.dead_refs&&s.dead_refs.enabled?1:0))"
+}
+eval "$(load_harness_standards)"
+if [ "${DEAD_REFS_ENABLED:-0}" != "1" ]; then
+  echo "SKIP check-dead-refs：标准配置未启用"
+  exit 0
+fi
+
 RULE='地图与代码不符 → 先更代码库地图再同步规则文件;死指针及时删。'
 WS="${WORKSPACE:-$ROOT}"   # 路径解析基准。自测时样例写在临时目录,但基准必须仍是真实仓库根
 SELFTEST=0

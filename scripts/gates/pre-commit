@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# 统一门禁：把 npm run check 的退出码原样交给 git。
+# 不在这里重复实现任何检查，也不吞失败。
+npm run check
+exit $?

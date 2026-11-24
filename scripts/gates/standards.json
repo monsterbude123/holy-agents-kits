@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "components": {
+    "agents_md": {
+      "max_lines": 200,
+      "counts_body_only": false
+    },
+    "rule": {
+      "max_lines": 120,
+      "counts_body_only": false
+    },
+    "skill_md": {
+      "max_lines": 150,
+      "counts_body_only": true,
+      "forbid_windows_paths": true,
+      "max_reference_depth": 1
+    },
+    "subagent": {
+      "max_lines": 200,
+      "counts_body_only": false
+    }
+  },
+  "references": {
+    "max_lines": 300
+  },
+  "description": {
+    "min_chars": 40
+  },
+  "dead_refs": {
+    "enabled": true
+  }
+}

@@ -15,14 +15,27 @@ script       scripts/ 下的可执行程序，固化确定性流程，避免每�
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 # --------------------------------------------------------------------------
-# 常量：skill 定义的固有 schema
+# 唯一标准来源：scripts/gates/standards.json
+# 其余脚本共用本文件的常量，因此读一次即可让所有调用者继承同一阈值。
 # --------------------------------------------------------------------------
+
+def load_harness_standards():
+    """读取仓级标准配置；缺文件时回退内置值，保证本模块可独立导入。"""
+    path = Path(__file__).resolve().parents[3] / "scripts" / "gates" / "standards.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+_STANDARDS = load_harness_standards()
+_COMPONENTS = _STANDARDS.get("components", {})
 
 FRONTMATTER_DELIM = "---"
 
@@ -36,11 +49,14 @@ MAX_NAME_LEN = 64
 MAX_DESCRIPTION_LEN = 1024
 MAX_COMPATIBILITY_LEN = 500
 
-# 本仓约定：SKILL.md 正文行数上限（不含 frontmatter）
-DEFAULT_SKILL_MD_MAX_LINES = 150
+# 本仓约定：SKILL.md 正文行数上限（不含 frontmatter），来自唯一标准配置
+DEFAULT_SKILL_MD_MAX_LINES = _COMPONENTS.get("skill_md", {}).get("max_lines", 150)
 
 # references/ 下的单文件行数上限；超过应继续拆分
-MAX_REFERENCE_LINES = 300
+MAX_REFERENCE_LINES = _STANDARDS.get("references", {}).get("max_lines", 300)
+
+# description 偏短警告线
+DESCRIPTION_MIN_CHARS = _STANDARDS.get("description", {}).get("min_chars", 40)
 
 # references/ 下免于「必须被正文引用」检查的文件（索引与目录说明）
 EXEMPT_REFERENCE_NAMES = frozenset({"INDEX.md", "README.md"})
@@ -371,7 +387,7 @@ def validate_skill(
             )
         if "<" in description or ">" in description:
             add("error", "description.brackets", "description 不能包含尖括号 < >")
-        if len(description) < 40:
+        if len(description) < DESCRIPTION_MIN_CHARS:
             add(
                 "warn",
                 "description.short",
