@@ -4,6 +4,30 @@
 
 > ⚠️ **口径**：0.8.0 是 npm 上的第一个带本文件的版本。**已装 0.7.0 的用户看不到本期之前的增量**（0.7.0 及更早没有本文件）—— 这里不假装有历史，往后每版往下追加。
 
+## 0.10.0
+
+> **这一版做两件事**：① **全仓 harness 门禁闭环** —— `npm run check` 一条命令机械判定全仓 skill 与规则文件是否合规（issue 自带 文件:行）、提交前自动拦截不合规改动、判定标准只剩一份 `scripts/gates/standards.json`；② **新技能 `vibe-coding-standards` 首次入库**，同时把多个技能的内容修到过门禁。
+
+### 新增
+
+- **统一门禁 `scripts/gates/`** —— `npm run check` 输出一份结构化 JSON 报告（stdout）：3 个检查器（skill 结构 / 规则文件行数 / 交叉引用）各自的退出码、每条问题带**文件:行**、通过清单；任一 error 整体退出码非 0。报告走 stdout 不落仓库。
+- **判定标准单一来源 `scripts/gates/standards.json`** —— AGENTS.md / Rule / SKILL.md / Subagent 按组件分档（200/120/150/200，references 300），三个检查器从同一份配置读阈值；改一个数字三处同步。SKILL.md 行数口径统一为**正文、不含 frontmatter**。
+- **提交前拦截** —— `core.hooksPath` 指向 `scripts/gates`，pre-commit 调 `npm run check`：不合规的改动提交不进去（不引入 husky / lint-staged 等任何新依赖）。`scripts/gates/install-hooks.mjs --restore` 可按留证恢复原 hook 配置。
+- **回滚锚点登记 `scripts/gates/ROLLBACK.md`** —— phase 内每个被改路径都有写下来的改造前锚点（commit / ref / 删除三型）与恢复命令。
+- **新技能 `vibe-coding-standards`** —— Vibe Coding 核心组件（AGENTS.md / Rules / Skills / Subagents）的编写原则：地图内联防迷路、规范指针防上下文击穿、5 Pillar context engineering。
+- **skill-creator-v2 增强** —— 校验 issue 自带 `file`/`line`（指向真正的问题位置）；引用存在性只认 markdown 链接（代码块里的模板路径不再误报）；`evals/` 新增 3 条机判回归用例与 `run-evals.mjs` 执行入口。
+
+### 变更
+
+- **死引用检查器升级** —— 能抓 markdown 链接形式的坏路径（原先只扫反引号 token，链接里的死链全漏）；样本集从 2 个文件扩到 78 个（`skills/*/SKILL.md` 与 `skills/*/references/*.md`）；git rev range（如 `origin/main..HEAD`）与运行时路径不再误判。
+- **多个技能内容合规化** —— `vibe-coding-standards` 21 处旧体积口径换成标准真值、正文瘦身（160→141 行）、5 处死链接改纯文本；`session-distiller` 正文 341→144 行（内容搬进 references 不删）；`website-helper-skill` 正文 157→149 行 + 死链改真；`idea-backend` 一处死链改指现存文件。
+- **npm 包新增两个技能** —— `session-distiller`（会话蒸馏器）与 `website-helper-skill`（子域名发布）首次进入发布包。
+
+### 已知限制
+
+- **`~/.agents/skills/` 里的旧副本不会自动更新** —— 重装覆盖：`npx holy-agents-kits@latest install <skill> --force`。
+- **Windows 下 pre-commit 每次提交多花约 3 秒**（死引用检查器全量扫描 78 个文件）。
+
 ## 0.9.0
 
 > **这一版做两件事**：① 把 0.8.0 里两条**被复测推翻的结论**改回来 —— 「VS Code 侧无抽方法」「诊断这条路 VS Code 侧没有腿」是**把一条腿的失败当成了能力不存在**；② **把三样 IDEA 级能力真正接通**（抽方法 / 全项目检视 / 全局改名落盘）。0.8.0 已发布不可重发，修正与新能力一起走本版。
