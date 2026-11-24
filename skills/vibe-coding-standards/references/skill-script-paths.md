@@ -53,7 +53,7 @@
 
 ## §4 Context Engineering 5 Pillar — 路径解析维度（2026-08-14 增量）
 
-> 来源：[external-report 2026-08-14 §M-04](../2026-08-14/external-report.md)
+> 来源：2026-08-14 外部报告 §M-04
 
 `gitnexus4Trae` 已实装:`impact` / `cypher` 是 **语义搜索**(`query`),不是 grep。但本文件 §1 的"先查 .codebuddy/skills/"仍可能让 agent 退化到 **路径搜索 → 多 read 文件 → 95k token** 的老路。
 

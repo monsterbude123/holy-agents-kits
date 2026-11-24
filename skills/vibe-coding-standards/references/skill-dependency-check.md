@@ -127,7 +127,7 @@ requires:
 
 ## §7 Context Engineering 5 Pillar — 依赖检查维度（2026-08-14 增量）
 
-> 来源：[external-report 2026-08-14 §M-03](../2026-08-14/external-report.md) + §M-04 Token 效率
+> 来源：2026-08-14 外部报告 §M-03 + §M-04 Token 效率
 
 依赖检查协议对应 5 Pillar 的两个关键 Pillar:
 

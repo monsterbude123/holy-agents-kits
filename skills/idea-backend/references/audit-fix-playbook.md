@@ -210,7 +210,7 @@ tools:
 - **按需加**：需要改名 → `mcp__idea-index__ide_refactor_rename`；需要建类型文件 → `mcp__idea-index__ide_create_from_template`（monster 分支才有）；需要抽方法 → `mcp__idea-index__ide_refactor_extract_method`（monster 分支才有）。
 - **别授**：`execute_terminal_command`（CreateProcess 直调、PATH 是 IDEA 的、复合命令要自己包 `cmd /c`）、`build_project`/`execute_run_configuration`（构建与进程由编排层统一管，§Step 5 铁律）。
 - **授了不等于能用**：工具面因插件版本而异（上游版没有 `ide_inspect`/`ide_refactor_extract_method`/`ide_create_from_template`）→ 派发前用 `bash scripts/mcp-call.sh list index` 核对清单；**当前 server 没暴露的工具，写进 prompt 只会让子代理静默降级**。
-- **TS/Next 仓另有一套**：符号级工具在 TS 仓静默失效（位置法解析到目录符号），子代理必须改用 `ide_search_text` + 人工核对 —— 见 [ts-web.md](ts-web.md)。
+- **TS/Next 仓另有一套**：符号级工具在 TS 仓静默失效（位置法解析到目录符号），子代理必须改用 `ide_search_text` + 人工核对 —— 见 [langs/ts/runtime.md](langs/ts/runtime.md)。
 
 ---
 
@@ -256,7 +256,7 @@ tools:
 | problems 文本清单 | `total` 与返回行数不符 | 读 `xmlDir` |
 | P3C `NonAsciiCharacters` | 612 条（每条中文注释一条） | 噪音规则，脚本已单列豁免 |
 | `ide_inspect` 不在工具面 | 上游插件版（5.20.x）只有 16 个工具 → 整条流水线不可用 | `mcp-call.sh has index ide_inspect` 探测；脚本自动降级 `ide_diagnostics` |
-| TS 仓位置法解析符号 | `resolvedSymbol.kind = directory` → 引用面是"目录"（假命中/0 命中），**不报错** | 查 `resolvedSymbol.kind`；TS 仓改走 `ide_search_text`（见 ts-web.md） |
+| TS 仓位置法解析符号 | `resolvedSymbol.kind = directory` → 引用面是"目录"（假命中/0 命中），**不报错** | 查 `resolvedSymbol.kind`；TS 仓改走 `ide_search_text`（见 langs/ts/runtime.md） |
 
 ---
 
