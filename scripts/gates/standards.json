@@ -13,7 +13,11 @@
       "max_lines": 150,
       "counts_body_only": true,
       "forbid_windows_paths": true,
-      "max_reference_depth": 1
+      "max_reference_depth": 1,
+      "enforcement": {
+        "forbid_windows_paths": "warn",
+        "max_reference_depth": "warn"
+      }
     },
     "subagent": {
       "max_lines": 200,
@@ -23,10 +27,25 @@
   "references": {
     "max_lines": 300
   },
+  "name": {
+    "max_chars": 64
+  },
   "description": {
-    "min_chars": 40
+    "min_chars": 40,
+    "max_chars": 1024
   },
   "dead_refs": {
-    "enabled": true
+    "enabled": true,
+    "scan_markdown_links": true,
+    "link_globs": [
+      "skills/*/SKILL.md",
+      "skills/*/references/*.md",
+      ".agents/skills/*/SKILL.md",
+      "AGENTS.md"
+    ],
+    "tick_globs": [
+      "AGENTS.md",
+      ".agents/skills/*/SKILL.md"
+    ]
   }
 }

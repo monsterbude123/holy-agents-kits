@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate_vibe_docs.sh — Vibe Coding 文档自校验（v2.5）
+# validate_vibe_docs.sh — Vibe Coding 文档自校验
 #
 # 校验项:
 #   1. AGENTS.md / SKILL.md / subagents/*.md 行数超过弹性上限
@@ -11,20 +11,61 @@
 # 用法:
 #   ./scripts/validate_vibe_docs.sh [dir1 dir2 ...]
 #   默认扫描当前目录
+#   （脚本自带用法在任何 CWD 下都可跑：先解析仓库根再执行）
 #
-# 阈值（v2.5）:
-#   AGENTS.md 地图型 ≤ 300 行 / 纯规范 ≤ 200 行
-#   SKILL.md ≤ 300 行
-#   Subagent ≤ 200 行
-#   Rule .mdc ≤ 120 行
+# 阈值（读自 scripts/gates/standards.json —— 唯一标准来源）:
+#   AGENTS.md / SKILL.md / Subagent / Rule .mdc 的行数上限，
+#   以及各组件是否按正文计数（counts_body_only），全部在标准配置里，本脚本不写死。
 
 set -u
 
+# 调用时的 CWD（用户给的相对目录按它解析,切到仓根之后仍指原来那个地方）
+ORIG_PWD="$(pwd)"
+
+# ---------- 仓库根：git 顶层优先，失败则从脚本位置上溯 3 级 ----------
+# 注意:不要写成 `git ... || cd ... && pwd` —— shell 里 || 与 && 左结合,
+# git 成功时仍会执行 pwd,两段路径会被拼成两行,后续 cd 必失败。
+if ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" && [ -n "$ROOT" ]; then
+  :
+else
+  ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+fi
+cd "$ROOT" || exit 2
+# 统一成 pwd 形式:后面所有路径比较(仓根相对)都用同一个形态
+ROOT="$(pwd)"
+
 # ---------- 阈值：唯一来源 scripts/gates/standards.json ----------
+# node 需要本机可解析的绝对路径：cygpath -m 给出 D:/... 形式
+STD_ABS="$(cygpath -m "$ROOT/scripts/gates/standards.json" 2>/dev/null || echo "$ROOT/scripts/gates/standards.json")"
 load_harness_standards() {
-  node -e "const s=require('./scripts/gates/standards.json'),c=s.components;console.log('TH_AGENTS='+c.agents_md.max_lines);console.log('TH_SKILL='+c.skill_md.max_lines);console.log('TH_SUBAGENT='+c.subagent.max_lines);console.log('TH_RULE='+c.rule.max_lines)"
+  STD_PATH="$STD_ABS" node -e '
+const s = require(process.env.STD_PATH), c = s.components;
+console.log("TH_AGENTS=" + c.agents_md.max_lines);
+console.log("TH_SKILL=" + c.skill_md.max_lines);
+console.log("TH_SUBAGENT=" + c.subagent.max_lines);
+console.log("TH_RULE=" + c.rule.max_lines);
+console.log("AGENTS_MD_BODY_ONLY=" + (c.agents_md.counts_body_only ? 1 : 0));
+console.log("SKILL_MD_BODY_ONLY=" + (c.skill_md.counts_body_only ? 1 : 0));
+console.log("SUBAGENT_BODY_ONLY=" + (c.subagent.counts_body_only ? 1 : 0));
+console.log("RULE_BODY_ONLY=" + (c.rule.counts_body_only ? 1 : 0));
+'
 }
 eval "$(load_harness_standards)"
+
+# ---------- 输出路径：仓根相对 ----------
+repo_rel() {
+  local p="$1" r
+  case "$p" in
+    "$ROOT"/*) r="${p#"$ROOT"/}" ;;
+    "$ROOT")   r="." ;;
+    *)        r="$p" ;;
+  esac
+  case "$r" in
+    ./*) r="${r#./}" ;;
+  esac
+  r="${r//\/\.\//\/}"          # 去掉路径里的 /./ 段
+  printf '%s\n' "$r"
+}
 
 # ---------- 计数 ----------
 errors=0
@@ -36,14 +77,26 @@ check_file() {
   local file="$1"
   local type="$2"   # agents / skill / subagent / rule
   local lines
-  if [ "$type" = "skill" ]; then
-    # SKILL.md 统一按正文行数（不含 frontmatter），与 Python 侧同口径
+  local body_only=0
+  case "$type" in
+    agents)   body_only="${AGENTS_MD_BODY_ONLY:-0}" ;;
+    skill)    body_only="${SKILL_MD_BODY_ONLY:-0}" ;;
+    subagent) body_only="${SUBAGENT_BODY_ONLY:-0}" ;;
+    rule)     body_only="${RULE_BODY_ONLY:-0}" ;;
+  esac
+
+  if [ "$body_only" = "1" ]; then
+    # 按正文行数（不含 frontmatter），与 Python 侧同口径
     lines=$(awk 'BEGIN{fm=0;n=0} NR==1&&/^---$/{fm=1;next} fm&&/^---$/{fm=0;next} !fm{n++} END{print n}' "$file" 2>/dev/null || echo 0)
   else
+    # 整文件计数
     lines=$(wc -l < "$file" 2>/dev/null || echo 0)
   fi
 
   checked_files=$((checked_files + 1))
+
+  local rel
+  rel="$(repo_rel "$file")"
 
   local threshold
   case "$type" in
@@ -57,10 +110,10 @@ check_file() {
   if [ "$lines" -gt "$threshold" ]; then
     if [ "$type" = "rule" ]; then
       # Rule 超阈值是警告（非阻断）
-      echo "WARN  $file ($lines 行 > 阈值 $threshold，建议拆分)"
+      echo "WARN  $rel ($lines 行 > 阈值 $threshold，建议拆分)"
       warnings=$((warnings + 1))
     else
-      echo "FAIL  $file ($lines 行 > 阈值 $threshold，建议提取 references/)"
+      echo "FAIL  $rel ($lines 行 > 阈值 $threshold，建议提取 references/)"
       errors=$((errors + 1))
     fi
   fi
@@ -68,7 +121,7 @@ check_file() {
   # 子代理必须有 timeout
   if [ "$type" = "subagent" ]; then
     if ! grep -q "^timeout:" "$file"; then
-      echo "WARN  $file 缺少 'timeout:' 字段（vibe 子代理强制）"
+      echo "WARN  $rel 缺少 'timeout:' 字段（vibe 子代理强制）"
       warnings=$((warnings + 1))
     fi
   fi
@@ -76,7 +129,7 @@ check_file() {
   # AGENTS.md 必须含地图（至少一个）
   if [ "$type" = "agents" ]; then
     if ! grep -qE "技术栈|目录树|启动命令|目录结构|架构" "$file"; then
-      echo "WARN  $file 缺少地图元素（技术栈/目录树/启动命令）"
+      echo "WARN  $rel 缺少地图元素（技术栈/目录树/启动命令）"
       warnings=$((warnings + 1))
     fi
   fi
@@ -109,9 +162,15 @@ scan_dir() {
 }
 
 # ---------- 入口 ----------
-dirs=("$@")
+dirs=()
+for d in "$@"; do
+  case "$d" in
+    /*|[A-Za-z]:*) dirs+=("$d") ;;
+    *)             dirs+=("$ORIG_PWD/$d") ;;
+  esac
+done
 if [ ${#dirs[@]} -eq 0 ]; then
-  dirs=("$(pwd)")
+  dirs=("$ORIG_PWD")
 fi
 
 for d in "${dirs[@]}"; do
@@ -154,7 +213,7 @@ while IFS= read -r skill_md; do
             # 任意 optional 缺降级说明 → WARN
             missing_degrade=$(echo "$optional_block" | grep -vE '(降级|→|代价|影响)' | grep -vE '^\s*#' | grep -E '^\s*-' | grep -v '^\s*-\s*$' | head -5)
             if [ -n "$missing_degrade" ]; then
-                rel=$(echo "$skill_md" | sed "s|$PWD/||")
+                rel=$(repo_rel "$skill_md")
                 echo "  ⚠  $rel — optional 缺降级影响说明(Pillar 4)"
                 pillar_warn=$((pillar_warn + 1))
             fi
@@ -163,11 +222,11 @@ while IFS= read -r skill_md; do
 
     # P2: 检查 SKILL.md 是否有 Examples 章节(Pillar 4)
     if ! grep -qE '^## (Examples|示例)' "$skill_md" 2>/dev/null; then
-        rel=$(echo "$skill_md" | sed "s|$PWD/||")
+        rel=$(repo_rel "$skill_md")
         echo "  ℹ  $rel — 缺 Examples 章节(可选增强,但建议加)"
         pillar_count=$((pillar_count + 1))
     fi
-done < <(find . -name SKILL.md -not -path "./node_modules/*" 2>/dev/null)
+done < <(find "$ORIG_PWD" -name SKILL.md -not -path "*/node_modules/*" 2>/dev/null)
 
 echo ""
 if [ "$pillar_warn" -gt 0 ]; then
