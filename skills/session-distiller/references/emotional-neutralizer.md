@@ -87,7 +87,7 @@ Step 1 — 检测情绪载荷
   └─ 输出: emotion_score (0-1)  +  emotion_type
 
 Step 1.5 — 【V2.2.1 新】计算温度值 T
-  ├─ 查 self-improving-agent .learnings/ERRORS.md 同 tag 爆发次数 → accumulation_factor
+  ├─ 查**项目内** .learnings/ERRORS.md 同 tag 爆发次数 → accumulation_factor（无此文件按 0 计）
   ├─ 查最近一次爆发时间戳 → 计算 history_weight
   ├─ T = emotion_score × accumulation_factor × history_weight
   └─ 输出: temperature (0-10+) + attention_level (🟢/🟡/🟠/🔴/🔥/🚨)
@@ -197,7 +197,7 @@ MUST:
 | 5 | **忘记保留原始话术** | 用户无法审计是否漏翻 | 强制四段式输出(原始 + 中性 + 标注 + 温度) |
 | 6 | **把中性化当 LLM prompt 不当算法** | 不可验证 + 不可重现 | 中性化必须是 6 步确定性算法 |
 | 7 | **【V2.2.1 新】高温区不汇报用户**(T ≥ 6 直接行动) | 用户失去对齐机会,规则冲突固化 | T ≥ 6 强制"协议变更建议"先行 |
-| 8 | **【V2.2.1 新】温度值拍脑袋**(不查历史 .learnings/) | 温度值失真,触发错误的关注度等级 | 必须查 self-improving-agent .learnings/ 同 tag |
+| 8 | **温度值拍脑袋**(不查历史 .learnings/) | 温度值失真,触发错误的关注度等级 | 必须查项目内 .learnings/ 同 tag |
 
 ---
 

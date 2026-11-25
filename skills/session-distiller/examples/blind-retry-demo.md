@@ -279,7 +279,7 @@ NEVER: 不验证文件存在性就直接委派修改
 
 ### 集成方式三: Hook 自动化
 
-在 `.trae/rules/` 中补充 Hook:
+在项目规则目录（如 `.agents/rules/`）中补充 Hook:
 
 ```python
 # pre-delegation-hook.py

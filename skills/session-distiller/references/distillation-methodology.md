@@ -67,7 +67,7 @@ Level 3 (极具体): "修改代码前必须: impact({target: 'symbolName'}) → 
 
 ```
 ❌ "修改配置文件"
-✅ "修改 .trae/rules/strict.md"
+✅ "修改 .agents/rules/strict.md"
 ```
 
 **技术二: 命令具体化**

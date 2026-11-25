@@ -67,12 +67,12 @@
 检查项: 引用文件/工具时有具体路径或命令
 
 判定标准:
-  ✅ 有具体路径 (如: .trae/rules/strict.md)
-  ⚠️ 有部分具体 (如: "某个 .trae 文件")
+  ✅ 有具体路径 (如: .agents/rules/strict.md)
+  ⚠️ 有部分具体 (如: "项目里某个规则文件")
   ❌ 全是抽象描述 (如: "配置文件")
 
 示例:
-  ✅ 修改 .trae/rules/strict.md
+  ✅ 修改 .agents/rules/strict.md
 
   ❌ 修改配置文件
 ```
