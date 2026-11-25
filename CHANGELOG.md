@@ -13,7 +13,7 @@
 - **全项目问题清单（= Inspect Code 等价）** —— 复用现成的 **vsc-lsp-mcp**（VS Code 扩展 `CJL.lsp-mcp`，MIT）：`execute_lsp{operation:"workspace_diagnostics"}` 底层就是 `vscode.languages.getDiagnostics()` 的无参重载（**Problems 面板的数据源**）⇒ 实测对坏文件返 **7 条** error（source=Pylance），与同版本 pyright CLI 的 7 条一致。
 - **全局改名并落盘** —— 同一个扩展的 `prepare_rename` → `rename_preview` → `rename_apply`（VS Code 原生 rename provider，`applyEdit` + `save`）⇒ 实测改一个方法名 **4 个文件 / 8 处**全部落盘，`savedToDisk: true`。
 - **抽方法并落盘（TS/JS）** —— 仓内新脚本 `skills/vscode-backend/scripts/lsp-refactor.mjs`：TS 的「Extract to function」是 **command 型** code action（`_typescript.applyRefactoring`，不带 edit）⇒ 凡是「只收 edit 型动作」的 MCP（BifrostMCP / vsc-lsp-mcp / agent-lsp）都给不了它，只能直连；脚本用**微软官方 `vscode-jsonrpc`**（不自造协议栈）⇒ 实测一次返 **4 个** action，执行后**落盘成功**（语句抽成新函数、原处换成调用）。
-- **新增依赖**：`vscode-jsonrpc`（MIT、零依赖）—— 只给上面那个脚本用。
+- **新增可选依赖**：`vscode-jsonrpc`（MIT、零依赖）—— 只给上面那个脚本用。**是 `optionalDependencies` 不是 `dependencies`**：离线机器装不上它时本仓其余能力照常可用，只有抽方法这条路缺席（脚本退出码 3 并给出替代路线）⇒ 不让一个新能力把离线用户的安装卡死。
 
 ### 变更
 

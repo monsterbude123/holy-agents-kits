@@ -68,7 +68,7 @@
   },
   "author": "monsterbude123",
   "license": "MIT",
-  "dependencies": {
+  "optionalDependencies": {
     "vscode-jsonrpc": "^10.0.1"
   }
 }
