@@ -1,5 +1,9 @@
 # 手写协议栈白名单（每行：路径 + 理由）
 # 门禁：scripts/check-no-handrolled-protocol.mjs —— 新增手写协议栈会阻断提交；存量放这里并写明理由。
 
-# 存量：curl + 裸 JSON-RPC 的 MCP 客户端 —— 服务"插件专用 MCP 端点 + 用户机无 Python SDK"的场景，phase 01 已实测可用；迁到官方 Python MCP SDK 需用户机额外装 SDK ⇒ 暂列白名单，迁移另立项。
-skills/idea-backend/scripts/mcp-call.sh  # 存量：curl 版 MCP 客户端（插件端点、用户机无 Python SDK）；迁移官方 SDK 另立项
+# 存量：**仓内既定的统一调用出口** —— 脚本自己第 9 行写着「Agents: use this INSTEAD of
+# hand-rolling curl+node JSON-RPC plumbing」,且 idea-backend 的 SKILL.md 有 6 处指向它
+# (index/builtin/list/has 四种调用形态)⇒ 它是**替代手搓**的方案,不是手搓的产物。
+# 为什么不迁到官方 Python MCP SDK:那会给技能运行时**新增一个 Python 依赖**(用户机未必有),
+# 而现在的零依赖 bash+curl 形态已实测可用 ⇒ 迁移是"用依赖换风格",不是净收益,另立项评估。
+skills/idea-backend/scripts/mcp-call.sh  # 仓内统一调用出口(脚本自带"别手搓 curl+JSON-RPC"的指引);迁移官方 SDK 需给技能加 Python 运行时依赖,另立项
