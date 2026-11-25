@@ -90,4 +90,14 @@ description: 把 VS Code 与语言服务器当 agent 的语义后端，两条腿
 
 ⇒ 一次性探针/分析脚本放 `<workspace>/.tmp/` 或系统 Temp，**任务结束前删掉**（不留堆积）。
 
+**官方立场与行为验证**（2026-11-25 联网核实，不是拍脑袋）：
+- MCP 官方文档写 "Build MCP servers and clients using our **official SDKs**"、架构文档写
+  "MCP SDKs **abstract away many concerns**"，build-server 文档还明确指出**手写接线只能服务老协议版本**
+  （协议版本协商由 SDK 负责）⇒ 用 SDK 有官方依据，不只是"风格问题"。
+- **行为层的官方验证**：`npx @modelcontextprotocol/conformance client --command "<启动命令>" --scenario initialize`
+  与 `npx @modelcontextprotocol/inspector --cli <启动命令> --method tools/list`。
+- 官方**没有**"检测手写协议栈"的 lint 规则（semgrep 全量 6308 条里 MCP 相关 168 条全是安全类）
+  ⇒ 仓里的门禁只是**文本粗筛**，协议合规仍以 conformance / Inspector 为准。
+- MCP 的 stdio framing 官方定义是**换行分隔**（不是 LSP 的 `Content-Length` 头）⇒ 查手写协议栈时两种都要查。
+
 > 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new

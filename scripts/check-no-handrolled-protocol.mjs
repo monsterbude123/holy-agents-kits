@@ -7,9 +7,22 @@
 // 所以这里做成**机器可判**的门禁。
 //
 // 指纹说明(只抓"协议栈"的写法,不动 HTTP 头等正常用法):
-//   ① "jsonrpc":"2.0" 报文          ⇒ 自己实现 MCP/JSON-RPC 客户端
+//   ① 手工构造 JSON-RPC 报文(同一行里既有 "jsonrpc" 又有 method/id)
+//      ⇒ 自己实现 MCP/JSON-RPC 客户端。
+//      ⚠️ MCP 的 stdio framing 官方定义是**换行分隔**、没有 Content-Length
+//      (规范 2025-06-18 transports:"Messages are delimited by newlines"),
+//      所以 MCP 侧的手写接线靠这条抓;LSP 侧才用 Content-Length 帧头。
 //   ② readline.createInterface      ⇒ 自己按行读协议流
 //   ③ Content-Length 作为裸帧头行   ⇒ 自己写 LSP 帧(区别于 self.send_header("Content-Length", …))
+//
+// 官方立场与"行为验证"(本门禁只是**文本粗筛**,不是官方门禁):
+//   · MCP 官方 SDK:"Build MCP servers and clients using our official SDKs";
+//     架构文档:"MCP SDKs abstract away many concerns";
+//     build-server 文档还指出**手写接线只能服务老协议版本**(协议版本协商由 SDK 负责)。
+//   · 官方**行为层**验证:@modelcontextprotocol/conformance(client --scenario initialize)
+//     与 @modelcontextprotocol/inspector(--cli ... --method tools/list)。
+//   · 官方**没有**"检测手写协议栈"的 lint 规则(semgrep 全量 6308 条里 MCP 相关 168 条全是安全类)
+//     ⇒ 所以本仓自建一条粗筛门禁,并把存量放进白名单(带理由)。
 //
 // 存量白名单:scripts/protocol-allowlist.txt(每行 = 路径 + 理由)
 //
@@ -27,7 +40,9 @@ const SCAN_DIRS = ['scripts', 'skills']
 const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.ts', '.py', '.sh'])
 
 const PATTERNS = [
-  { re: /["']jsonrpc["']\s*:\s*["']2\.0["']/, why: '手写 JSON-RPC 报文 ⇒ 用官方 MCP SDK / vscode-jsonrpc' },
+  // 收窄:必须**同一行**里既有 jsonrpc 又有 method/id ⇒ 命中的是"手工构造请求",
+  // 而不是正常调用代码里出现 jsonrpc 字段名
+  { re: /["']jsonrpc["']\s*:\s*["']2\.0["'][^\n]*["'](?:method|id)["']|["'](?:method|id)["'][^\n]*["']jsonrpc["']\s*:\s*["']2\.0["']/, why: '手工构造 JSON-RPC 报文 ⇒ 用官方 MCP SDK / vscode-jsonrpc' },
   { re: /readline\.createInterface/, why: '自己按行读协议流 ⇒ 用官方客户端库' },
   // 帧头写法是 "Content-Length: " + n（引号里带冒号）;HTTP 的 send_header("Content-Length", x) 是逗号 ⇒ 不误伤
   { re: /["']Content-Length:\s*["']/i, why: '自己写协议帧头 ⇒ 用官方 vscode-jsonrpc' },
