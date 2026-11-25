@@ -21,8 +21,8 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 | 步 | 做什么 | 产出 |
 |---|---|---|
 | ① 立边界 | 说清技能替 agent 承担了什么、什么**不**归它管；列出触发词 | 职责一句话 + 触发词清单 |
-| ② 起骨架 | 用 `scaffold_skill.py` 生成目录与三段式正文 | `SKILL.md` + `references/` + `scripts/` |
-| ③ 填核心 | 填「骨架流程 / 核心逻辑 / 核心循环」，只写**判断依据**，不写实现 | 满血 SKILL.md |
+| ② 起骨架 | 用 `scaffold_skill.py` 生成目录与正文占位 | `SKILL.md` + `references/` + `scripts/` |
+| ③ 填主轴 | 先写**主轴**：做什么 → 按什么顺序 → 在哪分叉；第一步见 §2.2 | 满血 SKILL.md |
 | ④ 溢出外迁 | 协议表、错误码、示例集、长清单 → 写进 `references/<topic>.md`，正文留指针 | references 文件 + 正文指针 |
 | ⑤ 过校验 | 跑 `validate_skill.py`，error 清零、warn 逐条确认 | 校验报告 |
 | ⑥ 跑评测 | 有客观可验证的输出才跑：测试用例 → 人工/脚本评分 → 反馈迭代 | 评测报告 |
@@ -45,6 +45,20 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 正文是每次调用都要付钱的部分，所以它有行数上限（本仓 ≤ 150 行）。
 细节属于 `references/`，**但抽走内容必须在原处留指针**——藏起来的知识等于丢掉的知识。
 
+### 2.2 第一屏 = 主轴（最容易写歪的地方）
+
+第一屏只回答三件事：**这技能替 agent 做什么 / 按什么顺序做 / 在哪里分叉**。
+读 15 行还答不上来，就重写这一屏 —— 不是加小标题，也不是补一段"为什么重要"。
+
+- 主轴是**一条可执行路径**：步骤序列 / 决策表 / 命令链。不是术语表、目录结构树、价值论述。
+- **概念与原则挂到它管辖的那一步**里（"Step 3 提炼铁律：每条都要能被机器判定"），
+  不要另开「三大原则」「核心概念」章节排在前面 —— 规则脱离步骤单独成节，读者不知道它何时生效。
+  这是形式化最典型的样子：看着有结构，读完不知道先干什么。
+- 自检：把前 15 行给一个没听过这技能的人，他能说出"先做什么、什么时候换路"吗？
+
+反例：开头「§1 三大铁律」+「§2 术语」，「怎么用」到第 40 行才出现。
+正例：开头就是"做 X = 一条命令；做 Y = 换个参数；三种失败的岔路见下"。
+
 ### 2.2 正文放什么、不放什么
 
 | 内容 | 去处 | 判据 |
@@ -62,17 +76,12 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 - **判断条目 ≤ 2 行**：结论一句 + 理由（或指针）一句；写满三行说明内容该外迁 references。
 - **同一判断全文只写一次**：流程写动作、逻辑写判断、退出条件只写判据清单；同一条规则出现第二遍就是注水，删掉。
 
-### 2.3 什么该固化成脚本
+### 2.4 什么该固化成脚本
 
-出现下面任一情况，就写脚本而不是让模型现编：
+重复出现 / 有固定 schema / 顺序可机械检查 ⇒ 写成脚本，别让模型每次现编。
+技术栈与 I/O 契约（Node 默认、Python 标准库、uv 按需；stdout 单行 JSON）见 `references/structure.md` §5。
 
-- 同一段代码在多个测试用例里被重复写出来
-- 解析有固定 schema（字段、枚举、必填项）——判定逻辑必须唯一，不能每次重新推导
-- 步骤有固定顺序且可机械检查
-
-脚本要求：技术栈与 I/O 契约见 `references/structure.md` §5 运行时协议（三选一、stdout 单行 JSON、stderr 日志、退出码 0/1、.env 三级查找）；有 `--help`，错误信息写清怎么修。
-
-### 2.4 description 决定生死
+### 2.5 description 决定生死
 
 技能会不会被用，只看 `description`。它必须同时写清「**做什么**」和「**什么时候用**」，
 并把用户的真实说法（触发词）写进去。描述模糊，技能就永远不会被触发——写得多漂亮都没用。
@@ -81,17 +90,10 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 
 ## §3 核心循环
 
-### 3.1 开发循环（改技能）
+**改技能**：按 §1 六步走，撞到 error / 正文超长就回到 ② ③ 重写那一屏，别在超长正文上打补丁。
+退出条件：校验 error 为 0、正文 ≤ 150 行、无占位与 TODO。
 
-```
-立边界 → 起骨架 → 填核心 → 溢出外迁 → 过校验
-  ↑                                    │
-  └────────── 有 error / 正文超长 ─────┘
-```
-
-退出条件：校验 error 为 0，正文 ≤ 150 行且按 §2.2 密度三规自查无注水，占位与 TODO 全部消化。
-
-### 3.2 评测循环（改效果）
+**改效果**（评测）：
 
 ```
 写测试用例 → 跑（有技能 / 无基线）→ 评分 → 人看结果 → 改技能 → 再跑
@@ -141,14 +143,12 @@ python .agents/skills/skill-creator-v2/scripts/split_skill.py skills/new-skill -
 
 ## §5 参考文件
 
-- `references/structure.md` —— 目录布局、frontmatter schema、命名规范与 scripts 运行时协议（§5）；**写技能前先读**。
-- `references/creating-skills.md` —— 立边界、访谈、写 SKILL.md、设计测试用例。
-- `references/evaluating.md` —— 跑用例、评分、生成评审视图、读反馈。
-- `references/improving.md` —— 从反馈里提炼改进项、迭代循环、盲测对比。
-- `references/description-optimization.md` —— 触发率评测集设计与优化循环。
-- `references/quality-gates.md` —— 全部校验项、错误含义与修法；**校验报错时查这里**。
-- `references/environments.md` —— Claude.ai / Cowork / 本仓的环境差异与降级路径。
-- `references/schemas.md` —— evals.json / grading.json / timing.json 的 JSON 结构。
-- `references/benchmark-schemas.md` —— benchmark.json / comparison.json / analysis.json 的 JSON 结构。
+**写技能前先读** [structure.md](references/structure.md)（布局 / frontmatter / 命名 / §5 运行时协议）；
+**校验报错查** [quality-gates.md](references/quality-gates.md)（每项错误的含义与修法）。
+
+写：[creating-skills.md](references/creating-skills.md)。测：[evaluating.md](references/evaluating.md)、
+[schemas.md](references/schemas.md)、[benchmark-schemas.md](references/benchmark-schemas.md)。
+改：[improving.md](references/improving.md)、[description-optimization.md](references/description-optimization.md)。
+宿主差异：[environments.md](references/environments.md)。
 
 > 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new
