@@ -196,6 +196,8 @@ TS 的「Extract to function」是 **command 型** code action（`_typescript.ap
 
 ⇒ 走仓内脚本（客户端用**微软官方** `vscode-jsonrpc`，不自造协议栈）：
 
+> ⚠️ **`vscode-jsonrpc` 是可选依赖**（`optionalDependencies`）—— 离线机器装不上它时，本仓其余能力照常可用，只有抽方法这条路缺席；脚本会直接给出替代路线（改名走 vsc-lsp-mcp 的 rename 三段式或 agent-lsp 的 `rename_symbol`；抽方法走 IDEA 的 `ide_refactor_extract_method`），退出码 3 ⇒ 不让一个新能力把离线用户的安装卡死。
+
 ```bash
 # 先看这个位置有哪些重构
 node skills/vscode-backend/scripts/lsp-refactor.mjs --file <绝对路径> --line 6 --col 3 --list
