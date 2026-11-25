@@ -70,16 +70,27 @@ function summarize(name) {
   return summary.length > 100 ? summary.slice(0, 100) + "…" : summary;
 }
 
-function copyDir(src, dest) {
+function copyDir(src, dest, prune) {
   fs.mkdirSync(dest, { recursive: true });
+  const srcNames = new Set();
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     if (SKIP_NAMES.has(entry.name)) continue;
     if (entry.isFile() && entry.name.endsWith(".pyc")) continue;
     if (entry.isFile() && SKIP_FILES.has(entry.name)) continue;
+    srcNames.add(entry.name);
     const from = path.join(src, entry.name);
     const to = path.join(dest, entry.name);
-    if (entry.isDirectory()) copyDir(from, to);
+    if (entry.isDirectory()) copyDir(from, to, prune);
     else if (entry.isFile()) fs.copyFileSync(from, to);
+  }
+  // 只增不减会让源里已删/改名的文件在目标机永久残留（--force 也清不掉），
+  // "装完 diff -r 应为空" 就永远不成立。prune 时删掉源里没有的条目，
+  // 但 config.json 这类机器本地状态必须保住。
+  if (!prune) return;
+  for (const entry of fs.readdirSync(dest, { withFileTypes: true })) {
+    if (SKIP_NAMES.has(entry.name) || SKIP_FILES.has(entry.name)) continue;
+    if (srcNames.has(entry.name)) continue;
+    fs.rmSync(path.join(dest, entry.name), { recursive: true, force: true });
   }
 }
 
@@ -155,7 +166,7 @@ function cmdInstall(opts) {
       failed = 1;
       continue;
     }
-    copyDir(path.join(SKILLS_DIR, name), dest);
+    copyDir(path.join(SKILLS_DIR, name), dest, opts.force);
     console.log("已安装 " + name + " → " + dest);
   }
 
