@@ -1,0 +1,33 @@
+{
+  "skill_name": "skill-creator-v2",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我写一个 skill，把会话里的踩坑固化成可校验的规则，SKILL.md 长了该拆到 references",
+      "expected_output": "触发 skill-creator-v2 而不是泛化的写作技能；按其六步流程先立边界再起骨架，校验步调用统一门禁脚本。模型层是否真触发需 claude CLI（由 scripts/run_eval.py 判，本仓默认不可用）—— 本条的机判只守住「description 里含本次触发关键词」这个回归护栏。",
+      "expectations": [
+        "skills/skill-creator-v2/SKILL.md 的 description 含触发关键词：skill、SKILL.md、references"
+      ],
+      "judge": "machine"
+    },
+    {
+      "id": 2,
+      "prompt": "用统一门禁判定 skills/human-docs 是否合规：name 与目录名是否一致、正文是否超过 skill_md 档位、末尾是否有反馈入口",
+      "expected_output": "validate_skill 对该技能报 0 条 error（正文按不含 frontmatter 计），且统一门禁报告的 passed 清单含 skills/human-docs。",
+      "expectations": [
+        "validate_skill.py 对 skills/human-docs 的 error 数为 0",
+        "harness-check.mjs 报告的 passed 清单含 skills/human-docs"
+      ],
+      "judge": "machine"
+    },
+    {
+      "id": 3,
+      "prompt": "扫描规则文件里的路径引用，检查指向不存在的文件能否被抓出来",
+      "expected_output": "死引用检查器报出「死引用 <文件>:<行>」；不得因为文字读得通就把不存在的路径判为通过。",
+      "expectations": [
+        "对含坏 markdown 链接的临时样例，死引用检查器输出含「死引用」与该文件:行"
+      ],
+      "judge": "machine"
+    }
+  ]
+}

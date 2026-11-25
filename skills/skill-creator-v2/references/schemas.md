@@ -33,6 +33,7 @@ Defines the evals for a skill. Located at `evals/evals.json` within the skill di
 - `evals[].expected_output`: Human-readable description of success
 - `evals[].files`: Optional list of input file paths (relative to skill root)
 - `evals[].expectations`: List of verifiable statements
+- `evals[].judge`: Who verifies it — `"machine"` (a script can decide it; run by `evals/run-evals.mjs`) or `"agent"` (needs a model; run by `scripts/run_eval.py`, which needs the `claude` CLI). Default `"machine"`.
 
 ---
 

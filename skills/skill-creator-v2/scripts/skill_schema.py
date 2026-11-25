@@ -15,14 +15,27 @@ script       scripts/ 下的可执行程序，固化确定性流程，避免每�
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 # --------------------------------------------------------------------------
-# 常量：skill 定义的固有 schema
+# 唯一标准来源：scripts/gates/standards.json
+# 其余脚本共用本文件的常量，因此读一次即可让所有调用者继承同一阈值。
 # --------------------------------------------------------------------------
+
+def load_harness_standards():
+    """读取仓级标准配置；缺文件时回退内置值，保证本模块可独立导入。"""
+    path = Path(__file__).resolve().parents[3] / "scripts" / "gates" / "standards.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+_STANDARDS = load_harness_standards()
+_COMPONENTS = _STANDARDS.get("components", {})
 
 FRONTMATTER_DELIM = "---"
 
@@ -32,15 +45,35 @@ ALLOWED_FRONTMATTER_KEYS = frozenset(
 )
 REQUIRED_FRONTMATTER_KEYS = ("name", "description")
 
-MAX_NAME_LEN = 64
-MAX_DESCRIPTION_LEN = 1024
+MAX_NAME_LEN = _STANDARDS.get("name", {}).get("max_chars", 64)
+MAX_DESCRIPTION_LEN = _STANDARDS.get("description", {}).get("max_chars", 1024)
 MAX_COMPATIBILITY_LEN = 500
 
-# 本仓约定：SKILL.md 正文行数上限（不含 frontmatter）
-DEFAULT_SKILL_MD_MAX_LINES = 150
+# 本仓约定：SKILL.md 正文行数上限（不含 frontmatter），来自唯一标准配置
+DEFAULT_SKILL_MD_MAX_LINES = _COMPONENTS.get("skill_md", {}).get("max_lines", 150)
+
+# skill_md 组件的口径开关（同一份标准里取值，改标准即改判定）
+SKILL_MD_COMPONENT = _COMPONENTS.get("skill_md", {})
+# 行数是否只算正文（true ⇒ 排除 frontmatter）
+COUNTS_BODY_ONLY = SKILL_MD_COMPONENT.get("counts_body_only", True)
+# 是否禁止文档里出现本机绝对路径（warn 级检查）
+FORBID_WINDOWS_PATHS = SKILL_MD_COMPONENT.get("forbid_windows_paths", True)
+# references/ 的最大层级（1 ⇒ references/ 下的文件不得再链 references/ 下的文件）
+MAX_REFERENCE_DEPTH = SKILL_MD_COMPONENT.get("max_reference_depth", 1)
+# 两项检查的等级由标准里的 enforcement 驱动（"warn" ⇒ 不拦工；"error" ⇒ 拦工）
+_ENFORCEMENT = SKILL_MD_COMPONENT.get("enforcement", {})
+
+
+def _enforcement_level(key: str, default: str = "warn") -> str:
+    """读标准里声明的等级；声明缺失时用默认（不猜）。"""
+    level = str(_ENFORCEMENT.get(key, default)).strip().lower()
+    return level if level in ("warn", "error") else default
 
 # references/ 下的单文件行数上限；超过应继续拆分
-MAX_REFERENCE_LINES = 300
+MAX_REFERENCE_LINES = _STANDARDS.get("references", {}).get("max_lines", 300)
+
+# description 偏短警告线
+DESCRIPTION_MIN_CHARS = _STANDARDS.get("description", {}).get("min_chars", 40)
 
 # references/ 下免于「必须被正文引用」检查的文件（索引与目录说明）
 EXEMPT_REFERENCE_NAMES = frozenset({"INDEX.md", "README.md"})
@@ -61,7 +94,14 @@ FENCED_BLOCK_RE = re.compile(
     r"^```([A-Za-z0-9_+-]*)[ \t]*$.*?^```[ \t]*$", re.MULTILINE | re.DOTALL
 )
 REFERENCE_LINK_RE = re.compile(r"references/([A-Za-z0-9_./-]+\.md)")
+# 引用**存在性**只认 markdown 链接：正文里的裸路径（代码块里的产出包结构、写作指引）
+# 不是链接，不该判成死引用；孤儿检测仍用上面的宽正则（提到即算被提到）。
+REFERENCE_MD_LINK_RE = re.compile(r"\]\(\s*references/([A-Za-z0-9_./-]+\.md)")
 SCRIPT_LINK_RE = re.compile(r"scripts/([A-Za-z0-9_./-]+\.(?:py|mjs))")
+
+# 本机绝对路径判定：复用 skills/idea-backend/scripts/check-experiment.js 的 LOCAL_PATH_RE 口径
+# （盘符形态 D:/... 与 URL 编码形态 d%3A/...；盘符字母前面不能是字母数字，否则 JSON 转义假阳性）。
+LOCAL_PATH_RE = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|[A-Za-z]%3[Aa][\\/])")
 
 # 正文里出现这类变量名说明技能需要密钥配置，应配套 .env.example（运行时协议 §5.2）
 ENV_HINT_RE = re.compile(r"\b[A-Z][A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)\b")
@@ -136,6 +176,30 @@ def parse_frontmatter(content: str) -> Tuple[Optional[Dict], str, Optional[str]]
         return None, body, "frontmatter YAML 解析失败：%s" % exc
 
 
+def _frontmatter_offset(content: str) -> Tuple[int, int]:
+    """返回 (正文起始行号（文件内 1 基）, frontmatter 占用行数)。
+
+    正文第 i 行（0 基）在文件里的行号 = 正文起始行号 + i。
+    """
+    match = FRONTMATTER_RE.match(content)
+    if not match:
+        return 1, 0
+    prefix = content[: match.end()]
+    consumed = prefix.count("\n") + (0 if prefix.endswith("\n") else 1)
+    return consumed + 1, consumed
+
+
+def _link_lines(
+    body_lines: List[str], body_start_line: int, pattern: "re.Pattern[str]"
+) -> Dict[str, int]:
+    """正文里各链接目标首次出现的文件行号（1 基）。"""
+    found: Dict[str, int] = {}
+    for idx, line in enumerate(body_lines):
+        for match in pattern.finditer(line):
+            found.setdefault(match.group(1), body_start_line + idx)
+    return found
+
+
 # --------------------------------------------------------------------------
 # 数据结构
 # --------------------------------------------------------------------------
@@ -146,9 +210,17 @@ class Issue:
     level: str  # "error" | "warn"
     code: str
     message: str
+    file: Optional[str] = None  # 相对 skill 目录的路径
+    line: Optional[int] = None  # 文件内 1 基行号；0 = 整文件级问题
 
-    def to_dict(self) -> Dict[str, str]:
-        return {"level": self.level, "code": self.code, "message": self.message}
+    def to_dict(self) -> Dict[str, object]:
+        return {
+            "level": self.level,
+            "code": self.code,
+            "message": self.message,
+            "file": self.file,
+            "line": self.line,
+        }
 
 
 @dataclass
@@ -176,6 +248,10 @@ class SkillInfo:
     sections: List[Section] = field(default_factory=list)
     referenced_references: Set[str] = field(default_factory=set)
     referenced_scripts: Set[str] = field(default_factory=set)
+    body_start_line: int = 1  # 正文起始行号（文件内 1 基）
+    frontmatter_line_count: int = 0  # frontmatter 占用行数（counts_body_only=False 时计入行数）
+    linked_references: Dict[str, int] = field(default_factory=dict)  # markdown 链接目标 → 文件行号
+    linked_scripts: Dict[str, int] = field(default_factory=dict)  # 同上（scripts/）
 
     # -- 便捷属性 ---------------------------------------------------------
     @property
@@ -190,7 +266,13 @@ class SkillInfo:
 
     @property
     def body_line_count(self) -> int:
-        return len(self.body_lines)
+        """计入行数的行数：口径由标准 components.skill_md.counts_body_only 决定。
+
+        true（默认）⇒ 只算正文（排除 frontmatter）；false ⇒ 整文件计数。
+        """
+        if COUNTS_BODY_ONLY:
+            return len(self.body_lines)
+        return len(self.body_lines) + self.frontmatter_line_count
 
     @property
     def references_dir(self) -> Path:
@@ -296,21 +378,38 @@ def load_skill(skill_dir: Path) -> SkillInfo:
 
     content = skill_md.read_text(encoding="utf-8")
     frontmatter, body, error = parse_frontmatter(content)
+    body_start_line, frontmatter_line_count = _frontmatter_offset(content)
 
     info = SkillInfo(
         path=skill_dir,
         frontmatter=frontmatter or {},
         body=body,
         body_lines=body.splitlines(),
+        body_start_line=body_start_line,
+        frontmatter_line_count=frontmatter_line_count,
     )
     if error:
-        info.issues.append(Issue("error", "frontmatter", error))
+        info.issues.append(Issue("error", "frontmatter", error, file="SKILL.md", line=0))
         return info
 
     info.sections = split_sections(info.body_lines)
     info.referenced_references = set(REFERENCE_LINK_RE.findall(info.body))
     info.referenced_scripts = set(SCRIPT_LINK_RE.findall(info.body))
+    info.linked_references = _link_lines(info.body_lines, body_start_line, REFERENCE_MD_LINK_RE)
+    info.linked_scripts = _link_lines(info.body_lines, body_start_line, SCRIPT_LINK_RE)
     return info
+
+
+def _reference_depth(rel: str) -> int:
+    """reference 文件的层级：references/x.md → 1，references/sub/x.md → 2。"""
+    return max(len(rel.split("/")) - 1, 0)
+
+
+def _markdown_files(info: SkillInfo) -> List[Tuple[str, Path]]:
+    """SKILL.md 与 references/ 下的 md 文件 [(相对 skill 目录的路径, 实体)]。"""
+    files = [(info.relative(info.path / "SKILL.md"), info.path / "SKILL.md")]
+    files.extend((info.relative(p), p) for p in info.reference_files())
+    return files
 
 
 def validate_skill(
@@ -325,8 +424,15 @@ def validate_skill(
     skill_dir = Path(skill_dir)
     info = load_skill(skill_dir)
 
-    def add(level: str, code: str, message: str) -> None:
-        info.issues.append(Issue(level, code, message))
+    def add(
+        level: str,
+        code: str,
+        message: str,
+        file: str = "SKILL.md",
+        line: int = 0,
+    ) -> None:
+        """记一条问题。file 相对 skill 目录；line 为文件内 1 基行号，0 = 整文件级。"""
+        info.issues.append(Issue(level, code, message, file=file, line=line))
 
     # ---- frontmatter 键 ------------------------------------------------
     if info.frontmatter:
@@ -371,7 +477,7 @@ def validate_skill(
             )
         if "<" in description or ">" in description:
             add("error", "description.brackets", "description 不能包含尖括号 < >")
-        if len(description) < 40:
+        if len(description) < DESCRIPTION_MIN_CHARS:
             add(
                 "warn",
                 "description.short",
@@ -388,13 +494,27 @@ def validate_skill(
         )
 
     # ---- 引用完整性 ----------------------------------------------------
-    for rel in sorted(info.referenced_references):
+    # 存在性只认 markdown 链接：正文里的裸路径不是链接，不判死引用。
+    # 报错指向 SKILL.md 里那行链接（缺失的文件本身不是「要打开的文件」）。
+    for rel, line in sorted(info.linked_references.items()):
         if not (skill_dir / "references" / rel).is_file():
-            add("error", "reference.missing", "SKILL.md 引用了不存在的 references/%s" % rel)
+            add(
+                "error",
+                "reference.missing",
+                "SKILL.md 引用了不存在的 references/%s" % rel,
+                file="SKILL.md",
+                line=line,
+            )
 
-    for rel in sorted(info.referenced_scripts):
+    for rel, line in sorted(info.linked_scripts.items()):
         if not (skill_dir / "scripts" / rel).is_file():
-            add("error", "script.missing", "SKILL.md 引用了不存在的 scripts/%s" % rel)
+            add(
+                "error",
+                "script.missing",
+                "SKILL.md 引用了不存在的 scripts/%s" % rel,
+                file="SKILL.md",
+                line=line,
+            )
 
     # ---- 孤儿文件 ------------------------------------------------------
     for path in info.reference_files():
@@ -403,13 +523,21 @@ def validate_skill(
             continue  # INDEX.md / README.md 是索引与说明，天然无需在正文点名
         ref_key = rel[len("references/"):] if rel.startswith("references/") else rel
         if ref_key not in info.referenced_references and path.name not in info.referenced_references:
-            add("warn", "reference.orphan", "%s 未被 SKILL.md 引用（孤立文档不会被读到）" % rel)
+            add(
+                "warn",
+                "reference.orphan",
+                "%s 未被 SKILL.md 引用（孤立文档不会被读到）" % rel,
+                file=rel,
+                line=0,
+            )
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > MAX_REFERENCE_LINES:
             add(
                 "warn",
                 "reference.length",
                 "%s 有 %d 行，超过 %d 行，应继续按主题拆分" % (rel, line_count, MAX_REFERENCE_LINES),
+                file=rel,
+                line=0,
             )
 
     for path in info.script_files():
@@ -425,7 +553,47 @@ def validate_skill(
             for r in info.referenced_scripts
         )
         if not matched:
-            add("warn", "script.orphan", "%s 未被 SKILL.md 引用（脚本不会被执行）" % rel)
+            add(
+                "warn",
+                "script.orphan",
+                "%s 未被 SKILL.md 引用（脚本不会被执行）" % rel,
+                file=rel,
+                line=0,
+            )
+
+    # ---- 本机绝对路径（warn） ------------------------------------------
+    # 口径复用 idea-backend 的 LOCAL_PATH_RE（不另造正则）；扫 SKILL.md 与 references/ 下的 md。
+    if FORBID_WINDOWS_PATHS:
+        for rel, path in _markdown_files(info):
+            for idx, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+                found = LOCAL_PATH_RE.search(line)
+                if found:
+                    add(
+                        _enforcement_level("forbid_windows_paths"),
+                        "path.windows",
+                        "%s 含本机绝对路径「%s」：文档里只写仓库相对路径" % (rel, found.group(0)),
+                        file=rel,
+                        line=idx,
+                    )
+
+    # ---- 引用层级（warn） ----------------------------------------------
+    # 口径：references/ 下的文件不得再用 markdown 链接链 references/ 下的文件
+    # （SKILL.md → references/x.md 是第 1 层合规；references/x.md → references/y.md 是第 2 层超限）。
+    for path in info.reference_files():
+        rel = info.relative(path)
+        if _reference_depth(rel) + 1 <= MAX_REFERENCE_DEPTH:
+            continue
+        for idx, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            found = REFERENCE_MD_LINK_RE.search(line)
+            if found:
+                add(
+                    _enforcement_level("max_reference_depth"),
+                    "reference.depth",
+                    "%s 用 markdown 链接链到 references/%s（超过 %d 层）"
+                    % (rel, found.group(1), MAX_REFERENCE_DEPTH),
+                    file=rel,
+                    line=idx,
+                )
 
     # ---- 代码外泄到正文 ------------------------------------------------
     blocks = find_code_blocks(info.body)

@@ -125,6 +125,7 @@ description: 创建、改造与评测 Agent Skill——生成技能骨架、把�
 ```bash
 # 仓库门禁：校验全部技能，并检查每个 SKILL.md 末尾的反馈入口
 python .agents/skills/skill-creator-v2/scripts/validate_skill.py --all --root .
+node .agents/skills/skill-creator-v2/evals/run-evals.mjs
 
 # 生成骨架（--runtime node|python|uv，默认 node）
 python .agents/skills/skill-creator-v2/scripts/scaffold_skill.py skills new-skill --description "一句话说明"
