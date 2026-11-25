@@ -27,6 +27,24 @@
 
 - **`~/.agents/skills/` 里的旧副本不会自动更新** —— 重装覆盖：`npx holy-agents-kits@latest install <skill> --force`。
 - **Windows 下 pre-commit 每次提交多花约 3 秒**（死引用检查器全量扫描 78 个文件）。
+## 0.9.1
+
+> **修一个会卡死离线用户的安装问题**:0.9.0 把 `vscode-jsonrpc` 写成了**硬依赖**
+> (`dependencies`) ⇒ **离线机器装这个技能会直接装不上**(npm 装依赖失败即整包安装失败)
+> ⇒ 一个新能力把老用户的安装卡死。0.9.1 改成**可选依赖**(`optionalDependencies`):
+> 装不上不阻断整包安装,其余能力照常可用。
+
+### 变更
+
+- **`vscode-jsonrpc` 改可选依赖** —— 抽方法脚本缺依赖时不再崩在 import 上,而是打印**替代路线**
+  并 **退出码 3**:改名走 vsc-lsp-mcp 的 rename 三段式 / agent-lsp 的 `rename_symbol`;
+  抽方法走 IDEA 的 `ide_refactor_extract_method`
+- `references/setup.md` §6.6 写明**技能目录里怎么装**这个可选依赖
+  (`npm i vscode-jsonrpc --prefix ~/.agents/skills/vscode-backend`,离线加 `--offline`)
+
+### 已知限制
+
+- 抽方法这条路需要 `vscode-jsonrpc`;**离线且没装它**时该能力缺席(其余能力不受影响)
 
 ## 0.9.0
 
@@ -37,7 +55,7 @@
 - **全项目问题清单（= Inspect Code 等价）** —— 复用现成的 **vsc-lsp-mcp**（VS Code 扩展 `CJL.lsp-mcp`，MIT）：`execute_lsp{operation:"workspace_diagnostics"}` 底层就是 `vscode.languages.getDiagnostics()` 的无参重载（**Problems 面板的数据源**）⇒ 实测对坏文件返 **7 条** error（source=Pylance），与同版本 pyright CLI 的 7 条一致。
 - **全局改名并落盘** —— 同一个扩展的 `prepare_rename` → `rename_preview` → `rename_apply`（VS Code 原生 rename provider，`applyEdit` + `save`）⇒ 实测改一个方法名 **4 个文件 / 8 处**全部落盘，`savedToDisk: true`。
 - **抽方法并落盘（TS/JS）** —— 仓内新脚本 `skills/vscode-backend/scripts/lsp-refactor.mjs`：TS 的「Extract to function」是 **command 型** code action（`_typescript.applyRefactoring`，不带 edit）⇒ 凡是「只收 edit 型动作」的 MCP（BifrostMCP / vsc-lsp-mcp / agent-lsp）都给不了它，只能直连；脚本用**微软官方 `vscode-jsonrpc`**（不自造协议栈）⇒ 实测一次返 **4 个** action，执行后**落盘成功**（语句抽成新函数、原处换成调用）。
-- **新增依赖**：`vscode-jsonrpc`（MIT、零依赖）—— 只给上面那个脚本用。
+- **新增可选依赖**：`vscode-jsonrpc`（MIT、零依赖）—— 只给上面那个脚本用。**是 `optionalDependencies` 不是 `dependencies`**：离线机器装不上它时本仓其余能力照常可用，只有抽方法这条路缺席（脚本退出码 3 并给出替代路线）⇒ 不让一个新能力把离线用户的安装卡死。
 
 ### 变更
 
