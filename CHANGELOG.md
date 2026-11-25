@@ -4,6 +4,26 @@
 
 > ⚠️ **口径**：0.8.0 是 npm 上的第一个带本文件的版本。**已装 0.7.0 的用户看不到本期之前的增量**（0.7.0 及更早没有本文件）—— 这里不假装有历史，往后每版往下追加。
 
+## 0.10.1
+
+> **这一版把 0.10.0 里那套「手写协议栈」门禁按官方依据收窄** —— 0.10.0 发的是**粗版指纹**（会误伤正常调用代码），本版修掉，并把「官方依据」与「本门禁只是粗筛」写进代码注释，别把自建粗筛说成官方门禁。
+
+### 变更
+
+- **门禁指纹收窄（`scripts/check-no-handrolled-protocol.mjs`）**
+  - ① 手工构造 JSON-RPC 报文：改成**同一行里既有 `jsonrpc` 又有 `method`/`id`** 才命中 ⇒ 只命中"手工构造请求"，不再误伤"用 SDK 但自己拼 payload"的正常代码；
+  - ② 补上 MCP 侧：MCP 的 stdio framing 官方定义是**换行分隔**、**没有 `Content-Length`**（规范 2025-06-18 transports）⇒ 只盯 `Content-Length` 会漏掉 MCP 的手写接线；
+  - ③ LSP 帧头仍抓 `"Content-Length: " + n` 这种引号里带冒号的写法，HTTP 的 `send_header("Content-Length", x)`（逗号）不误伤。
+- **补官方依据与官方验证路线（代码注释 + `vscode-backend/SKILL.md`）**
+  - MCP 官方："Build MCP servers and clients using our **official SDKs**"、架构文档 "MCP SDKs **abstract away many concerns**"、build-server 文档指出**手写接线只能服务老协议版本**（版本协商由 SDK 负责）⇒ 用 SDK 有官方依据，不只是风格问题；
+  - **行为层官方验证**：`npx @modelcontextprotocol/conformance client --scenario initialize`、`npx @modelcontextprotocol/inspector --cli <启动命令> --method tools/list`；
+  - 官方**没有**"检测手写协议栈"的 lint 规则（semgrep 全量 6308 条里 MCP 相关 168 条全是安全类）⇒ **本仓门禁只是文本粗筛**，协议合规以 conformance / Inspector 为准（这话写进代码注释）。
+- **`vscode-backend/SKILL.md` 增「怎么测 VS Code 侧能力」现成轮子对照表** —— MCP→Python MCP SDK / LSP→官方 `vscode-jsonrpc` / 引用改名→agent-lsp / 符号图→codegraph / lint→`ruff --output-format=json` / 重复→jscpd / 全项目清单→vsc-lsp-mcp 的 `workspace_diagnostics`；并写明一次性探针脚本放 `.tmp/` 或 Temp 且**任务结束前删掉**。
+
+### 已知限制
+
+- 本仓门禁是**文本粗筛**，不是协议合规判定；真正的合规验证走官方 conformance / Inspector。
+
 ## 0.10.0
 
 > **这一版做两件事**：① **全仓 harness 门禁闭环** —— `npm run check` 一条命令机械判定全仓 skill 与规则文件是否合规（issue 自带 文件:行）、提交前自动拦截不合规改动、判定标准只剩一份 `scripts/gates/standards.json`；② **新技能 `vibe-coding-standards` 首次入库**，同时把多个技能的内容修到过门禁。
