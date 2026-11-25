@@ -1,0 +1,5 @@
+# 手写协议栈白名单（每行：路径 + 理由）
+# 门禁：scripts/check-no-handrolled-protocol.mjs —— 新增手写协议栈会阻断提交；存量放这里并写明理由。
+
+# 存量：curl + 裸 JSON-RPC 的 MCP 客户端 —— 服务"插件专用 MCP 端点 + 用户机无 Python SDK"的场景，phase 01 已实测可用；迁到官方 Python MCP SDK 需用户机额外装 SDK ⇒ 暂列白名单，迁移另立项。
+skills/idea-backend/scripts/mcp-call.sh  # 存量：curl 版 MCP 客户端（插件端点、用户机无 Python SDK）；迁移官方 SDK 另立项

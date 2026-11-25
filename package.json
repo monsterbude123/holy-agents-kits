@@ -29,7 +29,7 @@
   "scripts": {
     "check": "python skills/skill-creator-v2/scripts/validate_skill.py --all --root .",
     "check:pack": "node -e \"const{execFileSync:E}=require('child_process');const A=['pack','--dry-run','--json'],O={encoding:'utf8',maxBuffer:67108864};const o=process.env.npm_execpath?E(process.execPath,[process.env.npm_execpath,...A],O):E('npm',A,{...O,shell:true});const f=JSON.parse(o)[0].files.map(x=>x.path);const J=['__pycache__','node_modules','.venv','.mypy_cache','.pytest_cache','.ruff_cache'];const b=f.filter(p=>{const s=p.split('/');return s.some(x=>J.includes(x))||p.includes('/fixtures/')&&/(\\.idea\\/|\\.codegraph\\/|\\.mcp\\.json$|bifrost\\.config\\.json$)/.test(p)||/(^|\\/)config\\.json$/.test(p)||/(^|\\/)\\.env$/.test(p)||/\\.(zip|tar|tgz)$/.test(p)});if(b.length){console.error('打包清单里有机器本地产物（不可重发！）：'+b.join(' | '));process.exit(1)}console.log('打包清单干净（'+f.length+' 个文件，无机器本地产物）')\"",
-    "test": "npm run check && node bin/cli.js list && node skills/vscode-backend/scripts/check-runtime-table.js && node skills/idea-backend/scripts/check-experiment.js && node scripts/check-selection-table.js && npm run check:pack",
+    "test": "npm run check && node bin/cli.js list && node skills/vscode-backend/scripts/check-runtime-table.js && node skills/idea-backend/scripts/check-experiment.js && node scripts/check-selection-table.js && node scripts/check-no-handrolled-protocol.mjs && npm run check:pack",
     "prepublishOnly": "npm run check && npm run check:pack"
   },
   "engines": {
