@@ -71,4 +71,23 @@ description: 把 VS Code 与语言服务器当 agent 的语义后端，两条腿
 - 表里的数字只覆盖**本机、本版本、TS**；别的语言/别的机器要重测。
 - 装扩展、装语言服务器都要用户点头 —— **未经授权不自行下载安装**。
 
+
+## 六、怎么测 VS Code 侧能力（**别手搓协议栈**）
+
+现成轮子按这张表选 —— **不要自己写 JSON-RPC / 帧头 / MCP 客户端**（抽象的"不要手搓轮子"会被绕过，
+所以仓级门禁 check-no-handrolled-protocol.mjs（仓根 scripts 目录）会把关：手写帧头或裸 JSON-RPC 报文会被拦）：
+
+| 要做的事 | 用现成的 |
+|---|---|
+| 调 MCP 通道（BifrostMCP :8008 / vsc-lsp-mcp :9527） | 官方 **Python MCP SDK**（`mcp.client.stdio` / `mcp.client.streamable_http`） |
+| 要 LSP 协议层（拿 refactor action / applyEdit） | 官方 **`vscode-jsonrpc`**（MIT、零依赖）—— 仓内 `scripts/lsp-refactor.mjs` 就是这么写的 |
+| 引用 / 定义 / 改名 / 影响面 | **agent-lsp** 的 MCP 工具（`find_references` / `rename_symbol` / `blast_radius`） |
+| 符号图 / 调用链 / 影响面 | **codegraph**（MCP + CLI） |
+| lint 清单（要机器消费） | `ruff check --output-format=json` |
+| 重复代码 | **jscpd**（npm, MIT） |
+| 全项目问题清单（= Inspect Code 等价） | vsc-lsp-mcp 的 `workspace_diagnostics`（= Problems 面板同源） |
+| 改名落盘（VS Code 原生 rename provider） | vsc-lsp-mcp 的 `prepare_rename` → `rename_preview` → `rename_apply` 三段式 |
+
+⇒ 一次性探针/分析脚本放 `<workspace>/.tmp/` 或系统 Temp，**任务结束前删掉**（不留堆积）。
+
 > 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new
