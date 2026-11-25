@@ -15,11 +15,24 @@
 //   node lsp-refactor.mjs --file <绝对路径> --line <1-based> --col <1-based> [--end-line N --end-col N] [--list|--apply "<动作标题>"]
 //   可选：--server "<可直接 spawn 的命令>"（默认 typescript-language-server）｜--project <工程根>（默认取文件所在工程）
 //
-// 退出码：0 成功；1 失败；2 参数错。
+// 退出码：0 成功；1 失败；2 参数错；3 缺可选依赖。
 import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve, sep, join } from 'node:path'
-import { createMessageConnection, StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc/node'
+
+// vscode-jsonrpc 是**可选依赖**（optionalDependencies）—— 离线机器装不上它时，
+// 本仓其余能力照常可用，抽方法这条路单独缺席 ⇒ 这里给替代路线而不是崩在 import 上。
+let jsonrpc
+try {
+  jsonrpc = await import('vscode-jsonrpc/node')
+} catch {
+  console.error('缺可选依赖 vscode-jsonrpc（微软官方，MIT，零依赖）—— 抽方法这条路要它。')
+  console.error('装它: npm i vscode-jsonrpc   （离线装不上的替代路线见 references/setup.md §6.6）')
+  console.error('  · 改名/影响面 → vsc-lsp-mcp 的 rename 三段式、agent-lsp 的 rename_symbol')
+  console.error('  · 抽方法     → IDEA 的 ide_refactor_extract_method（monster 分支插件）')
+  process.exit(3)
+}
+const { createMessageConnection, StreamMessageReader, StreamMessageWriter } = jsonrpc
 
 const argv = process.argv.slice(2)
 const arg = (name, dflt) => {
