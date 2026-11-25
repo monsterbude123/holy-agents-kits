@@ -4,6 +4,28 @@
 
 > ⚠️ **口径**：0.8.0 是 npm 上的第一个带本文件的版本。**已装 0.7.0 的用户看不到本期之前的增量**（0.7.0 及更早没有本文件）—— 这里不假装有历史，往后每版往下追加。
 
+## 0.10.3
+
+> **这一版给 `jenkins-cli` 补齐 5 个 P0 + 3 个 P1 缺口** —— 来源是 deploy-services 仓 `jenkins-ci` 技能移除前的逐节对比反馈，加上 2026-11-25 在内网 Jenkins 上真实跑通 GitLab→Jenkins→DooD 构建→部署全链路期间的 4 起可归因事故。全部内容有实战事故支撑，不补齐随 `jenkins-ci` 移除即彻底丢失。
+
+### 变更（P0，全部有真实事故支撑）
+
+- **REST 写操作 403 三坑写全（`references/troubleshooting.md` §4.1 + §1 症状行改指向）**——报错文案 `No valid crumb` 会把排查带偏到 crumb 上：① POST `/scriptText`、`/config.xml` 等写操作**即使带 cookie+crumb 头仍必须带 basic auth**（`-u user:pass`），缺一依旧 403；② crumb 从 `/crumbIssuer/api/xml` 原始 XML 用正则 `<crumb>([^<]+)</crumb>` 提取（Jenkins 默认安全策略禁用 xpath 的 `concat()`，照网上文档用 xpath 必失败）；③ PowerShell `Invoke-WebRequest` 内网 HTTP basic auth 必须加 `-AllowUnencryptedAuthentication`，crumb 与 session 复用同一个 `WebRequestSession`。
+- **Script Console 执行 shell 的唯一可靠模板（§4.2）**——`ProcessBuilder` + `redirectErrorStream(true)` + `waitFor()`；配套两条：`p.text + p.err.text` 在 `waitFor()` 后读流必抛 `Stream closed`；Groovy 双引号里的 `$` 必须转义或换单引号（否则被当 Groovy 插值，静默改写命令语义）。容器化 Jenkins 无 CLI/无 SSH 时这是唯一命令通道。
+- **「构建卡住但没报错」的判据与介入时机（§2）**——卡死与失败不同，没有报错就没有排障入口：① 每步骤记基线时长，轮询**远超基线必须主动介入，禁止盲等**；② 定位三板斧 `docker top` → `netstat/ss` 看对端 → 对端零进展 = 上游 registry/网络挂起，不是代码问题；③ 反证法：同代码上次构建正常 ⇒ 立即排除本次改动。
+- **触发构建的幂等纪律（§3）**——POST 返回空/异常 exit ≠ 未入队；触发后先查 `lastBuild/api/json` 的 `number` 是否已 +1 再决定重试。冗余构建会与卡死构建互相污染因果证据链。
+- **Deploy 段必须更新正式服务 + 部署后冒烟（`references/pipeline-authoring.md` §2）**——模板补 `curl -fsS --max-time 5` 冒烟示例与两条硬规则：目标必须是正式服务（只重建预览容器 = 构建 SUCCESS 用户看的还是旧版）；构建成功 ≠ 功能可用（dev-only 中间件没挂进生产，全绿但接口 404），冒烟失败让流水线失败。
+
+### 变更（P1）
+
+- **排障表补 2 行（`references/dood-and-gitlab.md` + §1）**：裸 `docker run` 调试报 sock `permission denied` → 补 `--group-add <gid>`；「新手入门引导页」行补备选方案「重打镜像让 InstallState 从根上跳过」。
+- **边界声明核实（P1-2 选项①）**：确认 `jenkins-controller` 技能已收录控制器部署包内容（`test-190/jenkins`、镜像构成、端口、`DOCKER_GID` 核对、时区挂载），边界声明保留不动。
+- **`SKILL.md` 增「0 快路径」表、「4 排障入口」表与「6 参考」精选外链**（Pipeline 语法/最佳实践、插件文档、DooD 权限社区帖、GitLab↔Jenkins 集成、实战 Jenkinsfile 合集）。
+
+### 已知限制
+
+- 实战案例里的内网地址已泛化（不落具体 IP）；`jenkins-controller` 的安装仍走仓库安装命令，老机器若只装了 `jenkins-cli`，控制器内容需补装该技能。
+
 ## 0.10.2
 
 > **这一版把 phase 05 的「全仓 harness 门禁闭环」并进来** —— 兄弟会话那轮的 6 个提交（统一 harness 门禁 + 共享标准配置 `scripts/gates/standards.json` + 逐路径回滚锚点 + 三个技能修合规 + 新技能 `vibe-coding-standards`）与 main 的 0.10.1（可选依赖修复 + 协议栈门禁按官方依据收窄）**合并成一次发布**。

@@ -48,6 +48,7 @@ pipeline {
         sh '''
           docker rm -f <app>-run 2>/dev/null || true
           docker run -d --name <app>-run --restart unless-stopped -p <host-port>:<app-port> <app>:latest
+          curl -fsS --max-time 5 http://localhost:<host-port>/ >/dev/null   // 冒烟：部署后打一次真实接口
         '''
       }
     }
@@ -66,6 +67,8 @@ pipeline {
 - `when { branch ... }` 仅 multibranch 任务生效；`beforeAgent true` 先判分支再占节点。
 - `post { cleanup { cleanWs() } }` 清工作区；失败产物放 `post { always }`，通知放 `success/failure`。
 - 标签推荐 `${GIT_COMMIT.take(8)}-${BUILD_NUMBER}`，别裸用 `latest`。
+- **Deploy 段的目标必须是正式服务**（不是只重建预览 / 旁路容器），否则构建 SUCCESS、用户访问的还是旧版本（实战事故）。
+- **部署后必须打一次真实接口冒烟——构建成功 ≠ 功能可用**（实战事故：dev-only 中间件没挂进生产，接口 404 但流水线全绿）。冒烟失败即让流水线失败，别把坏版本留在宿主上。
 
 ## 3 agent 类型
 
