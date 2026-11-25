@@ -66,15 +66,15 @@ T 取值范围: 0.0 起无理论上限。emotion_score≤1、hw≤1 时靠 accum
 ```
 MUST 采集:
   1. 当前发言的 emotion_score (§3 Step 1)
-  2. 同领域历史爆发次数(查 self-improving-agent .learnings/ERRORS.md 同 tag)
-  3. 同领域最近一次爆发距今的时间(查 self-improving-agent .learnings/LEARNINGS.md 时间戳)
+  2. 同领域历史爆发次数(查**项目内** .learnings/ERRORS.md 同 tag；没有就按 0 计，别去全局库找)
+  3. 同领域最近一次爆发距今的时间(查**项目内** .learnings/LEARNINGS.md 时间戳)
 
 SHOULD 采集:
   4. 同领域是否有规则冲突记录(查 rules + SKILL.md frontmatter 矛盾)
   5. agent 历史上在该领域的失败率(查 completion-report 历史)
 
 实现位置:
-  - 输入端:self-improving-agent .learnings/ERRORS.md 同 tag 计数
+  - 输入端:项目内 .learnings/ERRORS.md 同 tag 计数（范围同去重检查：只项目内，不碰全局库）
   - 中性化器:本协议 §3 Step 1 计算 base_intensity
   - 合并:§3 Step 5 标注 temperature + history_count + last_incident
 ```

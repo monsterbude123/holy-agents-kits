@@ -28,6 +28,8 @@ description: "从完整会话历史中蒸馏出可验证、可复用、非空泛
 **Step 2 生成主题指纹并扫已有技能**
 用一句话写清「这轮解决的核心问题 + 解法 + 关键词」，再去已有技能里找同义的。
 决策只有三个：**新建 / 合并进已有 / 跳过**。不扫就新建 = 制造同义技能。
+**扫描范围默认锁在项目内**（项目根的 `skills/`、`.agents/skills/`、`AGENTS.md`、项目 rules）；
+`~/.agents/skills/` 等全局库与其它项目**只有用户明确要求才看**，并要在产出里注明「已超出项目范围（用户要求）」。
 流程与相似度算法 → [skill-dedup.md](references/skill-dedup.md)；示例与清单 → [skill-dedup-examples.md](references/skill-dedup-examples.md)。
 
 **Step 3 提取模式**

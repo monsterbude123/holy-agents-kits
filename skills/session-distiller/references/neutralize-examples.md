@@ -260,7 +260,7 @@ assert "protocol_change_suggestion" in msg
 | 缺 stripped 字段 | 🟡 WARN | 补字段后重跑 |
 | 缺 temperature 字段(V2.2.1) | 🔴 BLOCK | 补温度计算后重跑 |
 | T ≥ 1 但缺 agent_self_check_required | 🔴 BLOCK | 补字段 + 触发自检 |
-| T ≥ 3 但缺 history_count | 🟠 WARN | 补字段(查 .learnings/) |
+| T ≥ 3 但缺 history_count | 🟠 WARN | 补字段(查项目内 .learnings/) |
 | T ≥ 6 但缺 protocol_change_suggestion | 🔴 BLOCK | 补建议 + 汇报用户 |
 | T 与推导值偏差 > 5% | 🟠 WARN | 复核 emotion_score / history_count |
 | attention_level 与 T 不一致 | 🟠 WARN | 调表或重算 T |

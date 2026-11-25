@@ -102,9 +102,9 @@
 蒸馏会话后,强制执行以下检查:
 
 ```
-[ ] Step 1 — 扫描已有技能
-    ├─ 扫描 .trae/skills/
-    ├─ 扫描 skill-markets/
+[ ] Step 1 — 扫描项目内已有技能（范围锁在项目根，别扫全局库）
+    ├─ 扫描 skills/ 与 .agents/skills/
+    ├─ 读项目 AGENTS.md 与 rules 目录
     └─ 提取每个技能的核心特征
 
 [ ] Step 2 — 计算相似度
