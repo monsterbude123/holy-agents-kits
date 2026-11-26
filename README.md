@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、VS Code / 语言服务器语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、VS Code / 语言服务器语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、巨石代码库消肿与安全拔除、会话蒸馏成技能包、Vibe Coding 组件规范、子域名发布、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -74,6 +74,22 @@ mindmap
       正文拆分 references
       规范校验
       触发率评测
+    codebase-slimming
+      全景摸底 五张账本
+      三权分立 定唯一靶心
+      剪断寄生 整包拔除
+      门禁棘轮 只紧不松
+    session-distiller
+      会话历史蒸馏技能包
+      错误路径诊断
+      反向提示词
+    vibe-coding-standards
+      组件体积红线
+      防上下文击穿
+    website-helper-skill
+      子域名发布 HTTPS
+      DNS Nginx SSL 一条命令
+      回滚上一版
 ```
 
 | Skill | 解决什么 | 你会怎么说 |
@@ -90,6 +106,10 @@ mindmap
 | `human-docs` | 文档按读者分离：给人看的表达层 + 给 agent 的记忆层 | 「写份给人看的文档」「这笔记下个上下文就忘了」 |
 | `knowledge-surface` | 把 Markdown 文档库变成一眼全图 + 披露式明细的可探索界面 | 「把这堆文档做成脑图」「给我个能钻进去的知识图谱」 |
 | `skill-creator-v2` | 开发、拆分、校验、评测 Skill 本身 | 「写一个 skill」「SKILL.md 太长」 |
+| `codebase-slimming` | 巨石代码库消肿与安全拔除：全景摸底五张账本 → 三权分立定靶心 → 剪断寄生 → 整包拔除 → 门禁棘轮，数万行真实净减 | 「代码库太臃肿」「老代码整包下线」「死代码排查」「代码分布摸底」 |
+| `session-distiller` | 从完整会话历史蒸馏可验证、可复用的技能包，附错误路径诊断与反向提示词 | 「把这次会话提炼成 skill」「蒸馏会话」「诊断 agent 反复道歉」 |
+| `vibe-coding-standards` | AGENTS.md / Rules / Skills / Subagents 的结构规范与体积红线、防上下文击穿策略 | 「写 AGENTS.md 怎么组织」「skill 最多多少行」「防上下文击穿」 |
+| `website-helper-skill` | 本地网页或已有后端发布到子域名（HTTPS 自动证书），DNS / Nginx / SSL 一条命令走完 | 「发布上线」「部署子域名」「更新网站」「回滚上一版」 |
 
 两个 Jenkins 技能互为边界：`jenkins-cli` 只管流水线，`jenkins-controller` 只管控制器本身，触发时不会互相抢。
 两个 new-api 技能同样分工：`fy-new-api-app-framework` 管「在 new-api 外面写应用」，`fy-newapi-cli` 管「运维已经在跑的 new-api」。
@@ -125,7 +145,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 **卸载**：删除 `~/.agents/skills/<skill-name>` 目录即可。安装器不会写注册表，不会留残留。
 
-## 十二个技能分别做什么
+## 十六个技能分别做什么
 
 ### analysis-codegraph —— 按符号查代码
 
@@ -225,6 +245,34 @@ npx holy-agents-kits install jenkins-cli --force
 
 **边界**：不生产业务技能的内容，只提供生产技能的方法。
 
+### codebase-slimming —— 巨石代码库消肿与安全拔除
+
+**可观察行为**：产出互斥四桶、src 分域排行、巨型模糊桶二阶下钻、跨域依赖矩阵、死代码可达闭包等五张全景账本；按三权分立锁定唯一拔除靶心；先在新端内建自包含组件剪断寄生引用，再对老地层整包物理拔除（UI + API 路由 + 专属测试），最后用增量门禁棘轮锁死，`git diff --stat` 数万行真实净减。
+
+**用法**：说「代码库太臃肿」「老代码整包下线」「死代码排查」「代码分布摸底」，agent 先出摸底账本，再走四步拔除闭环。
+
+**边界**：只管巨石治理主线（摸底 → 分立 → 拔除 → 棘轮），不做单模块小型重构与性能优化；语义判定（引用 / 诊断 / 影响面）委托 `vscode-backend`；提炼自单项目复盘，比例数字仅作量级先验。
+
+### session-distiller —— 会话蒸馏成技能包
+
+**可观察行为**：从完整会话历史中蒸馏出可验证、可复用、非空泛的技能包（SKILL.md + references + templates）；做去重检查、错误路径诊断（反复道歉 → 反向提示词）、输入端情绪中性化与温度值（保留严重程度信号）。
+
+**用法**：说「把这次会话提炼成 skill」「蒸馏会话」「诊断 agent 反复道歉」，agent 按会话历史产出技能包并过校验。
+
+### vibe-coding-standards —— Vibe Coding 组件编写规范
+
+**可观察行为**：给出 AGENTS.md、Rules、Skills、Subagents 的结构规范、体积上限（AGENTS.md 200 行 / Rule 120 行 / SKILL.md 150 行 / Subagent 200 行 / references 300 行）与防上下文击穿策略。
+
+**用法**：说「写 AGENTS.md」「写规则」「编写 skill」「写子代理」「防上下文击穿」。
+
+### website-helper-skill —— 子域名发布
+
+**可观察行为**：自带 publish CLI，把本地网页或已有后端发布到子域名（HTTPS 自动证书），DNS / Nginx / SSL 一条命令走完；也能给反代后端挂域名，支持更新与回滚上一版。
+
+**用法**：说「发布上线」「部署子域名」「更新网站」「回滚上一版」「续签证书」。
+
+**边界**：凭据只从仓库根 `.agents/.env` 读取，绝不回显。
+
 ## 仓库结构
 
 ```
@@ -241,7 +289,11 @@ holy-agents-kits/
 │   ├── rules-layer-governance/     SKILL.md + references/ + templates/
 │   ├── human-docs/                 SKILL.md + references/
 │   ├── knowledge-surface/          SKILL.md + references/ + scripts/ + assets/
-│   └── skill-creator-v2/           SKILL.md + references/ + scripts/ + assets/templates/
+│   ├── skill-creator-v2/           SKILL.md + references/ + scripts/ + assets/templates/
+│   ├── codebase-slimming/          SKILL.md + references/（含实证案例库）
+│   ├── session-distiller/          SKILL.md + references/ + scripts/ + templates/ + examples/
+│   ├── vibe-coding-standards/      SKILL.md + references/ + scripts/
+│   └── website-helper-skill/       SKILL.md + publish CLI + scripts/ + tests/ + references/
 ├── bin/cli.js                      安装器（零依赖）
 ├── FEEDBACK.md                     issue 上报入口与必填信息
 └── package.json
@@ -278,7 +330,8 @@ npx holy-agents-kits feedback
 - `git-selective-branch-sync` 针对同一仓库内的两个分支，跨仓库搬运不适用。
 - `vscode-backend` 需要本机装好 VS Code（BifrostMCP 扩展 + `CJL.lsp-mcp` 扩展）与语言服务器（agent-lsp + typescript-language-server + TypeScript 5.x）；窗口开着那条腿依赖 VS Code 窗口活着，窗口外那条腿不需要；机器事实写在技能内的 `config.json`（不入库、不分发），`.mcp.json` 由安装脚本生成。
 - `skill-creator-v2` 的触发率评测脚本依赖 `claude` CLI；本机没有时走人工跑用例的降级路径，技能里写明了。
-- `rules-layer-governance` 与 `human-docs` 是纯方法论技能，不需要外部服务、机器或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改。
+- `rules-layer-governance`、`human-docs`、`codebase-slimming`、`session-distiller` 与 `vibe-coding-standards` 是纯方法论技能，不需要外部服务、机器或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改；`codebase-slimming` 的语义判定委托 `vscode-backend` 技能。
+- `website-helper-skill` 需要一台可部署的服务器与可控 DNS 的域名（HTTPS 证书自动申请）；凭据只从仓库根 `.agents/.env` 读取，绝不回显。
 - `knowledge-surface` 的构建脚本零依赖，只需 Node ≥ 18；`--echarts` 指定本地 `echarts.min.js` 则产物离线自包含，不给则走 CDN（需联网打开）。
 - 本仓库只放技能与方法，不含业务代码、部署包和任何真实凭据。
 
