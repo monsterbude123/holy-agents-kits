@@ -23,10 +23,13 @@ import sys
 from pathlib import Path
 import paramiko
 
-# 自发现仓库根：本文件位于 <repo>/.agents/skills/website-helper-skill/scripts/ssh-exec.py
+# 自发现仓库根：兼容 <repo>/skills/<skill>/ 与 <repo>/.agents/skills/<skill>/ 两种布局，
+# 向上找第一个含 .agents/ 子目录的祖先目录（找不到再回退旧安装布局口径）
 _SCRIPT = Path(__file__).resolve()
-# parents: [0]=scripts [1]=website-helper-skill [2]=skills [3]=.agents [4]=repo 根
-_ROOT = _SCRIPT.parents[4]
+_ROOT = next(
+    (p for p in _SCRIPT.parents if (p / ".agents").is_dir()),
+    _SCRIPT.parents[4],
+)
 ENV_FILE = _ROOT / ".agents" / ".env"
 
 

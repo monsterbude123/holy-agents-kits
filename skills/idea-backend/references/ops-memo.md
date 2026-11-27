@@ -15,8 +15,8 @@ bash scripts/mcp-call.sh has index ide_inspect   # 0=有 1=没有 2=探不到 se
 | Server | 实测工具数 | 内容 |
 |---|---|---|
 | `idea-index`（上游 5.20.7） | **16** | `ide_find_class` / `ide_find_file` / `ide_find_definition` / `ide_find_references` / `ide_find_implementations` / `ide_find_super_methods` / `ide_call_hierarchy` / `ide_type_hierarchy` / `ide_search_text` / `ide_diagnostics` / `ide_index_status` / `ide_sync_files` / `ide_project_status` / `ide_refactor_rename` / `ide_refactor_safe_delete` / `ide_move_file` |
-| `idea-index`（monster 分支额外） | +3 | `ide_inspect` / `ide_refactor_extract_method` / `ide_create_from_template` |
-| `idea`（内置 2026.2.5） | **25** | 含 `search_symbol` / `analyze_calls` / `read_file` / `get_file_problems` / `lint_files` / `build_project` / `apply_patch` / `rename_refactoring` / `execute_terminal_command` / `get_run_configurations` / `execute_run_configuration` / `git_status` 等 |
+| `idea-index`（monster 分支额外） | +4 | `ide_inspect` / `ide_refactor_extract_method` / `ide_create_from_template` / `ide_run_control` |
+| `idea`（内置 2026.2.5） | **24**（2026-11-27 live） | 含 `search_symbol` / `analyze_calls` / `read_file` / `get_file_problems` / `lint_files` / `build_project` / `apply_patch` / `rename_refactoring` / `execute_terminal_command` / `get_run_configurations` / `execute_run_configuration` / `git_status` 等 |
 
 **怎么判自己装的是哪版**（`config.json` 的 `sideLoadDir` 只记路径，看不出版本）：
 
@@ -43,7 +43,7 @@ unzip -p "<sideLoadDir>/lib/jetbrains-index-mcp-plugin-<ver>.jar" META-INF/plugi
 | global 批处理项（unused declaration / DuplicateExpressions / SameParameterValue…） | ✅（XML 全量） | ❌ 拿不到（只有文件级） |
 | 编译错误 | ✅ | ✅（`includeBuildErrors:true`，取最近一次构建） |
 | 工具名列 | 检视工具名 | **severity**（`ERROR`/`WARNING`/`WEAK_WARNING`） |
-| TS/JS 文件 | ⚠️ 依赖插件的 TS 检视 | ❌ **实测恒 0 条**（连语法错误都不报，见 ts-web.md §1） |
+| TS/JS 文件 | ⚠️ 依赖插件的 TS 检视 | ❌ **实测恒 0 条**（连语法错误都不报，见 [langs/ts/runtime.md](langs/ts/runtime.md) 实测表） |
 
 ⇒ **降级路径是 Java/Kotlin 仓的止血方案**；TS 仓的检视权威源是 `tsc --noEmit` + `eslint`。
 

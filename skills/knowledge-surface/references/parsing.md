@@ -16,7 +16,7 @@
 
 ```json
 {
-  "title": "AI 全栈面试 · 25 天学习图谱",
+  "title": "示例语料 · 25 天学习图谱",
   "groups": [
     { "id": "gateway", "name": "AI 网关", "color": "#5b9dff", "match": "day-0[234]" },
     { "id": "method",  "name": "Agent 方法论", "color": "#3ecf8e", "match": "day-0[56]" }

@@ -239,7 +239,7 @@ echo "  curl -s -o /dev/null -w '%{http_code}\\n' $WEB_URL/api/json    # 期望 
 echo "  curl -s -o /dev/null -w '%{http_code}\\n' $WEB_URL/login       # 期望 200"
 echo "  docker exec $CONTAINER_NAME id jenkins                        # 期望 uid=110 gid=114"
 echo "  docker exec $CONTAINER_NAME node --version                    # 期望 v24.15.0"
-echo "  docker exec $CONTAINER_NAME sudo -n -l                        # 期望能看到 ai-short-studio 规则"
+echo "  docker exec $CONTAINER_NAME sudo -n -l                        # 期望能看到业务服务 sudoers 规则"
 
 if [ "$FAILED" -ne 0 ]; then
     echo "RESULT: FAILED"

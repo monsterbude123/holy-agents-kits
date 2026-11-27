@@ -5,7 +5,7 @@
 
 ## 被测对象
 
-- 路径：`D:/workspace/ai-collaborate/ai-short-studio-monster-2`
+- 路径：`D:/workspace/<project>`（内部 TS 项目，名略）
 - 形态：Next.js 15 + React 19 + pnpm 12 工作区（`pnpm-workspace.yaml` → `packages/*`）+
   Prisma + Vitest + Playwright
 - 规模：package.json 里 302 个 scripts（其中 48 个 `test:*`）、48 个 @types 包、

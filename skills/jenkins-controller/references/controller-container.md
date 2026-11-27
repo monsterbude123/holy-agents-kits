@@ -7,7 +7,7 @@ systemctl 管服务、`sudo -u www npm install/build`、往宿主目录写产物
 **四件事要同时打通**：宿主身份（uid/gid）、sudo 免密、宿主 systemd 可达、宿主工具链；
 外加**容器化后的安全收敛**（旧 home 常是无密码保护 + 允许匿名读）。
 
-本仓库的落地实例：`test-190/jenkins/`（包根即 compose 目录）。
+部署包不在仓库里；落地实例在服务器 `/opt/deploy-services/test-190/jenkins/`（包根即 compose 目录），仓内用 `resolve_pkg_dir()` 定位（见 `scripts/lib/pkg.sh`）。
 
 ---
 
@@ -40,11 +40,11 @@ RUN set -eux; \
 规则文件放 `/etc/sudoers.d/`，权限 `root:root 0440`，构建时用 `visudo -cf` 自检：
 
 ```
-# Jenkins 无密码管理 ai-short-studio 服务
+# Jenkins 无密码管理业务服务（示例：<business>）
 # 注意：Jenkins sh 块没 tty，要覆盖 use_pty default
 Defaults:jenkins !use_pty
-jenkins ALL=(ALL) NOPASSWD: /bin/systemctl restart ai-short-studio-prod.service
-jenkins ALL=(ALL) NOPASSWD: /bin/rm -rf /opt/ai-short-studio-prod/.next
+jenkins ALL=(ALL) NOPASSWD: /bin/systemctl restart <business>-prod.service
+jenkins ALL=(ALL) NOPASSWD: /bin/rm -rf /opt/<business>-prod/.next
 jenkins ALL=(www) NOPASSWD: /bin/npm
 jenkins ALL=(www) NOPASSWD: /bin/bash
 ```
@@ -55,7 +55,7 @@ jenkins ALL=(www) NOPASSWD: /bin/bash
 - `sudo -u www npm install` 这类要单独写 `(www)` 作用域的规则。
 - sudoers 里写 `/bin/npm` 可解析（Debian 的 `/bin` 是 `/usr/bin` 的软链），
   但目标脚本要有可执行位，否则报 permission denied。
-- ★**白名单是「命令 + 固定参数」的精确匹配**：写的是 `/bin/systemctl status ai-short-studio-prod.service`，
+- ★**白名单是「命令 + 固定参数」的精确匹配**：写的是 `/bin/systemctl status <business>-prod.service`，
   调用时多带一个 `--no-pager` 就**不再匹配**，sudo 会退回要密码（报 `sudo: a password is required`）。
   容器里驱动宿主服务要照抄白名单里的原始形式，别自作主张加参数。
 - **HOME 语义**（sudoers(5) 原文）：`always_set_home` = 任何调用形态都取**目标用户**家目录；
@@ -188,7 +188,7 @@ sed -i 's#@@JENKINS_PORT@@#28080#g' "$CONF"
 
 要点：
 
-- 直接写 `\1` + 数字会被 sed 当成多位反向引用（GNU sed 只认 `\1`~\`\9`），行为不可预期 → 必须占位符两步走。
+- 直接写 `\1` 紧跟数字（如 `\18080`）虽在 GNU sed 里合法（= `\1` + 字面 `8080`），但审读时极易误读 → 必须占位符两步走（反引用先落占位符，再用 sed 把占位符换成数字）。
 - 改之前备份 `.bak`；改完先 `nginx -t`，失败自动还原并退出；最后 reload。
 - ★reload 不能只信 `nginx -s reload`：宝塔的 pid 文件可能过期 →
   `kill(pid) failed (3: No such process)`，**配置根本没重载**。兜底做法是找真正的 master

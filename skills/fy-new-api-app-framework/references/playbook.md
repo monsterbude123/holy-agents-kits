@@ -112,7 +112,7 @@ my-app/
 
 - Server Components by default; `'use client'` only on the smallest interactive leaf.
 - Reuse an existing component before writing markup; compose DaisyUI (`btn`, `card`, `navbar`, `drawer`, `modal`, `table`, `tabs`, `alert`, `loading`, `skeleton`) and set the theme once with `data-theme` on `<html>`.
-- **Only valid DaisyUI 5 classes**: `input-bordered`, `textarea-bordered`, `select-bordered`, `card-compact`, `card-bordered`, `tabs-boxed`, the removed `join`/`join-item`, and the non-existent `chip-*` silently do nothing. Use `input` / `textarea` / `select` / `card-sm` / `card-border` / `tabs-box`/`tabs-border`, plain `flex gap-*` or `label.input` for grouped inputs, and `btn btn-xs` for filter chips. Run the acceptance commands in `references/standards/daisyui.md#8` before delivery.
+- **Only invalid DaisyUI 5 classes**: `input-bordered`, `textarea-bordered`, `select-bordered`, `card-compact`, `card-bordered`, `tabs-boxed`, the removed `btn-group`/`input-group`, and the non-existent `chip-*` silently do nothing. Use `input` / `textarea` / `select` / `card-sm` / `card-border` / `tabs-box`/`tabs-border`; for grouped controls use `join` + `join-item` (the official DaisyUI 5 replacement for `btn-group`/`input-group`, verified against daisyui.com upgrade docs), or `label.input` for an input with an icon, and `btn btn-xs` for filter chips. Run the acceptance commands in `references/standards/daisyui.md#8` before delivery.
 - **Compose, do not rebuild**: containers, inputs, alerts, and dialogs must be `card` + `card-body`, `input` / `textarea` / `select`, `alert`, and `dialog.modal` + `modal-box`; Tailwind utilities are for layout only.
 
 ## Step 7: Deploy with Vercel — environment variables

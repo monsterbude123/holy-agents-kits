@@ -10,7 +10,7 @@
 | `docker run -v` 是宿主路径 | daemon 在宿主侧，bind mount 指的是**宿主**路径；Jenkins workspace 在 named volume 里宿主并不存在 → 应用容器别 bind mount workspace，要挂载就用宿主真实路径 |
 | 构建上下文没问题 | `docker build` 上下文经 API 传输，workspace 在 volume 里也能 build |
 | 产物归属宿主 | 镜像 / 容器都出现在宿主 `docker images/ps`，pipeline 不清理就堆积；`post` 里 prune，临时容器 `docker rm -f` |
-| workspace 属主 | 容器内 uid 1000 创建的文件宿主上显示陌生 UID，属正常；卷权限错配用一次性容器 `chown -R 1000:1000` 修 |
+| workspace 属主 | 容器内 jenkins 用户（官方镜像 uid 1000）创建的文件宿主上显示陌生 UID，属正常；卷权限错配用一次性容器 `chown -R <uid>:<gid>` 修（本仓控制器为 110:114，见下行与 `jenkins-controller`） |
 | 容器内跑构建工具链 | Jenkins 容器没装 node/maven 等工具时，用 `docker run --rm --volumes-from jenkins-190 -w "$WORKSPACE/<sub>" <tool-image> ...`：构建容器复用 jenkins_home 卷，`$WORKSPACE` 路径两边一致，产物直接落 workspace |
 | 手工调试裸跑报 sock denied | compose 里配了 `group_add`，但**裸 `docker run` 调试时没带** → 补 `--group-add <gid>`（Docker Desktop 为 0，服务器为 .env 的 `DOCKER_GID`） |
 | 控制器 uid 与宿主不一致 | 基础镜像 jenkins=1000:1000，宿主 jenkins 常是 110:114（www 1000:1000）；要以宿主身份（`sudo -u www`）在宿主目录落文件，须在 Dockerfile 里改 uid/gid 并 chown 卷内数据，见 `jenkins-controller` 技能的 `references/controller-container.md` §1 |

@@ -15,7 +15,7 @@
 | 插件装不上 / 向导卡住 | Update Center 不可达（离线） | 预装进镜像或用内网插件镜像源 |
 | pipeline 卡死不结束 | 无 timeout / input 占节点 | 补 `options { timeout(...) }`，`input` 移出 steps |
 | 401 / 404 / 403（拉码 / webhook） | 见 `references/dood-and-gitlab.md` §2 | 对照处理 |
-| node 容器构建报 workspace 无权限 | 构建容器用户与 workspace 属主（uid 1000）不符 | 构建容器用 uid 1000 用户，或 `docker run --user 1000:1000` |
+| node 容器构建报 workspace 无权限 | 构建容器用户与 workspace 属主不符 | `docker run --user <uid>:<gid>` 对齐容器内 jenkins 用户（官方镜像默认 1000:1000；本仓控制器 110:114，见 `jenkins-controller`） |
 | 拉码 503 且带 `Proxy-Connection` 头 | 内网 ACL 不认容器 NAT 网段 | 走宿主 TCP 转发器；服务器内网直连无此问题 |
 | REST API 写操作 403（`No valid crumb`） | 只给 cookie+crumb，缺 basic auth；或 crumb 提取失败 | 见 §4 三坑：cookie jar + `Jenkins-Crumb` 头 **+ `-u user:pass`**，缺一不可 |
 | 登录后弹"新手入门"插件引导页 | InstallState 未标记完成 | Script Console：`Jenkins.get().setInstallState(InstallState.INITIAL_SETUP_COMPLETED)`；或重打镜像让 InstallState 从根上跳过 |

@@ -116,7 +116,7 @@ python <skill-dir>/scripts/parity_check.py --repo <repo> --target main --source 
   「回到 HEAD」的命令，若路径里有刚由合并脚本写入但尚未提交的内容，会一并冲掉。
   判据：执行任何覆盖式回滚前，先确认目标路径的改动是否已提交。
 - **不同步台账要在收尾时重新对账** —— 「用户说不迁的」是意图，
-  「实际没没迁的」是结果，两者是两个集合，收尾时逐条对账才算完成。
+  「实际未迁的」是结果，两者是两个集合，收尾时逐条对账才算完成。
 
 ## §3 核心循环
 
@@ -149,5 +149,6 @@ python <skill-dir>/scripts/parity_check.py --help   # 逐路径完整性核对�
   语义移植的标准做法、结构化文件怎么合、凭据怎么迁。**开始解冲突前读。**
 - `references/pitfalls.md` —— 实战踩坑集：每条是「现象 → 根因 → 判据 → 修法」。**动手前扫一遍，能省掉整轮返工。**
 - `references/verification.md` —— 五层验证清单与每层的判定标准。**声称「搬完了」之前读。**
+- `references/INDEX.md` —— 上面三份「何时读」的一句话索引（速查用）。
 
 > 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new

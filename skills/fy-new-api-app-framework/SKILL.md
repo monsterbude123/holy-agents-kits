@@ -58,7 +58,7 @@ Deliver an external App from zero to production in this order. Every step has a 
 
 ### fy-newapi-cli updates must sync the skills (mandatory)
 
-The `fy-newapi-cli` npm package bundles **both** this skill and `fy-newapi-cli` through `cmd/fy-newapi-cli/npm/scripts/prepare-skill.js`, whose `SKILLS` array is `['fy-newapi-cli', 'fy-new-api-app-framework']`. Every time a `fy-newapi-cli` command or its behavior changes, update both `SKILL.md` files in the same change; never ship a CLI carrying an older skill.
+The `fy-newapi-cli` npm package bundles **both** this skill and `fy-newapi-cli` through the upstream repo's `cmd/fy-newapi-cli/npm/scripts/prepare-skill.js`, whose `SKILLS` array is `['fy-newapi-cli', 'fy-new-api-app-framework']`. Every time a `fy-newapi-cli` command or its behavior changes, update both `SKILL.md` files in the same change; never ship a CLI carrying an older skill.
 
 ## Step 0: Environment Bootstrap
 
@@ -75,7 +75,7 @@ new-api is the OIDC identity provider; your app never stores new-api passwords. 
 - **Public or confidential, decide once**: a server that can keep a secret uses a confidential client (BFF, `client_secret` server-only); an SPA or mini-program uses a public client (`public_client = true`, no secret, PKCE mandatory). Never enable public mode for a server-side app.
 - Generate `state`, `nonce`, and the PKCE `code_verifier` on the server, keep them in HttpOnly / `Secure` / `SameSite=Lax` cookies, and validate `state` and the verifier on the callback.
 - Supabase direct mode: the provider identifier must be exactly `custom:newapi`; the gateway must already be publicly reachable over HTTPS with an issuer equal to its public base URL **before** the provider is created; the app's redirect URI is `https://<project>.supabase.co/auth/v1/callback`.
-- Supabase does not refresh a custom provider's token: refresh through `POST <gateway>/oauth/token` before the 1 hour expiry, store the rotated refresh token, sign out on `invalid_grant`, and revoke the refresh token on logout.
+- Supabase does not refresh a custom provider's token: refresh through `POST <gateway>/oauth/token` when less than 60 s remain of the 1 hour TTL (threshold per outfit-demo `gateway-session.ts`), store the rotated refresh token, sign out on `invalid_grant`, and revoke the refresh token on logout.
 
 ## Step 3: AI Relay Calls
 
@@ -108,7 +108,7 @@ Mandatory for any app that stores new-api users or business data in Supabase. Cl
 Conventions: `references/standards/nextjs.md`, `references/standards/daisyui.md`, `references/standards/ui-ux.md`, plus `references/vendor/`.
 
 - Server Components by default; `'use client'` only on the smallest interactive leaf. Never pass an access token, refresh token, `client_secret`, or service-role key into a Client Component.
-- **Compose, do not rebuild**: containers are `card` + `card-body`, inputs are `input` / `textarea` / `select`, dialogs are `dialog.modal` + `modal-box`; Tailwind utilities are for layout only. Invalid DaisyUI 5 classes (`input-bordered`, `card-compact`, `join`, `chip-*`, ...) silently do nothing — valid/invalid list in `references/playbook.md` § Step 6 and `references/standards/daisyui.md#8`.
+- **Compose, do not rebuild**: containers are `card` + `card-body`, inputs are `input` / `textarea` / `select`, dialogs are `dialog.modal` + `modal-box`; Tailwind utilities are for layout only. Invalid DaisyUI 5 classes (`input-bordered`, `card-compact`, `tabs-boxed`, `chip-*`, ...) silently do nothing; the removed `btn-group` / `input-group` map to the valid `join` / `join-item` — valid/invalid list in `references/playbook.md` § Step 6 and `references/standards/daisyui.md#8`.
 - **OAuth callback is server-side and single-use**: exchange the code in a Route Handler `GET` with exactly one `exchangeCodeForSession`. Never call it from a client effect — React 19 StrictMode runs it twice and Supabase returns `invalid flow state`.
 - Every data view needs loading, empty, and error states; destructive actions need confirmation; payment and logout show the resulting state.
 

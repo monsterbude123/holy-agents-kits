@@ -33,7 +33,7 @@ note() { echo "  $*"; }
 
 # --- code CLI 定位（不在 PATH 时给全路径提示）----------------------------------------
 CODE_CMD="code"
-command -v code >/dev/null 2>&1 || CODE_CMD="/c/Users/septe/AppData/Local/Programs/Microsoft VS Code/bin/code"
+command -v code >/dev/null 2>&1 || CODE_CMD="$(cygpath -u "${LOCALAPPDATA:-}" 2>/dev/null)/Programs/Microsoft VS Code/bin/code"
 [ -x "$CODE_CMD" ] || command -v code >/dev/null 2>&1 || fail "找不到 code CLI（装 VS Code 或把 bin 目录加进 PATH）"
 
 # --- 端口来源：工作区 bifrost.config.json → 缺省 8008 --------------------------------

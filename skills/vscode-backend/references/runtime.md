@@ -1,7 +1,7 @@
 # 能力面实测 —— 档位表与代价边界
 
 > **数从哪来**：现成工具实测，原始输出入库在 `references/measurements/typescript.json`（可逐格复核）；本表里每个数字都能在那儿对上。
-> **测床**：真实工程 `ai-short-studio-monster-2`（TS）；锚点 `apiFetch`（`src/lib/api-fetch.ts:78`）。
+> **测床**：真实工程（内部 TS 项目，名略）；锚点 `apiFetch`（`src/lib/api-fetch.ts:78`）。
 > **测的时候**：2026-11-22，VS Code 1.147.0 + BifrostMCP 0.0.14（窗口开着）+ agent-lsp 0.24.4。
 
 ## 档位表
@@ -27,7 +27,7 @@
 | L4@vsc-lsp-mcp | execute_lsp(workspace_diagnostics) | python | 7 | 25.2 | 16.5 | 工作区级问题清单（= Problems 面板同源）：坏文件返 **7 条** error（source=Pylance，与 pyright CLI 同数）⇒ **Inspect Code 的清单这一档在 VS Code 侧可达**（⚠️ 只含 VS Code 已分析过的文件） |
 | L5-rename@vsc-lsp-mcp | execute_lsp(prepare_rename/rename_preview/rename_apply) | typescript | 8 | 46 | 37.3 | 全局改名（VS Code 原生 rename provider）：改一个方法名 ⇒ 预览 **4 个文件 / 8 处编辑**，apply 返回 savedToDisk: true，磁盘 4 个文件全改写 |
 | L5-extract@lsp-refactor | textDocument/codeAction(kind=refactor) + _typescript.applyRefactoring | typescript | 4 | 3790.2 | 1290.2 | 抽方法（command 型重构，**必须直连**）：一次返 **4 个** action，选「Extract to function in module scope」执行后**落盘成功**（语句抽成新函数、原处换成调用） |
-| L5@bifrost-mcp | get_rename_locations | typescript | — | — | — | 无此能力 —— 实现层：实测 get_rename_locations 报 Unexpected type，扩展 0.0.14 |
+| L5@bifrost-mcp | get_rename_locations | typescript | — | — | — | 实现层：无此能力（0.0.14 实测 get_rename_locations 报 Unexpected type；phase 03 复测一次可用但随会话波动——用前先 dry-run 自检，不稳就换腿②/⑤，见 setup.md） |
 | L0@agent-lsp | （未测） | typescript | — | — | — | 未测：这条腿本轮只测了引用/诊断/影响面三档，文件级与文本级没测 |
 | L2-def@agent-lsp | （未测） | typescript | — | — | — | 未测：同上（agent-lsp 的定义检索工具本轮没单独跑） |
 | L0@codegraph | （未测） | 多语言 | — | — | — | 未测：codegraph 已装（本机 1.7.0），本轮没测它的档位 |
@@ -44,7 +44,7 @@
 | 项 | 结论（实测） |
 |---|---|
 | **两条腿的分工** | **BifrostMCP**：要 **VS Code 窗口开着**（服务跑在扩展宿主里，窗口一关端口就没了），能力到 L2（定义/引用/工作区符号）+ L0/L1，**L3 诊断与 L5 改名在 0.0.14 是坏的**；**agent-lsp**：**窗口关着也能跑**，能力到 L2/L5（引用/影响面）；**L3 诊断在 TS 腿实测恒返 0 条（静默失效 ✓）⇒ 诊断这条路 VS Code 侧本轮没有腿 ✓**（**更正**：这只对 **TS 腿**成立 ✓ —— 2026-11-23 复测：Python 腿直连 pyright 的 `textDocument/diagnostic` 返 7 条、与 CLI 同数 ✓）；**抽方法 VS Code 侧有**（TS：直连 typescript-language-server 的 codeAction kind=refactor 实测 4 个 action ✓ —— 缺的是腿的封装、不是能力 ✓） |
-| **agent-lsp 的启动参数坑** | server spec 必须带 `,--stdio`（`agent-lsp typescript:typescript-language-server,--stdio`）：少了它 broker 拉起的 server 启动即退出、broker 自杀，报 `daemon: broker did not start within 45s`；**这不是 Windows 缺陷**（daemon 在本机 Windows 上跨会话存活正常，uptime 20 分钟+）。失败现场在 `~/.cache/agent-lsp/spawn-logs/<语言>.log` |
+| **agent-lsp 的启动参数坑** | server spec 必须带 `,--stdio`（`agent-lsp typescript:typescript-language-server,--stdio`）：少了它 broker 拉起的 server 启动即退出、broker 自杀，报 `daemon: broker did not start within 30s`（默认 30s，`AGENT_LSP_BROKER_TIMEOUT_MS` 可覆盖；runtime 旧稿曾记 45s，为实测当时已调高后的值）；**这不是 Windows 缺陷**（daemon 在本机 Windows 上跨会话存活正常，uptime 20 分钟+）。失败现场在 `~/.cache/agent-lsp/spawn-logs/<语言>.log` |
 | **`doctor` 报 ok 不等于 daemon 链路可用** | doctor 走**直连**路径且 autodetect 自带 `--stdio` ⇒ 测不出上面那个坑（本轮踩过） |
 | **诊断的成本** | agent-lsp 的 `get_diagnostics` 单文件 **25s**（daemon 已 ready 状态）—— 大仓里按文件逐个问诊断会很贵 |
 | **影响面的成本** | agent-lsp 的 `blast_radius` **18.9s**（446 符号 / 445 条边）；BifrostMCP 侧**没有**等价工具（L5 不可用） |
@@ -109,7 +109,7 @@
 > **这张表的读法**：每行给「推荐（主 / 备）· 依据（数字或可逐字核对的事实 + 出处指针）· 证据等级 · 代价与前提 · 何时别选它」。
 > **证据等级**四档：`实测`（本 phase 的同题对照实验）· `结构事实`（协议层 / edition 门禁事实，出处可逐字核对）· `既有实测`（phase 01/02 的实测）· `未测`（写明为什么没测、需要什么才能测）。
 > **口径提醒**：各后端的「引用」口径不同 —— IDEA = 真代码引用 · agent-lsp / pyright = 引用位置 · BifrostMCP = 扩展侧 provider · codegraph = 受影响符号（含 import 边与成员）⇒ **数字不可直接相减**。
-> **同源副本**：本节在两个技能里各存一份（技能 idea-backend 的 references/capability-matrix.md 与技能 vscode-backend 的 references/runtime.md），**逐字相同**；仓内门禁 `scripts/check-selection-table.js` 逐格对账（两份 JSON 块 · 行数 · 每个数字的出处指针 · 禁词）。
+> **同源副本**：本节在两个技能里各存一份（技能 idea-backend 的 references/capability-matrix.md 与技能 vscode-backend 的 references/runtime.md），**逐字相同**；仓内门禁 `scripts/check-selection-table.js`（在 kit 仓根 scripts/，不随技能分发）逐格对账（两份 JSON 块 · 行数 · 每个数字的出处指针 · 禁词）。
 
 | 任务类型 × 语言 | 推荐后端（主 / 备） | 依据（数字或可逐字核对的事实 + 出处） | 证据等级 | 代价与前提 | 何时别选它 |
 |---|---|---|---|---|---|

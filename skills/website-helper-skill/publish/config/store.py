@@ -17,9 +17,13 @@ _ENV_FILE_OVERRIDE = os.environ.get("PUBLISH_ENV_FILE")
 if _ENV_FILE_OVERRIDE:
     ENV_FILE = Path(_ENV_FILE_OVERRIDE)
 else:
-    # 本文件位于 <repo>/.agents/skills/website-helper-skill/publish/config/store.py
-    _SKILL_ROOT = Path(__file__).resolve().parents[2]  # .../skills/website-helper-skill/
-    _PROJECT_ROOT = _SKILL_ROOT.parents[2]             # .../.agents/ 再上一级 = 仓库根
+    # 兼容两种布局：<repo>/skills/<skill>/（源码 checkout）与 <repo>/.agents/skills/<skill>/（安装）。
+    # 向上找第一个含 .agents/ 子目录的祖先目录 = 项目根（凭据红线：只读项目根 .agents/.env）。
+    _SKILL_ROOT = Path(__file__).resolve().parents[2]  # .../website-helper-skill/
+    _PROJECT_ROOT = next(
+        (p for p in (_SKILL_ROOT, *_SKILL_ROOT.parents) if (p / ".agents").is_dir()),
+        _SKILL_ROOT.parents[2],  # 兜底：旧安装布局口径
+    )
     ENV_FILE = _PROJECT_ROOT / ".agents" / ".env"
 
 
