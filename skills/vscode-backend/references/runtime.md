@@ -44,7 +44,7 @@
 | 项 | 结论（实测） |
 |---|---|
 | **两条腿的分工** | **BifrostMCP**：要 **VS Code 窗口开着**（服务跑在扩展宿主里，窗口一关端口就没了），能力到 L2（定义/引用/工作区符号）+ L0/L1，**L3 诊断与 L5 改名在 0.0.14 是坏的**；**agent-lsp**：**窗口关着也能跑**，能力到 L2/L5（引用/影响面）；**L3 诊断在 TS 腿实测恒返 0 条（静默失效 ✓）⇒ 诊断这条路 VS Code 侧本轮没有腿 ✓**（**更正**：这只对 **TS 腿**成立 ✓ —— 2026-11-23 复测：Python 腿直连 pyright 的 `textDocument/diagnostic` 返 7 条、与 CLI 同数 ✓）；**抽方法 VS Code 侧有**（TS：直连 typescript-language-server 的 codeAction kind=refactor 实测 4 个 action ✓ —— 缺的是腿的封装、不是能力 ✓） |
-| **agent-lsp 的启动参数坑** | server spec 必须带 `,--stdio`（`agent-lsp typescript:typescript-language-server,--stdio`）：少了它 broker 拉起的 server 启动即退出、broker 自杀，报 `daemon: broker did not start within 30s`（默认 30s，`AGENT_LSP_BROKER_TIMEOUT_MS` 可覆盖；runtime 旧稿曾记 45s，为实测当时已调高后的值）；**这不是 Windows 缺陷**（daemon 在本机 Windows 上跨会话存活正常，uptime 20 分钟+）。失败现场在 `~/.cache/agent-lsp/spawn-logs/<语言>.log` |
+| **agent-lsp 的启动参数坑** | server spec 必须带 `,--stdio`（`agent-lsp typescript:typescript-language-server,--stdio`）：少了它 broker 拉起的 server 启动即退出、broker 自杀，报 `daemon: broker did not start within 30s`（默认 30s，`AGENT_LSP_BROKER_TIMEOUT_MS` 可覆盖；旧稿曾录 45s，与默认口径不一致，以 setup.md 的默认值说明为准）；**这不是 Windows 缺陷**（daemon 在本机 Windows 上跨会话存活正常，uptime 20 分钟+）。失败现场在 `~/.cache/agent-lsp/spawn-logs/<语言>.log` |
 | **`doctor` 报 ok 不等于 daemon 链路可用** | doctor 走**直连**路径且 autodetect 自带 `--stdio` ⇒ 测不出上面那个坑（本轮踩过） |
 | **诊断的成本** | agent-lsp 的 `get_diagnostics` 单文件 **25s**（daemon 已 ready 状态）—— 大仓里按文件逐个问诊断会很贵 |
 | **影响面的成本** | agent-lsp 的 `blast_radius` **18.9s**（446 符号 / 445 条边）；BifrostMCP 侧**没有**等价工具（L5 不可用） |

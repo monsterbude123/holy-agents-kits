@@ -21,7 +21,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - 状态 → `badge badge-*`；表格 → `table table-zebra`；弹窗 → `<dialog class="modal">` + `modal-box`；加载 → `loading loading-spinner`
 - 禁止使用 DaisyUI 5 中已不存在的类，写了不会报错但完全没有样式：
   - 修饰类：`input-bordered`、`textarea-bordered`、`select-bordered`、`card-compact`、`card-bordered`、`alert-sm`（alert 没有尺寸修饰符，改成 `text-sm`）
-  - 整个组件：`join` / `join-item`（5.x 已移除，改用 `flex gap-*` 或 `label.input` 包裹图标+输入框）、`tabs-boxed`（改用 `tabs-box` 或 `tabs-border`）、`form-control` / `label-text`（改用 `fieldset` + `fieldset-legend`）
+  - 整个组件：`btn-group` / `input-group`（5.x 已移除，官方替代是 `join` / `join-item`；图标+输入框也可用 `label.input` 包裹）、`tabs-boxed`（改用 `tabs-box` 或 `tabs-border`）、`form-control` / `label-text`（改用 `fieldset` + `fieldset-legend`）
   - 从未存在：`chip` / `chip-primary` / `chip-outline`（筛选标签用 `btn btn-xs` 或 `badge`）
 - 语义色只用 `base-100/200/300`、`base-content`、`primary`、`success`、`warning`、`error`（含 `-content` 与 `/10` 透明度变体）。禁止 `bg-gray-*`、`text-gray-*`、`bg-blue-*` 等原始调色板，禁止 `#hex` / `rgb()`。
 - 背景必须搭配对应前景：`bg-primary` 配 `text-primary-content`；弱化文本用 `text-base-content/70`。
