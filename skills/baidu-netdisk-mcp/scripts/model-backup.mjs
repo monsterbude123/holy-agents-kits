@@ -365,7 +365,8 @@ try {
   process.stdout.write(JSON.stringify({ ok: true, command: cmd, data }) + '\n');
   process.exit(0);
 } catch (e) {
-  if (out.length && !asJson) process.stderr.write(out.join('\n') + '\n');
+  // 非 asJson 时 say() 已实时写过，别重放（否则每行两遍）；asJson 时 say 不写 stderr，这里补上。
+  if (out.length && asJson) process.stderr.write(out.join('\n') + '\n');
   process.stdout.write(JSON.stringify({ ok: false, error: e.message }) + '\n');
   process.exit(1);
 }

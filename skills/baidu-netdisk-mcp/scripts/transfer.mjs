@@ -400,7 +400,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.stdout.write(JSON.stringify({ ok: true, command: cmd, data }) + '\n');
     process.exit(0);
   } catch (e) {
-    if (out.length) process.stderr.write(out.join('\n') + '\n');
+    // say() 已经实时写过了，这里不要再重放 out —— 否则每行日志都会出现两遍。
     process.stdout.write(JSON.stringify({ ok: false, error: e.message, detail: e.detail || null }) + '\n');
     process.exit(1);
   }
