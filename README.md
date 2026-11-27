@@ -98,6 +98,8 @@ mindmap
     baidu-netdisk-mcp
       网盘本地盘点库
       目录体积 dirsize
+      原生分片传输
+      进度 续传 sha256
       重复隔离与分类重排
       反例驱动的避坑
 ```
@@ -121,7 +123,7 @@ mindmap
 | `session-distiller` | 从完整会话历史蒸馏可验证、可复用的技能包，附错误路径诊断与反向提示词 | 「把这次会话提炼成 skill」「蒸馏会话」「诊断 agent 反复道歉」 |
 | `vibe-coding-standards` | AGENTS.md / Rules / Skills / Subagents 的结构规范与体积红线、防上下文击穿策略 | 「写 AGENTS.md 怎么组织」「skill 最多多少行」「防上下文击穿」 |
 | `website-helper-skill` | 本地网页或已有后端发布到子域名（HTTPS 自动证书），DNS / Nginx / SSL 一条命令走完 | 「发布上线」「部署子域名」「更新网站」「回滚上一版」 |
-| `baidu-netdisk-mcp` | 盘点并整理百度网盘：目录树灌进本地 SQLite 后做体量汇总、md5 重复检测、路径深度检查，再执行隔离/重排/索引 | 「网盘很乱」「网盘占了多少」「找重复文件」「整理网盘」「腾空间」 |
+| `baidu-netdisk-mcp` | 盘点并整理百度网盘：目录树灌进本地 SQLite 后做体量汇总、md5 重复检测、路径深度检查，再执行隔离/重排/索引；传输走百度原生分片协议（进度/速度/断点续传/sha256 校验） | 「网盘很乱」「网盘占了多少」「找重复文件」「整理网盘」「腾空间」「上传看不到进度」「大文件传到一半断了」 |
 
 两个 Jenkins 技能互为边界：`jenkins-cli` 只管流水线，`jenkins-controller` 只管控制器本身，触发时不会互相抢。
 两个 new-api 技能同样分工：`fy-new-api-app-framework` 管「在 new-api 外面写应用」，`fy-newapi-cli` 管「运维已经在跑的 new-api」。
@@ -284,8 +286,14 @@ npx holy-agents-kits install jenkins-cli --force
 全部是服务端 move，可逆。
 
 - **目录体积用网盘自己的 `dirsize` 接口**，不要自己枚举文件累加 —— 深层树上枚举会少算一半
-- **反例清单**带路：分页每页 10 条、`make_dir` 默认重命名、`file_move` 的 async 语义等 12 个已踩过的坑
-- 盘点器（`scripts/baidu-netdisk-db.mjs`）+ 移动器（`scripts/baidu-netdisk-move.mjs`）零依赖
+- **传输走百度原生分片协议**（precreate → 分片 → 建档），不是黑盒 CLI：
+  每片一个进度刻度、实时速度与 ETA、**服务端驱动的断点续传**（它告诉你还缺哪几片）、
+  sha256 端到端校验；同一远端路径并发上传有锁保护
+- **哈希分两级**：片级用标准 md5（对齐百度 `block_list` 协议），文件级用 sha256 记我们自己的账；
+  网盘返回的 md5 是**闭源变种**（≠ 标准 md5），只当身份标识、不参与本地校验
+- **反例清单**带路：分页每页 10 条、`make_dir` 默认重命名、`file_move` 的 async 语义等 27 个已踩过的坑
+- 盘点器（`scripts/baidu-netdisk-db.mjs`）+ 移动器（`scripts/baidu-netdisk-move.mjs`）+
+  传输层（`scripts/transfer.mjs`）零依赖
 
 ### website-helper-skill —— 子域名发布
 
@@ -325,7 +333,7 @@ holy-agents-kits/
 │   ├── session-distiller/          SKILL.md + references/ + scripts/ + templates/ + examples/
 │   ├── vibe-coding-standards/      SKILL.md + references/ + scripts/
 │   ├── website-helper-skill/       SKILL.md + publish CLI + scripts/ + tests/ + references/
-│   └── baidu-netdisk-mcp/          SKILL.md + references/ + scripts/（网盘点库 + 移动器）
+│   └── baidu-netdisk-mcp/          SKILL.md + references/ + scripts/（网盘点库 + 移动器 + 传输层）
 ├── bin/cli.js                      安装器（零依赖）
 ├── FEEDBACK.md                     issue 上报入口与必填信息
 └── package.json
