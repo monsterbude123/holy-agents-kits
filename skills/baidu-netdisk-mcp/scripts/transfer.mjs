@@ -15,7 +15,7 @@
 // I/O：stdout 单行 JSON 信封；进度与日志走 stderr；成功退出 0、失败 1。
 
 import { createHash, randomBytes } from 'node:crypto';
-import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync, appendFileSync, openSync, readSync, closeSync, unlinkSync } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync, appendFileSync, openSync, readSync, writeSync, closeSync, unlinkSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -100,13 +100,42 @@ export function writeState(p, obj) {
 }
 
 // ---- 读文件的一段（按字节偏移） ----
-function readSlice(file, offset, length) {
+export function readSlice(file, offset, length) {
   const buf = Buffer.alloc(length);
   const fd = openSync(file, 'r');
   try {
     const n = readSync(fd, buf, 0, length, offset);
     return buf.subarray(0, n);
   } finally { closeSync(fd); }
+}
+
+// ---- 并发锁（同一个远端路径只能有一个传输进程在跑） ----
+// 为什么需要：状态文件按 remote 命名，两个进程同时传同一个路径会互相覆盖
+// 状态（一个把另一个的 done 列表冲掉），续传就乱了。
+// 用 O_EXCL 原子建锁；进程被杀留下的僵尸锁，按 pid 存活与否回收。
+function processAlive(pid) {
+  try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
+}
+export function acquireLock(lockPath) {
+  for (;;) {
+    try {
+      const fd = openSync(lockPath, 'wx');   // 排他创建，已存在就抛 EEXIST
+      try { writeSync(fd, JSON.stringify({ pid: process.pid, at: Date.now() })); } finally { closeSync(fd); }
+      return;
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      let stale = true;
+      try {
+        const info = JSON.parse(readFileSync(lockPath, 'utf8'));
+        if (processAlive(info.pid)) stale = false;   // 持有者还活着 → 不抢
+      } catch { /* 锁文件坏了 → 当僵尸锁回收 */ }
+      if (stale) { try { unlinkSync(lockPath); } catch {} continue; }
+      throw new Error(`另一个传输进程正在处理同一个远端路径（锁文件：${lockPath}）。等它结束再跑。`);
+    }
+  }
+}
+export function releaseLock(lockPath) {
+  try { unlinkSync(lockPath); } catch {}
 }
 
 // ---- 重试（百度偶发瞬时故障，errno 31024 "app id is empty" 就是其中一种） ----
@@ -132,14 +161,17 @@ async function cmdUpload() {
   if (!existsSync(file)) throw new Error(`本地文件不存在：${file}`);
   const remote = opt.remote;
   if (!remote) throw new Error('需要 --remote=/apps/bdpan/<路径>');
-  if (!remote.startsWith('/apps/bdpan/')) {
-    throw new Error(`远端路径必须以 /apps/bdpan/ 开头（这是本账号的应用数据区）：${remote}`);
+  if (!remote.startsWith('/') || remote.includes('..')) {
+    throw new Error(`远端路径必须是网盘绝对路径（以 / 开头、不含 ..）：${remote}`);
   }
+  // 注：bdpan CLI 只能操作 /apps/bdpan/，但**原生协议不受这个限制**（实测 /99_索引/ 也能建档）。
+  // 想仍然只在应用数据区里传，就显式给 --remote=/apps/bdpan/... 。
 
   const token = resolveToken();
   const sliceSize = checkSlice(parseSize(opt.slice, DEFAULT_SLICE));
   const retries = num(opt.retry, 3);
   const stateDir = opt['state-dir'] ? resolve(opt['state-dir']) : DEFAULT_STATE;
+  const dryRun = !!opt['dry-run'];
 
   say(`上传 ${file} → ${remote}（切片 ${human(sliceSize)}）`);
   const t0 = Date.now();
@@ -147,6 +179,11 @@ async function cmdUpload() {
   // 一次流式读，算出整文件 sha256 + 每片 md5（block_list 必须是标准 md5）
   const digest = digestFile(file, sliceSize);
   say(`  本地 sha256 ${digest.sha256.slice(0, 16)}… · ${digest.blocks.length} 片 · ${human(digest.size)}`);
+
+  if (dryRun) {
+    say(`  [dry-run] 本会分 ${digest.blocks.length} 片上传到 ${remote}（block_list[0]=${digest.blockList[0]?.slice(0, 12)}…）`);
+    return { dryRun: true, local: file, remote, bytes: digest.size, sha256: digest.sha256, blocks: digest.blocks.length, sliceSize };
+  }
 
   // 续传：带上次的 uploadid
   const sp = statePathFor(remote, stateDir);
@@ -158,82 +195,89 @@ async function cmdUpload() {
     say('  本地文件自上次上传以来已改变（或切片大小变了）→ 放弃旧续传状态，重新开始');
     try { unlinkSync(sp); } catch {}
   }
-  const pre = await withRetry(
-    () => precreate(token, { path: remote, size: digest.size, blockList: digest.blockList, uploadid: canResume ? prev.uploadid : undefined }),
-    retries, '预上传',
-  );
-  const resumed = canResume;
-  say(`  uploadid ${pre.uploadid.slice(0, 24)}… · 服务端要求传 ${pre.missing.length}/${digest.blocks.length} 片${resumed ? '（续传）' : ''}`);
+  // 并发保护：同一个远端路径同时只能有一个传输进程（状态文件会被互相冲掉）
+  const lockPath = `${sp}.lock`;
+  acquireLock(lockPath);
+  try {
+    const pre = await withRetry(
+      () => precreate(token, { path: remote, size: digest.size, blockList: digest.blockList, uploadid: canResume ? prev.uploadid : undefined }),
+      retries, '预上传',
+    );
+    const resumed = canResume;
+    say(`  uploadid ${pre.uploadid.slice(0, 24)}… · 服务端要求传 ${pre.missing.length}/${digest.blocks.length} 片${resumed ? '（续传）' : ''}`);
 
   // 进度起点：已完成的片（服务端说不用传的）算已完成
-  const doneSet = new Set(digest.blocks.map((_, i) => i).filter((i) => !pre.missing.includes(i)));
-  let doneBytes = digest.blocks.filter((b) => doneSet.has(b.index)).reduce((a, b) => a + b.size, 0);
-  const prog = makeProgress(digest.size, '上传中');
-  prog.tick(doneBytes);
-
-  for (const idx of pre.missing) {
-    const meta = digest.blocks[idx];
-    if (!meta) throw new Error(`服务端要第 ${idx} 片，但本地只有 ${digest.blocks.length} 片（切片大小对不上？）`);
-    const buf = readSlice(file, idx * sliceSize, meta.size);
-    const r = await withRetry(
-      () => uploadSlice(token, { path: remote, uploadid: pre.uploadid, partseq: idx, buffer: buf }),
-      retries, `第 ${idx} 片上传`,
-    );
-    // 服务端回传该片 md5 —— 与我们提交的必须一致，否则这片没被正确接收
-    if (r.md5 && r.md5 !== meta.md5) {
-      throw new Error(`第 ${idx} 片校验不符：提交 ${meta.md5.slice(0, 12)}… 服务端回 ${r.md5.slice(0, 12)}…`);
-    }
-    doneSet.add(idx);
-    doneBytes += meta.size;
-    writeState(sp, { remote, uploadid: pre.uploadid, done: [...doneSet].sort((a, b) => a - b), sliceSize, sha256: digest.sha256, updatedAt: Date.now() });
+    const doneSet = new Set(digest.blocks.map((_, i) => i).filter((i) => !pre.missing.includes(i)));
+    let doneBytes = digest.blocks.filter((b) => doneSet.has(b.index)).reduce((a, b) => a + b.size, 0);
+    const prog = makeProgress(digest.size, '上传中');
     prog.tick(doneBytes);
-  }
-  prog.done();
 
-  // 建档：正式生成网盘文件。返回的 md5 是**网盘侧闭源变种**，只作身份标识。
-  const cr = await withRetry(
-    () => createFile(token, { path: remote, size: digest.size, blockList: digest.blockList, uploadid: pre.uploadid }),
-    retries, '建档',
-  );
-  // 端到端核对：建档成功不等于远端就是我们要的那份 —— 查一眼远端实际大小
-  try {
-    const items = await listDir(token, remote.slice(0, remote.lastIndexOf('/')) || '/', 200);
-    const hit = items.find((i) => i.path === (cr.path || remote));
-    if (!hit) {
-      say('  （远端大小核对跳过：刚建的文件还没出现在目录列表里）');
-    } else if (Number(hit.size) !== digest.size) {
-      throw new Error(`远端大小对不上：本地 ${digest.size}，远端 ${hit.size}`);
-    } else {
-      say(`  远端大小核对通过：${hit.size} 字节`);
+    for (const idx of pre.missing) {
+      const meta = digest.blocks[idx];
+      if (!meta) throw new Error(`服务端要第 ${idx} 片，但本地只有 ${digest.blocks.length} 片（切片大小对不上？）`);
+      const buf = readSlice(file, idx * sliceSize, meta.size);
+      const r = await withRetry(
+        () => uploadSlice(token, { path: remote, uploadid: pre.uploadid, partseq: idx, buffer: buf }),
+        retries, `第 ${idx} 片上传`,
+      );
+      // 服务端回传该片 md5 —— 与我们提交的必须一致，否则这片没被正确接收
+      if (r.md5 && r.md5 !== meta.md5) {
+        throw new Error(`第 ${idx} 片校验不符：提交 ${meta.md5.slice(0, 12)}… 服务端回 ${r.md5.slice(0, 12)}…`);
+      }
+      doneSet.add(idx);
+      doneBytes += meta.size;
+      writeState(sp, { remote, uploadid: pre.uploadid, done: [...doneSet].sort((a, b) => a - b), sliceSize, sha256: digest.sha256, updatedAt: Date.now() });
+      prog.tick(doneBytes);
     }
-  } catch (e) {
-    if (e.message.startsWith('远端大小对不上')) throw e;
-    say(`  （远端大小核对跳过：${e.message}）`);
-  }
+    prog.done();
 
-  const seconds = (Date.now() - t0) / 1000;
-  // 状态文件用完了：删掉，避免下次误当续传（网盘上已有完整文件）
-  try { unlinkSync(sp); } catch {}
+    // 建档：正式生成网盘文件。返回的 md5 是**网盘侧闭源变种**，只作身份标识。
+    const cr = await withRetry(
+      () => createFile(token, { path: remote, size: digest.size, blockList: digest.blockList, uploadid: pre.uploadid }),
+      retries, '建档',
+    );
+    // 端到端核对：建档成功不等于远端就是我们要的那份 —— 查一眼远端实际大小
+    try {
+      const items = await listDir(token, remote.slice(0, remote.lastIndexOf('/')) || '/', 200);
+      const hit = items.find((i) => i.path === (cr.path || remote));
+      if (!hit) {
+        say('  （远端大小核对跳过：刚建的文件还没出现在目录列表里）');
+      } else if (Number(hit.size) !== digest.size) {
+        throw new Error(`远端大小对不上：本地 ${digest.size}，远端 ${hit.size}`);
+      } else {
+        say(`  远端大小核对通过：${hit.size} 字节`);
+      }
+    } catch (e) {
+      if (e.message.startsWith('远端大小对不上')) throw e;
+      say(`  （远端大小核对跳过：${e.message}）`);
+    }
 
-  const speed = digest.size / Math.max(seconds, 0.001);
-  say(`  完成：${cr.path || remote} · ${human(digest.size)} · ${seconds.toFixed(1)}s · ${human(speed)}/s${resumed ? ' · 续传' : ''}`);
-  say(`  网盘 md5（闭源变种，仅作身份标识）：${cr.md5 || '(无)'}`);
+    const seconds = (Date.now() - t0) / 1000;
+    // 状态文件用完了：删掉，避免下次误当续传（网盘上已有完整文件）
+    try { unlinkSync(sp); } catch {}
+
+    const speed = digest.size / Math.max(seconds, 0.001);
+    say(`  完成：${cr.path || remote} · ${human(digest.size)} · ${seconds.toFixed(1)}s · ${human(speed)}/s${resumed ? ' · 续传' : ''}`);
+    say(`  网盘 md5（闭源变种，仅作身份标识）：${cr.md5 || '(无)'}`);
 
   const entry = {
-    ts: new Date().toISOString(), op: 'upload', local: file, remote: cr.path || remote,
-    bytes: digest.size, sha256: digest.sha256, md5_local: digest.md5,
-    sliceSize, blockList: digest.blockList, blocks: digest.blocks,
-    seconds: Number(seconds.toFixed(2)), speed_bps: Math.round(speed),
-    netdisk_md5: cr.md5 || null, fs_id: cr.fs_id || null, resumed,
-  };
-  appendLedger(entry);
+      ts: new Date().toISOString(), op: 'upload', local: file, remote: cr.path || remote,
+      bytes: digest.size, sha256: digest.sha256, md5_local: digest.md5,
+      sliceSize, blockList: digest.blockList, blocks: digest.blocks,
+      seconds: Number(seconds.toFixed(2)), speed_bps: Math.round(speed),
+      netdisk_md5: cr.md5 || null, fs_id: cr.fs_id || null, resumed,
+    };
+    appendLedger(entry);
 
-  return {
-    remote: cr.path || remote, fs_id: cr.fs_id || null, bytes: digest.size,
-    sha256: digest.sha256, blocks: digest.blocks.length, resumed,
-    seconds: Number(seconds.toFixed(2)), speed_bps: Math.round(speed),
-    netdisk_md5: cr.md5 || null,
-  };
+    return {
+      remote: cr.path || remote, fs_id: cr.fs_id || null, bytes: digest.size,
+      sha256: digest.sha256, blocks: digest.blocks.length, resumed,
+      seconds: Number(seconds.toFixed(2)), speed_bps: Math.round(speed),
+      netdisk_md5: cr.md5 || null,
+    };
+  } finally {
+    releaseLock(lockPath);
+  }
 }
 
 // ================= 下载 =================
@@ -254,6 +298,11 @@ async function cmdDownload() {
 
   const link = await downloadLink(token, hit.fs_id);
   const total = link.size || statSync(to, { throwIfNoEntry: false })?.size || 0;
+
+  if (opt['dry-run']) {
+    say(`  [dry-run] 本会把 ${remote}（${human(total)}）下载到 ${to}`);
+    return { dryRun: true, remote, to, bytes: total };
+  }
 
   // 断点续传：本地 .part 已存在且没下完 → 用 Range 接着下
   const partPath = `${to}.part`;
@@ -339,7 +388,14 @@ async function cmdHash() {
   say(`  ${d.blocks.length} 片（每片 ${human(sliceSize)}）`);
   const shownN = Math.min(d.blocks.length, 20);
   for (const b of d.blocks.slice(0, shownN)) say(`    #${b.index} ${human(b.size).padStart(8)}  md5 ${b.md5}  sha256 ${b.sha256.slice(0, 16)}…`);
-  return { file, size: d.size, sha256: d.sha256, md5: d.md5, sliceSize, blocks: d.blocks, blockList: d.blockList };
+  if (d.blocks.length > shownN) say(`    …… 还有 ${d.blocks.length - shownN} 片（完整清单在 stdout 的 blockList 里）`);
+  // stdout 信封里的 blocks 也要限量：1.8GB 文件用 4MB 切片 = 450 片，
+  // 全塞进 JSON 会让调用方拿到几十 KB 噪音。blockList 是全的（那才是协议要的）。
+  const cap = Math.min(d.blocks.length, 50);
+  return {
+    file, size: d.size, sha256: d.sha256, md5: d.md5, sliceSize,
+    blocks: d.blocks.slice(0, cap), blocksTotal: d.blocks.length, blockList: d.blockList,
+  };
 }
 
 // 台账目录只有一个解析入口：写账本与读账本必须指向同一个地方，

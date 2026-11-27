@@ -171,5 +171,59 @@ eq('值里有等号', parseArgs(['--k=a=b'])['k'], 'a=b');
   rmSync(dir, { recursive: true, force: true });
 }
 
+// ---- transfer 的分片偏移与并发锁 ----
+{
+  const { mkdtempSync, writeFileSync, readFileSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { createHash } = await import('node:crypto');
+  const { readSlice, acquireLock, releaseLock } = await import('./transfer.mjs');
+  const { digestFile } = await import('./hashes.mjs');
+
+  const dir = mkdtempSync(join(tmpdir(), 'bnm-slice-'));
+  // 造一个跨多片、末片不满的内容
+  const data = Buffer.alloc(4096 + 777);
+  for (let i = 0; i < data.length; i++) data[i] = (i * 7 + 13) % 251;
+  const fp = join(dir, 's.bin');
+  writeFileSync(fp, data);
+  const md5b = (b) => createHash('md5').update(b).digest('hex');
+
+  // **上传就是按「第 idx 片 = 从 idx*sliceSize 处取 sliceSize 字节」取的**。
+  // 偏移算错 → 传到服务端的是错位的片 → 拼出来的文件损坏，且不报错。
+  // 这里逐片对拍：readSlice 取出来的内容 md5 必须等于 digestFile 报的该片 md5。
+  const SLICE = 1024;
+  const d = digestFile(fp, SLICE);
+  let mismatch = 0;
+  for (const b of d.blocks) {
+    const got = md5b(readSlice(fp, b.index * SLICE, b.size));
+    if (got !== b.md5) mismatch++;
+  }
+  eq('分片偏移逐片对拍全对（0 处错位）', mismatch, 0);
+  eq('对拍覆盖了全部片', d.blocks.length, 5);
+
+  // 末片不满：最后一片只有 777 字节，读出来也得是那 777 字节
+  eq('末片长度正确', readSlice(fp, 4 * SLICE, 777).length, 777);
+
+  // 并发锁：第二个进程应当拿不到
+  const lock = join(dir, 'x.lock');
+  acquireLock(lock);
+  let locked = false;
+  try { acquireLock(lock); } catch { locked = true; }
+  eq('并发时第二个拿不到锁', locked, true);
+  releaseLock(lock);
+  let relocked = false;
+  try { acquireLock(lock); releaseLock(lock); relocked = true; } catch {}
+  eq('释放后能重新拿到锁', relocked, true);
+
+  // 僵尸锁（持有者已死）要能回收
+  const zombie = join(dir, 'z.lock');
+  writeFileSync(zombie, JSON.stringify({ pid: 999999, at: Date.now() }));
+  let recovered = false;
+  try { acquireLock(zombie); releaseLock(zombie); recovered = true; } catch {}
+  eq('僵尸锁（进程已死）可回收', recovered, true);
+
+  rmSync(dir, { recursive: true, force: true });
+}
+
 console.log(`${failed ? 'FAIL' : 'OK'}：${passed} 通过，${failed} 失败`);
 process.exit(failed ? 1 : 0);
