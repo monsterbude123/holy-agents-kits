@@ -8,7 +8,7 @@
 - `dirsize.md` —— 拿目录权威体积的正确接口（openapi `method=dirsize` 提交 + web 端
   `/mid_mucw/api/ostp/file/taskQuery` 取结果，path 支持逗号分隔批量）、为什么 openapi
   自己枚举文件加总会偏低、以及怎么从网盘 JS bundle 挖出未知接口。要目录大小时读。
-- `counter-examples.md` —— 反例清单：这次实际犯过的 27 个错（枚举文件算目录体积会少一半、
+- `counter-examples.md` —— 反例清单：这次实际犯过的 29 个错（枚举文件算目录体积会少一半、
   猜接口名、category 判目录、按 100 判断末页、make_dir 默认 rtype 造出时间戳空目录、
   async=1 误判失败、AbortSignal.timeout 提前退出、Git Bash 路径转换、并发开 mcp-remote、
   误以为 MCP 没有删除、agent 先读源码而不执行…）。动手前扫一眼。

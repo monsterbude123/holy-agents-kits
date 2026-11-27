@@ -84,12 +84,32 @@ const callTool = async (name, args) => {
   try { return JSON.parse(txt); } catch { return { errno: -1, show_msg: txt.slice(0, 200) }; }
 };
 
+// 列出某目录下的全部文件名（**必须翻页**）：网盘 file_list 每页只有 10 条
+// （见 references/api-quirks.md），只查第 1 页的话，条目超过 10 个的目录永远查不到
+// → 幂等回查失效 → 已经搬成功的文件被误报成失败（实测 335 项里 85 项被误报）。
+// 结果按目录缓存：一次搬几百个文件、目标又是同一个目录时，
+// 逐项翻页会变成几百轮 API 调用（实测跑 10 分钟没跑完）。
+const dirCache = new Map();
+async function dirNames(parent) {
+  if (dirCache.has(parent)) return dirCache.get(parent);
+  const names = new Set();
+  for (let page = 1; page <= 100; page++) {
+    const j = await callTool('file_list', { dir: parent, page });
+    const items = j?.data?.list || [];
+    if (!items.length) break;
+    // 百度网盘的文件名**大小写不敏感**：`instantID_x` 与 `instantid_x` 视为同名，
+    // 搬过去会报 errno -8。所以比较一律归一化成小写。
+    for (const it of items) if (it.filename) names.add(it.filename.toLowerCase());
+    if (items.length < 10) break;                 // 不满页 = 最后一页
+  }
+  dirCache.set(parent, names);
+  return names;
+}
+
 async function pathExists(p) {
   const parent = p.slice(0, p.lastIndexOf('/')) || '/';
-  const name = p.slice(p.lastIndexOf('/') + 1);
-  const j = await callTool('file_list', { dir: parent, page: 1 });
-  const items = j?.data?.list || [];
-  return items.some((it) => it.filename === name);
+  const name = p.slice(p.lastIndexOf('/') + 1).toLowerCase();
+  return (await dirNames(parent)).has(name);
 }
 
 async function ensureDir(path) {
@@ -135,7 +155,7 @@ try {
     for (let i = 0; i < items.length; i += BATCH) {
       const batch = items.slice(i, i + BATCH);
       const filelist = batch.map((x) => ({ path: x.path, dest: x.dest, newname: x.newname }));
-      const j = await callTool('file_move', { async: ASYNC, ondup: 'skip', filelist: JSON.stringify(filelist) });
+      const j = await callTool('file_move', { async: ASYNC, ondup: 'skip', filelist });
       const info = Array.isArray(j?.info) ? j.info : [];
       const byPath = new Map(info.map((it) => [it.path, it]));
       let bOk = 0, bBad = 0;
@@ -145,9 +165,16 @@ try {
         let bad = !it || (it.errno !== undefined && it.errno !== 0);
         // errno -9 = 源不存在。多半是前一轮 async=1 的移动已延迟落地。
         // 回源/目标核对：源真不在、且目标已在 = 已完成（幂等）。
+        //
+        // 目标里要查**两个名字**：
+        //   · x.newname —— 本次 spec 指定的目标名
+        //   · 源文件的**原名** —— 上一轮已经搬过的话，隔离区里放的是原名
+        //     （同名副本在 spec 里被加了 __2/__3 后缀，按后缀名查会查不到 → 误报失败）
         if (bad && ASYNC === 0) {
           const srcGone = !(await pathExists(x.path));
-          const dstThere = await pathExists(x.dest + '/' + x.newname);
+          const srcBase = x.path.slice(x.path.lastIndexOf('/') + 1);
+          const dstThere = await pathExists(x.dest + '/' + x.newname)
+            || (srcBase !== x.newname && await pathExists(x.dest + '/' + srcBase));
           if (srcGone && dstThere) { bad = false; log(`    = 已就位 ${x.newname}`); }
         }
         results.push({ ...x, ok: !bad, to: it?.to_path, err: bad ? (it?.errno ?? 'no-info') : undefined });
@@ -155,6 +182,9 @@ try {
         else { bOk++; ok++; }
       }
       log(`[batch ${Math.floor(i / BATCH) + 1}] ${batch.length} 项 -> 成功 ${bOk} 失败 ${bBad}`);
+      // 目标目录的内容每批都在变 → 缓存必须失效，否则「目标已在」永远按搬之前的旧列表判，
+      // 已经就位的文件会被误报成失败（实测 335 项里 11 项误报）。
+      for (const d of new Set(batch.map((x) => x.dest))) dirCache.delete(d);
       await sleep(400);
     }
   }
