@@ -23,7 +23,7 @@ license: MIT
 - **只查一两个目录** = 直接用 `file_list` / `file_meta` 工具，别灌库
 - **岔路**：`scan` 撞上限 → 调大 `--depth`/`--max-dirs` 增量续灌；`move` 报 -9 → 源已被搬走，回目标核对；报 -8 → 目录太大，改 `--async=1`
 
-**动手前先扫一眼 `references/counter-examples.md`**——里面是这次实际踩过的 27 个坑
+**动手前先扫一眼 `references/counter-examples.md`**——里面是这次实际踩过的 29 个坑
 （枚举算体积会少一半、按 100 判断末页、`make_dir` 默认重命名、`async=1` 误判失败…），
 照着避坑比读脚本源码快得多。
 
@@ -120,7 +120,7 @@ Git Bash 下跑这两个脚本必须加 `MSYS2_ARG_CONV_EXCL='*'`，否则 `/课
 
 - `references/api-quirks.md` —— 百度网盘 MCP 的九个 API 陷阱（分页每页 10 条、`make_dir` 默认重命名、`category` 字段不可靠、`file_move` 的 async 语义、depth 记的是相对层数、路径含 `+`/全角括号报 1002、`file_list` 不返回 mtime、`file_upload_by_content` 不覆盖同名、ZCode 里显示红色/toolCount=0）；**排查报错或算出来的体量不对时读**
 - `references/dirsize.md` —— 拿目录**权威体积**的正确接口（openapi 的 `method=dirsize` 提交任务 + web 端 `/mid_mucw/api/ostp/file/taskQuery` 取结果）、为什么自己枚举加总会偏低、以及怎么从网盘 JS bundle 里挖出未知接口；**要目录大小、或要查「网盘到底调了哪个接口」时读**
-- `references/counter-examples.md` —— **反例清单**：这次实际犯过的 27 个错（枚举算体积、猜接口名、`category` 判目录、按 100 判断末页、`make_dir` 默认 rtype、`async=1` 误判失败、`AbortSignal.timeout` 提前退出、Git Bash 路径转换、并发开 mcp-remote、以为 MCP 没有删除…）；**动手前先扫一眼，能省掉几小时的错**
+- `references/counter-examples.md` —— **反例清单**：这次实际犯过的 29 个错（枚举算体积、猜接口名、`category` 判目录、按 100 判断末页、`make_dir` 默认 rtype、`async=1` 误判失败、`AbortSignal.timeout` 提前退出、Git Bash 路径转换、并发开 mcp-remote、以为 MCP 没有删除…）；**动手前先扫一眼，能省掉几小时的错**
 - `references/model-backup-method.md` —— **模型备份方法（我们自己的做法）**：选模型 → 收集同名附件 → zip 加密 → 上传网盘 → 台账，含目录命名约定、密码约定、还原流程与踩过的坑；**要备份模型到网盘、或要还原某个备份时读**
 - `references/transfer-protocol.md` —— **传输协议与实测边界**：百度原生分片上传三段式（precreate/superfile2/create）、服务端驱动的续传、下载 dlink 与 Range、**两级哈希口径**（片级 md5 / 文件级 sha256 / 网盘 md5 为何不能当尺子）、bdpan CLI 的实测边界与速度基线；**要传大文件、排查上传下载、或做同步之前读**
 - `references/governance-playbook.md` —— 治理决策手册（分类法怎么设计、怎么识别「体量-用途错配」、隔离与删除的取舍、索引怎么写）；**定分类法或用户问「该删什么」时读**
