@@ -326,7 +326,10 @@ function cmdPlan() {
   const spec = JSON.parse(readFileSync(specPath, 'utf8'));
   const moves = spec.moves || spec.phase1 || [];
   const sizes = dirSizes();
-  const known = new Set(db.prepare('SELECT path FROM nodes WHERE is_dir=1').all().map((r) => r.path));
+  // 白名单要含**文件**：重复副本清理搬的是文件，只收目录的话
+  // 每一项都会被判「未命中缓存」，计划直接空掉（实测 335 项全被拒）。
+  const known = new Set(db.prepare('SELECT path FROM nodes').all().map((r) => r.path));
+  const fileRow = (p) => db.prepare('SELECT size, is_dir FROM nodes WHERE path=?').get(p);
   const accepted = [];
   const rejected = [];
   say(`\n=== 移动计划校验 (${moves.length} 项) ===`);
@@ -335,7 +338,11 @@ function cmdPlan() {
     const to = m.dest ?? m.to;
     const name = m.newname ?? m.name;
     if (!known.has(from)) { rejected.push({ from, reason: '源路径不在缓存里(未扫描?)' }); say(`  ?? ${from}  未命中缓存`); continue; }
-    const v = sizes.get(from) || { bytes: 0, files: 0 };
+    // 目录用汇总体量，文件用自身大小
+    const row = fileRow(from);
+    const v = sizes.get(from) || (row && !row.is_dir
+      ? { bytes: Number(row.size || 0), files: 1 }
+      : { bytes: 0, files: 0 });
     say(`${human(v.bytes).padStart(9)}  ${String(v.files).padStart(6)} 文件  ${from}`);
     say(`${''.padStart(9)}  ${''.padStart(6)}        -> ${to}/${name}`);
     accepted.push({ group: m.group || 'move', path: from, dest: to, newname: name, bytes: v.bytes, files: v.files });
