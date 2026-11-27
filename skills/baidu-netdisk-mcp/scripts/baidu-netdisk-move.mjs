@@ -78,10 +78,65 @@ async function mcpStart() {
   mcp = { child, call };
 }
 
+// 从一段可能夹杂多个 JSON 的文本里，扫出**第一个 JSON 对象**。
+// 按花括号配对计数，跳过字符串字面量里的花括号。
+// 返回 { json, depth }：depth > 0 表示文本**被截断**、还缺 depth 个右花括号。
+function extractJson(text) {
+  const start = text.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return { json: text.slice(start, i + 1), depth: 0 };
+    }
+  }
+  return { json: text.slice(start), depth };
+}
+
+// 宽松解析：MCP 的 file_move 返回实测**末尾少一个 `}`**（花括号 2 vs 1），
+// 而且返回可能由多个 content 块拼成、前面还带换行。
+// 直接 JSON.parse(整段) 会失败 → 真实 errno/info 全丢，只剩一句「no-info」。
+// 修法：按括号配对扫出第一个 JSON 对象；若还缺右括号就补齐再 parse。
+function parseLoose(raw) {
+  const got = extractJson(raw);
+  if (!got) return null;
+  for (const cand of [got.json, raw.trim()]) {
+    if (!cand) continue;
+    try { return JSON.parse(cand); } catch { /* 试补括号 */ }
+    const g2 = extractJson(cand);
+    if (g2 && g2.depth > 0) {
+      try { return JSON.parse(g2.json + '}'.repeat(g2.depth)); } catch { /* 继续 */ }
+    }
+  }
+  return null;
+}
+
 const callTool = async (name, args) => {
   const r = await mcp.call('tools/call', { name, arguments: args });
-  const txt = (r.content || []).map((c) => c.text || '').join('');
-  try { return JSON.parse(txt); } catch { return { errno: -1, show_msg: txt.slice(0, 200) }; }
+  // MCP 的返回是**若干个 content 块**拼起来的：可能前面带换行、可能**含多个 JSON 对象**、
+  // 可能**末尾被截断**。直接 JSON.parse(整段) 会失败 → 真实的 errno/info 全被丢掉，
+  // 只剩一句「no-info」（连「整批被拒」都看不出来）。
+  const raw = (r.content || []).map((c) => c.text || '').join('');
+  const loose = parseLoose(raw);
+  if (loose) return loose;
+  const txt = raw.trim();
+  try { return JSON.parse(txt); } catch { /* 不是 JSON → 看是不是被包在错误里 */ }
+  // MCP 会把参数校验失败包成 `params error: (response.body:{...})`，
+  // 里面那个 JSON 才是真正的服务端返回 —— 挖出来，否则调用失败会被
+  // 幂等回查掩盖成「已就位」（实测 335 项全「成功」，其实一次都没发出去）。
+  const m = /params error:.*response\.body:(\{.*\})\s*\)/s.exec(txt);
+  if (m) { try { return JSON.parse(m[1]); } catch {} }
+  return { errno: -1, show_msg: txt.slice(0, 200) };
 };
 
 // 列出某目录下的全部文件名（**必须翻页**）：网盘 file_list 每页只有 10 条
@@ -152,12 +207,38 @@ try {
     log(`\n=== phase ${pi + 1}: ${items.length} 项 (async=${ASYNC}) ===`);
     for (const d of [...new Set(items.map((x) => x.dest))]) await ensureDir(d);
 
-    for (let i = 0; i < items.length; i += BATCH) {
-      const batch = items.slice(i, i + BATCH);
+    // 目录级移动（async=1）逐个提交：批量里只要有一个超大目录，整批会被服务端拒
+    // （errno 12 + info 为空），同批的小目录也一起失败 —— 实测 3 个目录一批，
+    // 744GB 那个把另外两个一起拖下水了（逐个提交后两个都成了）。
+    const step = ASYNC === 1 ? 1 : BATCH;
+    for (let i = 0; i < items.length; i += step) {
+      const batch = items.slice(i, i + step);
       const filelist = batch.map((x) => ({ path: x.path, dest: x.dest, newname: x.newname }));
-      const j = await callTool('file_move', { async: ASYNC, ondup: 'skip', filelist });
+      const j = await callTool('file_move', { async: ASYNC, ondup: 'skip', filelist: JSON.stringify(filelist) });
+      // async=1 只是**受理**，落地可能几分钟后 —— 轮询到「源消失」再判定，
+      // 否则会把「已受理但还没搬完」误报成失败（也拿不到真实结果）。
+      if (ASYNC === 1) {
+        const deadline = Date.now() + num(opt['wait-timeout'], 30) * 60 * 1000;
+        for (const x of batch) {
+          const srcDir = x.path.slice(0, x.path.lastIndexOf('/')) || '/';
+          while (Date.now() < deadline) {
+            if (!(await pathExists(x.path))) break;      // 源没了 = 落地了
+            dirCache.delete(srcDir);                    // 源目录在变，缓存要失效
+            await sleep(5000);
+          }
+          dirCache.delete(srcDir);
+        }
+      }
       const info = Array.isArray(j?.info) ? j.info : [];
       const byPath = new Map(info.map((it) => [it.path, it]));
+      // async=1 受理成功时返回 **taskid 且 info 为空** —— 这是「已提交、未落地」，
+      // 不是失败。批完之后若源仍在，报「已提交未落地」而不是「失败」。
+      const submitted = !!(j && j.taskid) || (j && j.errno === 0 && !info.length);
+      // 整批被拒（参数错、批次过大…）：这是**调用没发出去**，不是「已完成」。
+      // 必须硬失败 —— 否则幂等回查会把它变成「已就位」，335 项全绿而一次都没传。
+      if (j && j.errno !== undefined && j.errno !== 0 && j.errno !== 12 && !info.length) {
+        throw new Error(`file_move 被拒：errno=${j.errno} ${j.show_msg || ''}`.trim());
+      }
       let bOk = 0, bBad = 0;
 
       for (const x of batch) {
@@ -170,14 +251,15 @@ try {
         //   · x.newname —— 本次 spec 指定的目标名
         //   · 源文件的**原名** —— 上一轮已经搬过的话，隔离区里放的是原名
         //     （同名副本在 spec 里被加了 __2/__3 后缀，按后缀名查会查不到 → 误报失败）
-        if (bad && ASYNC === 0) {
+        if (bad) {
           const srcGone = !(await pathExists(x.path));
           const srcBase = x.path.slice(x.path.lastIndexOf('/') + 1);
           const dstThere = await pathExists(x.dest + '/' + x.newname)
             || (srcBase !== x.newname && await pathExists(x.dest + '/' + srcBase));
           if (srcGone && dstThere) { bad = false; log(`    = 已就位 ${x.newname}`); }
         }
-        results.push({ ...x, ok: !bad, to: it?.to_path, err: bad ? (it?.errno ?? 'no-info') : undefined });
+        results.push({ ...x, ok: !bad, to: it?.to_path,
+          err: bad ? (submitted ? '已提交未落地' : (it?.errno ?? 'no-info')) : undefined });
         if (bad) { bBad++; fail++; log(`    FAIL ${x.path}  errno=${it?.errno ?? 'no-info'}`); }
         else { bOk++; ok++; }
       }

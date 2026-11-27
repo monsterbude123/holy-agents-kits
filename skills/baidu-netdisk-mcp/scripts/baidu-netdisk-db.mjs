@@ -159,7 +159,8 @@ async function doScan() {
   const force = !!opt.force;
   const freshCut = nowSec() - freshHours * 3600;
 
-  let dirs = 0, files = 0, bytes = 0, skipped = 0, capped = false;
+  let dirs = 0, files = 0, bytes = 0, skipped = 0, capped = false, pruned = 0;
+  db.exec('CREATE TEMP TABLE IF NOT EXISTS kids(path TEXT PRIMARY KEY)');
   const walk = async (dir, depth) => {
     if (depth > maxDepth || dirs >= maxDirs) {
       upsertStmt.run(dir, dir.slice(0, dir.lastIndexOf('/')) || '/', dir.split('/').pop(), 1, 0, '', 0, depth, 0, nowSec(), -1);
@@ -172,7 +173,8 @@ async function doScan() {
     const prev = db.prepare('SELECT scanned_at, walk_depth FROM nodes WHERE path=?').get(dir);
     if (!force && prev && prev.scanned_at > freshCut && (prev.walk_depth ?? -1) >= need) { skipped++; dirs++; return; }
     let items = [];
-    try { items = await listDir(dir); } catch { items = []; }
+    let listed = true;
+    try { items = await listDir(dir); } catch { items = []; listed = false; }
     dirs++;
     upsertStmt.run(dir, dir.slice(0, dir.lastIndexOf('/')) || '/', dir.split('/').pop(), 1, 0, '', 0, depth, 1, nowSec(), need);
     for (const it of items) {
@@ -184,13 +186,25 @@ async function doScan() {
       if (isd) await walk(it.path, depth + 1);
       else { files++; bytes += sz; }
     }
+    // **剪掉已经消失的子项**：搬走/删掉的文件会留下一行旧路径，
+    // 库不剪的话体量被**重复计算**（实测隔离 335 个文件后库从 7.06TB 涨到 8.45TB）。
+    // 只在「这个目录确实列到了」时剪 —— 列举失败（listed=false）时绝不剪，
+    // 否则一次网络抖动就把整棵子树的记录抹了。
+    if (listed) {
+      db.exec('DELETE FROM kids');
+      const ins = db.prepare('INSERT OR IGNORE INTO kids(path) VALUES(?)');
+      for (const it of items) ins.run(it.path);
+      const del = db.prepare('DELETE FROM nodes WHERE parent = ? AND path NOT IN (SELECT path FROM kids)');
+      const gone = del.run(dir).changes;
+      if (gone > 0) pruned += gone;
+    }
   };
   for (const r of roots) await walk(r, 0);
   db.prepare('INSERT INTO scans(root,max_depth,dirs,files,bytes,at) VALUES(?,?,?,?,?,?)')
     .run(roots.join('|'), maxDepth, dirs, files, bytes, nowSec());
   db.prepare('INSERT OR REPLACE INTO meta(k,v) VALUES(?,?)').run('last_scan', String(nowSec()));
-  say(`scan done: dirs=${dirs} (fresh-skipped ${skipped}${capped ? ', 撞上限提前截断' : ''}) files=${files} bytes=${human(bytes)} -> ${DB_PATH}`);
-  return { dirs, files, bytes, skipped, capped, db: DB_PATH, maxDepth };
+  say(`scan done: dirs=${dirs} (fresh-skipped ${skipped}${capped ? ', 撞上限提前截断' : ''}) files=${files} bytes=${human(bytes)} 剪除已消失路径 ${pruned} 条 -> ${DB_PATH}`);
+  return { dirs, files, bytes, skipped, capped, pruned, db: DB_PATH, maxDepth };
 }
 
 // ---------- 查询 ----------
