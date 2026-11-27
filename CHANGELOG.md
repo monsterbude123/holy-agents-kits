@@ -4,6 +4,32 @@
 
 > ⚠️ **口径**：0.8.0 是 npm 上的第一个带本文件的版本。**已装 0.7.0 的用户看不到本期之前的增量**（0.7.0 及更早没有本文件）—— 这里不假装有历史，往后每版往下追加。
 
+## 0.12.0
+
+> **这一版新增两个技能** —— `baidu-netdisk-mcp`：盘点并治理百度网盘（目录树灌**本地 SQLite**，
+> 治理走「隔离 → 重排 → 索引」三步，全是服务端 move、可逆）；`doc-map-manager`：给 docs/ 建结构化索引
+> （SQLite + 链接图谱 + 新鲜度评分），agent 查文档的统一入口。
+
+### 变更
+
+- **新增技能 `baidu-netdisk-mcp`**（`skills/baidu-netdisk-mcp/`）
+  - `scripts/baidu-netdisk-db.mjs` —— 本地盘点库：`scan` 灌库（增量、双上限）/ `stats` / `du` / `big` /
+    `dup` / `deep` / `find` / `plan` / `dump`；stdout 单行 JSON 信封，人读表格走 stderr
+  - `scripts/baidu-netdisk-move.mjs` —— 幂等移动器：小批量 + `async:0` + 逐项解析 `info[]`，
+    遇 `errno -9`（源已被搬走）回源/目标核对
+- **新增技能 `doc-map-manager`**（`skills/doc-map-manager/`）
+  - `scripts/build-index.py` —— docs/ 建索引：标题/章节行号/面包屑 + 链接图谱 + 标签 + 新鲜度评分
+  - `scripts/query-index.py` —— `--grab` / `--lookup` / `--context-mode` / `--impact` / `--detect-changes`；
+    索引库禁止直接 Read，必须走查询口
+  - 语义检索（ChromaDB/Zvec）为可选增强，缺失自动降级标准库；需 Python ≥ 3.9
+- **目录体积走网盘自己的 `dirsize` 接口**，不自己枚举文件累加 —— 深层树上枚举会少算一半
+  （实测一棵树枚举得 281 GB、官方 727 GB）。接口与 openapi/web 两侧鉴权差异记在 `references/dirsize.md`
+- **反例清单 `references/counter-examples.md`** —— 12 个已踩过的坑（分页每页 10 条、`make_dir` 默认重命名、
+  `category` 字段不可靠、`file_move` 的 async 语义、`AbortSignal.timeout` 不保活、Git Bash 路径转换…）
+- **全仓评审修复**（任务票 T01-T10）：P0×1 / P1×7 / P2 批，覆盖 jenkins-cli、idea-backend、
+  fy-new-api-app-framework、website-helper-skill 等；含 `outfit-demo` AGENTS.md join 断言修正与
+  评审协议三共性条目
+
 ## 0.10.3
 
 > **这一版给 `jenkins-cli` 补齐 5 个 P0 + 3 个 P1 缺口** —— 来源是 deploy-services 仓 `jenkins-ci` 技能移除前的逐节对比反馈，加上 2026-11-25 在内网 Jenkins 上真实跑通 GitLab→Jenkins→DooD 构建→部署全链路期间的 4 起可归因事故。全部内容有实战事故支撑，不补齐随 `jenkins-ci` 移除即彻底丢失。

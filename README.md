@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、VS Code / 语言服务器语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、文档结构化索引与新鲜度验证、巨石代码库消肿与安全拔除、会话蒸馏成技能包、Vibe Coding 组件规范、子域名发布、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、VS Code / 语言服务器语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、文档结构化索引与新鲜度验证、巨石代码库消肿与安全拔除、会话蒸馏成技能包、Vibe Coding 组件规范、子域名发布、百度网盘盘点与治理、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -95,6 +95,11 @@ mindmap
       子域名发布 HTTPS
       DNS Nginx SSL 一条命令
       回滚上一版
+    baidu-netdisk-mcp
+      网盘本地盘点库
+      目录体积 dirsize
+      重复隔离与分类重排
+      反例驱动的避坑
 ```
 
 | Skill | 解决什么 | 你会怎么说 |
@@ -116,6 +121,7 @@ mindmap
 | `session-distiller` | 从完整会话历史蒸馏可验证、可复用的技能包，附错误路径诊断与反向提示词 | 「把这次会话提炼成 skill」「蒸馏会话」「诊断 agent 反复道歉」 |
 | `vibe-coding-standards` | AGENTS.md / Rules / Skills / Subagents 的结构规范与体积红线、防上下文击穿策略 | 「写 AGENTS.md 怎么组织」「skill 最多多少行」「防上下文击穿」 |
 | `website-helper-skill` | 本地网页或已有后端发布到子域名（HTTPS 自动证书），DNS / Nginx / SSL 一条命令走完 | 「发布上线」「部署子域名」「更新网站」「回滚上一版」 |
+| `baidu-netdisk-mcp` | 盘点并整理百度网盘：目录树灌进本地 SQLite 后做体量汇总、md5 重复检测、路径深度检查，再执行隔离/重排/索引 | 「网盘很乱」「网盘占了多少」「找重复文件」「整理网盘」「腾空间」 |
 
 两个 Jenkins 技能互为边界：`jenkins-cli` 只管流水线，`jenkins-controller` 只管控制器本身，触发时不会互相抢。
 两个 new-api 技能同样分工：`fy-new-api-app-framework` 管「在 new-api 外面写应用」，`fy-newapi-cli` 管「运维已经在跑的 new-api」。
@@ -151,7 +157,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 **卸载**：删除 `~/.agents/skills/<skill-name>` 目录即可。安装器不会写注册表，不会留残留。
 
-## 十七个技能分别做什么
+## 十八个技能分别做什么
 
 ### analysis-codegraph —— 按符号查代码
 
@@ -271,6 +277,16 @@ npx holy-agents-kits install jenkins-cli --force
 
 **用法**：说「写 AGENTS.md」「写规则」「编写 skill」「写子代理」「防上下文击穿」。
 
+### baidu-netdisk-mcp —— 百度网盘的盘点与治理
+
+把网盘目录树灌进**本地 SQLite**，之后所有分析（体量汇总、md5 重复检测、路径深度、重复副本）
+都是本地查询，不再反复打网盘接口。治理动作走「隔离 → 重排 → 索引」三步，
+全部是服务端 move，可逆。
+
+- **目录体积用网盘自己的 `dirsize` 接口**，不要自己枚举文件累加 —— 深层树上枚举会少算一半
+- **反例清单**带路：分页每页 10 条、`make_dir` 默认重命名、`file_move` 的 async 语义等 12 个已踩过的坑
+- 盘点器（`scripts/baidu-netdisk-db.mjs`）+ 移动器（`scripts/baidu-netdisk-move.mjs`）零依赖
+
 ### website-helper-skill —— 子域名发布
 
 **可观察行为**：自带 publish CLI，把本地网页或已有后端发布到子域名（HTTPS 自动证书），DNS / Nginx / SSL 一条命令走完；也能给反代后端挂域名，支持更新与回滚上一版。
@@ -308,7 +324,8 @@ holy-agents-kits/
 │   ├── codebase-slimming/          SKILL.md + references/（含实证案例库）
 │   ├── session-distiller/          SKILL.md + references/ + scripts/ + templates/ + examples/
 │   ├── vibe-coding-standards/      SKILL.md + references/ + scripts/
-│   └── website-helper-skill/       SKILL.md + publish CLI + scripts/ + tests/ + references/
+│   ├── website-helper-skill/       SKILL.md + publish CLI + scripts/ + tests/ + references/
+│   └── baidu-netdisk-mcp/          SKILL.md + references/ + scripts/（网盘点库 + 移动器）
 ├── bin/cli.js                      安装器（零依赖）
 ├── FEEDBACK.md                     issue 上报入口与必填信息
 └── package.json
