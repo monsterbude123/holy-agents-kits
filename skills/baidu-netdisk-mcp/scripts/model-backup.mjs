@@ -19,14 +19,17 @@
 //   node scripts/model-backup.mjs ledger --dir=<台账目录>
 //
 // 通用选项：--dry-run（只演练不写）、--json（stdout 单行 JSON 信封）
-// bdpan 调用约定见 https://github.com/baidu-netdisk/bdpan-storage 的 baidu-drive skill。
+// 上传走 scripts/transfer.mjs（原生分片：进度 + 续传 + sha256 校验），
+// 协议细节见 references/transfer-protocol.md。
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, appendFileSync, writeFileSync, unlinkSync, renameSync, openSync, readSync, closeSync, linkSync, copyFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, appendFileSync, writeFileSync, unlinkSync, renameSync, linkSync, copyFileSync, rmSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { parseArgs, num } from './args.mjs';
+import { sha256File } from './hashes.mjs';
 
 // 解析可执行文件：Windows 上 Node 的 spawn 不走 shell，PATH 里的 shell 包装脚本
 // （如用户主目录下的 bin/zip 包装脚本）无法被 spawnSync 执行 —— 必须指向真实的 .exe。
@@ -45,18 +48,6 @@ function resolveBin(name, envVar) {
 }
 const ZIP_BIN = resolveBin('zip', 'ZIP_BIN');
 const UNZIP_BIN = resolveBin('unzip', 'UNZIP_BIN');
-const BDPAN = (() => {
-  if (process.env.BDPAN_BIN) return process.env.BDPAN_BIN;
-  const home = process.env.HOME || process.env.USERPROFILE || '';
-  const candidates = [
-    join(home, 'AppData/Local/bdpan/bdpan.exe'),
-    join(home, '.local/bin/bdpan'),
-    '/usr/local/bin/bdpan',
-    '/usr/bin/bdpan',
-  ];
-  for (const c of candidates) if (existsSync(c)) return c;
-  return 'bdpan';
-})();
 const DEFAULT_PASSWORD = process.env.MODEL_BACKUP_PASSWORD || 'ai123456';
 // 模型库根与暂存目录都是机器本地配置，不写死默认路径：
 // 命令行 > 环境变量 > 用户主目录下的约定位置。
@@ -94,16 +85,6 @@ function human(b) {
   let i = 0, n = Number(b) || 0;
   while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
   return n.toFixed(1) + u[i];
-}
-function sha256(file) {
-  const h = createHash('sha256');
-  const buf = Buffer.alloc(1 << 20);
-  const fd = openSync(file, 'r');
-  try {
-    let n;
-    while ((n = readSync(fd, buf, 0, buf.length, null)) > 0) h.update(buf.subarray(0, n));
-  } finally { closeSync(fd); }
-  return h.digest('hex');
 }
 // 归档名必须 ASCII：网盘路径、跨平台 shell、各家解压工具都更稳。
 // 原名与 sha256 记在包内 manifest.json 和台账里，可完整还原。
@@ -190,7 +171,7 @@ function stage(group, stageDir) {
     const stored = i === 0 ? 'model' + e : (n === 1 ? 'model' + e : `model.${n}${e}`);
     const dst = join(stageDir, stored);
     try { linkSync(f, dst); } catch { copyFileSync(f, dst); }
-    files.push({ stored, original: orig, size: statSync(f).size, sha256: sha256(f) });
+    files.push({ stored, original: orig, size: statSync(f).size, sha256: sha256File(f) });
   });
   const manifest = {
     created_at: new Date().toISOString(),
@@ -236,15 +217,6 @@ function normalizeRemote(p) {
   return s;
 }
 
-// ---- bdpan（公共参数必须带） ----
-const SESSION_ID = `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).slice(2, 8)}`;
-function bdpan(args) {
-  const full = [...args,
-    '--agentname', 'zcode', '--session-id', SESSION_ID,
-    '--auth-flow', 'cli', '--skill-name', 'baidu-drive', '--skill-version', 'v1.7.8'];
-  const r = spawnSync(BDPAN, full, { encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
-  return { code: r.status, stdout: r.stdout || '', stderr: r.stderr || '' };
-}
 
 // ---- 子命令 ----
 function cmdPick() {
@@ -281,7 +253,7 @@ function cmdPack() {
     say(`[OK] ${basename(g.model)} -> ${name}  ${human(size)}  ${secs}s  附件 ${g.attaches.length} 个`);
     const entry = {
       ts: new Date().toISOString(), model: g.model, pack: packPath, bytes: size,
-      remote: null, sha256: sha256(packPath), files: p.manifest.files, seconds: secs,
+      remote: null, sha256: sha256File(packPath), files: p.manifest.files, seconds: secs,
     };
     appendFileSync(join(work, 'ledger.jsonl'), JSON.stringify(entry) + '\n');
     results.push(entry);
@@ -317,7 +289,7 @@ function cmdRestore() {
   for (const f of manifest.files) {
     const src = join(to, f.stored);
     if (!existsSync(src)) { bad.push({ name: f.original, why: '缺失' }); continue; }
-    if (sha256(src) !== f.sha256) { bad.push({ name: f.original, why: 'sha256 不符' }); continue; }
+    if (sha256File(src) !== f.sha256) { bad.push({ name: f.original, why: 'sha256 不符' }); continue; }
     renameSync(src, join(to, f.original));
   }
   // 模型本体放回原目录（可选）
@@ -341,20 +313,37 @@ function cmdUpload() {
   if (!existsSync(packPath)) throw new Error('包不存在: ' + packPath);
   const remote = normalizeRemote(opt.remote || ('/apps/bdpan/model-backup/' + basename(packPath)));
   if (!remote.startsWith('/apps/bdpan/')) throw new Error('bdpan 只允许操作 /apps/bdpan/ 目录，当前: ' + remote);
-  if (dryRun) { say(`[dry-run] bdpan upload "${packPath}" "${remote}"`); return { dryRun: true, pack: packPath, remote }; }
-  const r = bdpan(['upload', packPath, remote]);
-  say(`[bdpan upload] exit=${r.code}`);
-  if (r.stdout.trim()) say(r.stdout.trim());
-  if (r.stderr.trim()) say(r.stderr.trim());
-  if (r.code !== 0) throw new Error('bdpan upload 失败: exit=' + r.code);
+  if (dryRun) { say(`[dry-run] transfer.mjs upload --file="${packPath}" --remote="${remote}"`); return { dryRun: true, pack: packPath, remote }; }
+
+  // 走原生分片上传（不是 bdpan）：bdpan 是黑盒 —— 不吐进度、远端上传期间不可见、
+  // 没有断点续传。原生协议按片推进，每片完成就是一个进度刻度，服务端还能告诉我们
+  // 「还缺哪几片」，续传是服务端驱动的。详见 references/transfer-protocol.md。
+  const transfer = join(dirname(fileURLToPath(import.meta.url)), 'transfer.mjs');
+  const r = spawnSync(process.execPath, [transfer, 'upload',
+    `--file=${packPath}`, `--remote=${remote}`, `--slice=${opt.slice || '4MB'}`],
+    { encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
+  if (r.stderr) process.stderr.write(r.stderr);
+  let payload = null;
+  try { payload = JSON.parse((r.stdout || '').trim().split('\n').pop() || '{}'); } catch { payload = null; }
+  if (!payload || payload.ok !== true) {
+    throw new Error('上传失败: ' + ((payload && payload.error) || ('exit=' + r.status)));
+  }
+  const res = payload.data || {};
+
   // 回写台账
   const ledger = join(dirname(packPath), 'ledger.jsonl');
   if (existsSync(ledger)) {
     const lines = readFileSync(ledger, 'utf8').trim().split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
     const hit = lines.find((e) => e.pack === packPath);
-    if (hit) { hit.remote = remote; hit.uploaded_at = new Date().toISOString(); writeFileSync(ledger, lines.map((e) => JSON.stringify(e)).join('\n') + '\n'); }
+    if (hit) {
+      hit.remote = res.remote || remote;
+      hit.uploaded_at = new Date().toISOString();
+      hit.upload_seconds = res.seconds;
+      hit.upload_speed_bps = res.speed_bps;
+      writeFileSync(ledger, lines.map((e) => JSON.stringify(e)).join('\n') + '\n');
+    }
   }
-  return { pack: packPath, remote, exit: r.code };
+  return { pack: packPath, remote: res.remote || remote, sha256: res.sha256, bytes: res.bytes, seconds: res.seconds, speed_bps: res.speed_bps, resumed: res.resumed };
 }
 
 function cmdLedger() {

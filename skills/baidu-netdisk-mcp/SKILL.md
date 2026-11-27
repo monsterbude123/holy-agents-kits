@@ -18,6 +18,7 @@ license: MIT
 - **找重复** = `dup --min-size=50MB` 看 md5 相同组 → `plan` 校验 → `move` 隔离到 `/90_待清理/`
 - **按用途重排** = 写 spec（{from,to,name}）→ `plan` 校验源路径在库中 → `move` 执行 → 写 `/99_索引/` 索引
 - **备份模型到网盘** = `model-backup.mjs pack`（模型 + 同名附件 → 加密 zip）→ `upload` → 台账；还原走 `restore`
+- **传文件（要进度/续传/校验）** = `transfer.mjs upload|download` —— 原生分片上传，每片一个进度刻度，断点续传，sha256 校验
 - **只查一两个目录** = 直接用 `file_list` / `file_meta` 工具，别灌库
 - **岔路**：`scan` 撞上限 → 调大 `--depth`/`--max-dirs` 增量续灌；`move` 报 -9 → 源已被搬走，回目标核对；报 -8 → 目录太大，改 `--async=1`
 
@@ -82,6 +83,12 @@ node "$SK/scripts/model-backup.mjs" verify --pack=<包.zip> --password=<密码>
 node "$SK/scripts/model-backup.mjs" restore --pack=<包.zip> --to=<还原目录> --password=<密码>
 node "$SK/scripts/model-backup.mjs" upload --pack=<包.zip> --remote=/apps/bdpan/model-backup/x.zip
 
+# 传输层（原生分片：进度 + 速度 + 断点续传 + sha256 校验）
+node "$SK/scripts/transfer.mjs" upload   --file=<本地文件> --remote=/apps/bdpan/x.zip --slice=32MB
+node "$SK/scripts/transfer.mjs" download --remote=/apps/bdpan/x.zip --to=<本地文件> --expect-sha256=<hex>
+node "$SK/scripts/transfer.mjs" hash     --file=<本地文件>
+node "$SK/scripts/transfer.mjs" ledger
+
 # 脚本自检（只测参数解析等纯函数，不连网、不碰盘点库）——改完脚本跑一遍
 node "$SK/scripts/selftest.mjs"
 ```
@@ -93,7 +100,8 @@ node "$SK/scripts/selftest.mjs"
 `du` 任意子树汇总 · `big` 大目录 · `dup` md5 重复 · `deep` 路径过深的文件 · `find` 文件名检索 ·
 `dump` 导出子树为 JSON · `plan` 移动前用库校验 spec · `reset` 清空缓存 · `baidu-netdisk-move.mjs` 执行移动 ·
 `model-backup.mjs` 备份模型（模型 + 同名附件 → 加密 zip → 上传 → 台账），方法与还原流程见
-`references/model-backup-method.md`。
+`references/model-backup-method.md` · `scripts/transfer.mjs` 传输层（上传/下载/哈希/台账，**进度 + 续传 + 校验**）·
+`scripts/hashes.mjs`（流式哈希）与 `scripts/xpan-api.mjs`（百度原生协议）是它用的库模块，不要单独跑。
 
 stdout 是单行 JSON 信封（`{"ok":true,"data":...}`），人读表格与进度在 stderr。
 
@@ -113,6 +121,7 @@ Git Bash 下跑这两个脚本必须加 `MSYS2_ARG_CONV_EXCL='*'`，否则 `/课
 - `references/dirsize.md` —— 拿目录**权威体积**的正确接口（openapi 的 `method=dirsize` 提交任务 + web 端 `/mid_mucw/api/ostp/file/taskQuery` 取结果）、为什么自己枚举加总会偏低、以及怎么从网盘 JS bundle 里挖出未知接口；**要目录大小、或要查「网盘到底调了哪个接口」时读**
 - `references/counter-examples.md` —— **反例清单**：这次实际犯过的 21 个错（枚举算体积、猜接口名、`category` 判目录、按 100 判断末页、`make_dir` 默认 rtype、`async=1` 误判失败、`AbortSignal.timeout` 提前退出、Git Bash 路径转换、并发开 mcp-remote、以为 MCP 没有删除…）；**动手前先扫一眼，能省掉几小时的错**
 - `references/model-backup-method.md` —— **模型备份方法（我们自己的做法）**：选模型 → 收集同名附件 → zip 加密 → 上传网盘 → 台账，含目录命名约定、密码约定、还原流程与踩过的坑；**要备份模型到网盘、或要还原某个备份时读**
+- `references/transfer-protocol.md` —— **传输协议与实测边界**：百度原生分片上传三段式（precreate/superfile2/create）、服务端驱动的续传、下载 dlink 与 Range、**两级哈希口径**（片级 md5 / 文件级 sha256 / 网盘 md5 为何不能当尺子）、bdpan CLI 的实测边界与速度基线；**要传大文件、排查上传下载、或做同步之前读**
 - `references/governance-playbook.md` —— 治理决策手册（分类法怎么设计、怎么识别「体量-用途错配」、隔离与删除的取舍、索引怎么写）；**定分类法或用户问「该删什么」时读**
 - `references/INDEX.md` —— 本目录索引
 

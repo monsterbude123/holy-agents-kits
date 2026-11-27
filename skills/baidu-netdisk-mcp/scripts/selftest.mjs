@@ -58,5 +58,79 @@ eq('没写就是没有', parseArgs([])['k'], undefined);
 eq('后写的覆盖先写的', parseArgs(['--k=1', '--k=2'])['k'], '2');
 eq('值里有等号', parseArgs(['--k=a=b'])['k'], 'a=b');
 
+// ---- hashes：流式哈希与分块 ----
+// 这一段是「百度 block_list 必须对得上」的护栏：片边界错一位，
+// 服务端就整片拒收，而本地不报错 —— 属于静默错误。
+{
+  const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { createHash } = await import('node:crypto');
+  const { digestFile, sha256File, md5File, sliceSizeFor, SLICE_BYTES } = await import('./hashes.mjs');
+
+  const dir = mkdtempSync(join(tmpdir(), 'bnm-selftest-'));
+  const write = (name, buf) => { const p = join(dir, name); writeFileSync(p, buf); return p; };
+  const md5b = (b) => createHash('md5').update(b).digest('hex');
+  const sha = (b) => createHash('sha256').update(b).digest('hex');
+
+  // 切片大小按会员等级。
+  // 断言必须钉**绝对字节值**，不能写成 sliceSizeFor(x) === SLICE_BYTES.y ——
+  // 那是同义反复：把常量改错，测试照样绿（变异检验实测：32MB 改成 30MB 竟然没红）。
+  eq('普通用户 4MB', sliceSizeFor(0), 4 * 1024 * 1024);
+  eq('会员 16MB', sliceSizeFor(1), 16 * 1024 * 1024);
+  eq('超级会员 32MB', sliceSizeFor(2), 32 * 1024 * 1024);
+  eq('svip 常量就是 32MB', SLICE_BYTES.svip, 32 * 1024 * 1024);
+  eq('free 常量就是 4MB', SLICE_BYTES.free, 4 * 1024 * 1024);
+
+  // 小文件：单片
+  const small = Buffer.from('hello netdisk');
+  const pSmall = write('small.bin', small);
+  const dSmall = digestFile(pSmall, 4 * 1024 * 1024);
+  eq('小文件片数', dSmall.blocks.length, 1);
+  eq('小文件整文件md5', dSmall.md5, md5b(small));
+  eq('小文件整文件sha256', dSmall.sha256, sha(small));
+  eq('小文件片md5', dSmall.blockList[0], md5b(small));
+  eq('小文件片sha256', dSmall.blocks[0].sha256, sha(small));
+
+  // 恰好整片：不应多出空片
+  const exact = Buffer.alloc(1024, 7);
+  const pExact = write('exact.bin', exact);
+  const dExact = digestFile(pExact, 1024);
+  eq('恰好整片的片数', dExact.blocks.length, 1);
+  eq('恰好整片的片大小', dExact.blocks[0].size, 1024);
+
+  // 整片 + 1 字节：两片，第二片 1 字节
+  const over = Buffer.alloc(1025, 7);
+  const pOver = write('over.bin', over);
+  const dOver = digestFile(pOver, 1024);
+  eq('整片+1 的片数', dOver.blocks.length, 2);
+  eq('末片大小', dOver.blocks[1].size, 1);
+  eq('末片md5', dOver.blocks[1].md5, md5b(Buffer.alloc(1, 7)));
+
+  // 多片跨界：每片 md5 必须等于手工按同样边界切出来的 md5
+  const big = Buffer.alloc(4096 + 100);
+  for (let i = 0; i < big.length; i++) big[i] = i % 253;
+  const pBig = write('big.bin', big);
+  const dBig = digestFile(pBig, 1024);
+  eq('多片片数', dBig.blocks.length, 5);
+  const manual = [];
+  for (let o = 0; o < big.length; o += 1024) manual.push(md5b(big.subarray(o, Math.min(o + 1024, big.length))));
+  eq('多片每片md5与手工一致', JSON.stringify(dBig.blockList), JSON.stringify(manual));
+  eq('多片整文件md5', dBig.md5, md5b(big));
+  eq('多片整文件sha256', dBig.sha256, sha(big));
+  eq('多片片index连续', JSON.stringify(dBig.blocks.map((b) => b.index)), JSON.stringify([0, 1, 2, 3, 4]));
+
+  // 非法切片大小必须抛错，不能死循环（守卫有测试守着）
+  let threw = false;
+  try { digestFile(pSmall, 0); } catch { threw = true; }
+  eq('切片大小为 0 要抛错（否则死循环）', threw, true);
+
+  // 单文件哈希与分块版必须一致（不能因为流式切分改了整体结果）
+  eq('sha256File 与 digestFile 一致', sha256File(pBig), dBig.sha256);
+  eq('md5File 与 digestFile 一致', md5File(pBig), dBig.md5);
+
+  rmSync(dir, { recursive: true, force: true });
+}
+
 console.log(`${failed ? 'FAIL' : 'OK'}：${passed} 通过，${failed} 失败`);
 process.exit(failed ? 1 : 0);
