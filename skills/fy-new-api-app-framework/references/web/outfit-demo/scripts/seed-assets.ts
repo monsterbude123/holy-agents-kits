@@ -3,7 +3,7 @@
 // 用法：在项目根配置好 .env.local 后：
 //   cd apps/ai-outfit
 //   bun run scripts/seed-assets.ts \
-//     --pack-root "C:/Users/Administrator/.../asset-packs" \
+//     --pack-root "<path-to-asset-packs>" \
 //     --client-id "nac_xxxxxxxx"
 //
 // 幂等：按 (client_id, provider_id) upsert。

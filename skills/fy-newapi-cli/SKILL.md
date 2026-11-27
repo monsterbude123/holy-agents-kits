@@ -15,7 +15,8 @@ description: >-
 
 `fy-newapi-cli` is a thin HTTP client for the new-api admin API. It never touches
 the database directly and only needs a server URL plus a personal access token
-(PAT). Source lives in `cmd/fy-newapi-cli/`; it depends only on the standard
+(PAT). Its source lives in the upstream new-api repo at `cmd/fy-newapi-cli/`
+(not in this skill package); it depends only on the standard
 library and `spf13/cobra`.
 
 ## Install
@@ -35,7 +36,7 @@ users pass the same arguments unchanged (`--data` quoting applies).
 
 The server must be the same build that embeds the dashboard, because the login
 flow is served by the web UI. Rebuild and restart the server after changing
-either the frontend or `controller/cli_auth.go`.
+either the frontend or the upstream repo's `controller/cli_auth.go`.
 
 ## Authenticate
 

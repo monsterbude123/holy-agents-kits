@@ -1,6 +1,6 @@
 # JVM（Java / Kotlin）分册
 
-> **本分册的地位**：JVM 是 IDEA **全版本捆绑**的语言栈（社区版即可用）→ edition 门禁 = `community`，是所有语言里门槛最低的一档。它同时是 `idea-backend` 最早的实战场景（审查→修复流水线在 `ai-ocr-std-services` 上跑出 104 → 0）。
+> **本分册的地位**：JVM 是 IDEA **全版本捆绑**的语言栈（社区版即可用）→ edition 门禁 = `community`，是所有语言里门槛最低的一档。它同时是 `idea-backend` 最早的实战场景（审查→修复流水线在早期 JVM 实战项目上跑出 104 → 0）。
 > **本分册还没建配置侧清单**（没有 `checklist.json` / `idea-settings.json`）—— JVM 的"接进 IDEA"多数由 Maven/Gradle + JDK 自动完成；要把 IDE 侧设置也纳入自证清单，照 [../../capability-matrix.md](../../capability-matrix.md) §5 的契约补。
 
 ---

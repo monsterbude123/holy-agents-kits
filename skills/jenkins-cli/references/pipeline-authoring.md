@@ -48,7 +48,7 @@ pipeline {
         sh '''
           docker rm -f <app>-run 2>/dev/null || true
           docker run -d --name <app>-run --restart unless-stopped -p <host-port>:<app-port> <app>:latest
-          curl -fsS --max-time 5 http://localhost:<host-port>/ >/dev/null   // 冒烟：部署后打一次真实接口
+          curl -fsS --max-time 5 http://localhost:<host-port>/ >/dev/null   # 冒烟：部署后打一次真实接口（sh 块内只能用 # 注释，// 会被 curl 当 URL）
         '''
       }
     }

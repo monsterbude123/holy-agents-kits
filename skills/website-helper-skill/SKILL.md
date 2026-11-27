@@ -1,6 +1,6 @@
 ---
 name: website-helper-skill
-description: "把本地网页或已有后端发布到子域名（HTTPS 自动证书）——自带 publish CLI，DNS / Nginx / SSL 一条命令走完，也能给反代后端挂域名。用户说发布、上线、部署子域名、加子域名、更新网站、回滚上一版、申请/续签证书、设计并部署页面、给 docker 服务挂域名、反向代理时用。凭据只从仓库根 .agents/.env 读，绝不回显。"
+description: "把本地网页或已有后端发布到子域名（HTTPS 自动证书）——自带 publish CLI，DNS / Nginx / SSL 一条命令走完，也能给反代后端挂域名。用户说发布、上线、部署子域名、加子域名、更新网站、回滚上一版、申请/续签证书、设计并部署页面、给 docker 服务挂域名、反向代理时用。凭据源：仓库根 .agents/.env 与 ~/.publish/config.yaml，绝不回显。"
 ---
 
 # website-helper-skill — 子域名发布
@@ -37,7 +37,7 @@ publish rollback blog.example.com                                    # 退回上
 
 ## 红线（做任何一步之前）
 
-1. 绝不复述 `.env` 里 `*_KEY` / `*_SECRET` / `*_PASSWORD` / `*_TOKEN` 的值——回复、日志、截图都不行。
+1. 绝不复述凭据源（`.agents/.env` 与 `~/.publish/config.yaml`）里 `*_KEY` / `*_SECRET` / `*_PASSWORD` / `*_TOKEN` 的值——回复、日志、截图都不行。
 2. 只看字段名与是否存在；用户粘贴了真实 secret，立即提醒轮换。
 3. 让用户自己编辑 `.agents/.env`，不要在对话里写或改凭据值。
 4. 要展示配置状态就 `publish config show`，**不要 `cat .env`**。
@@ -51,7 +51,7 @@ publish config init | show
 publish deploy NAME -d DOMAIN (-w DIR | --upstream URL) [--ip IP] [--no-ssl] [--force]
 publish rollback DOMAIN
 publish list
-publish cert status | publish cert renew [DOMAIN]
+publish cert status | publish cert renew <DOMAIN>
 ```
 
 ---

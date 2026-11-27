@@ -12,9 +12,6 @@ Official documentation:
 - web.dev Core Web Vitals (CLS): https://web.dev/articles/cls
 - Material Design state layers: https://m3.material.io/foundations/interaction/states
 
-Vendored background: `../vendor/ui-ux-pro-max/skills/ui-ux-pro-max/SKILL.md`,
-`../vendor/ui-ux-pro-max/skills/design-system/references/`.
-
 ## 1. Design Tokens
 
 One set of tokens, defined once, consumed by every screen. In this stack the

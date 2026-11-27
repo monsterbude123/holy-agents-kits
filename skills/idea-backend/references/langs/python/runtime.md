@@ -2,7 +2,7 @@
 
 > **怎么读这份文档**：通用档位定义与探测判据见 [../../capability-matrix.md](../../capability-matrix.md)；本文是 **Python 那一档的实测值**。
 > 实测环境（2026-11-22）：Windows 11、IDEA **IC 2026.2.5（社区版）** + **Python Community Edition 262.12573.28**（Marketplace id 7322）+ Index 插件 **5.20.7**。
-> 被测工程：`ai-short-studio-monster-2`（含若干 `.py` 脚本）。
+> 被测工程：内部项目（含若干 `.py` 脚本，名略）。
 
 ---
 

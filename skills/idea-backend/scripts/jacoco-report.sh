@@ -7,8 +7,12 @@ set -u
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ] || [ "${1:-}" = "help" ]; then
   sed -n '2,/^[^#]/p' "$0" | sed 's/^# \{0,1\}//' | sed '/^$/d'; exit 0
 fi
-# default = this repo's devcontainer; override with DEVCONTAINER=<name> for other projects
-CTR="${DEVCONTAINER:-ai-ocr-std-services_devcontainer-app-1}"
+# devcontainer 容器名因项目而异（docker ps 查真实名）；未传 DEVCONTAINER 直接报错退出，不猜默认名
+CTR="${DEVCONTAINER:-}"
+if [ -z "$CTR" ]; then
+  echo "错误：请用 DEVCONTAINER=<容器名> 传入 devcontainer 容器名（docker ps 查）" >&2
+  exit 2
+fi
 TEST_ARGS="${1:-}"
 JACOCO_VER="${JACOCO_VER:-0.8.12}"
 

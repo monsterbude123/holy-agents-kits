@@ -1,6 +1,6 @@
 # 审查→修复流水线（IDEA 检视驱动）
 
-> **来源**：2026-11-17 在 `ai-ocr-std-services`（JDK25 + Spring Boot 4，60 主代码 + 47 测试文件）实战的完整复盘。
+> **来源**：2026-11-17 在一个 JDK25 + Spring Boot 4 项目（60 主代码 + 47 测试文件）实战的完整复盘。
 > 那一轮把 IDEA 全局检视项从 **104 → 0**、改了 **66 个文件**、**314 个测试全绿**，
 > 但**耗时 2h20m —— 产出量与耗时不匹配**。本 playbook 把「慢在哪」拆成可执行规则，把目标压到 **≤45min**。
 
@@ -176,7 +176,7 @@ bash scripts/inspect-diff.sh "$(pwd)"     # 改动集的门禁（uncommitted 自
 
 ### §4.1 子代理 MCP 授权清单（照抄，别自己抄一遍）
 
-**前提**：自定义 agent 的 `frontmatter tools:` 写什么就有什么；**内置类型 agent（general-purpose / Explore）工具表固定、没有 MCP** → 代码调查类必须派自定义 agent。最常见的错漏是**只授 `mcp__idea-builtin__*`**（那样没有 `ide_find_references`，子代理只能改用文本搜索找引用）。
+**前提**：自定义 agent 的 `frontmatter tools:` 写什么就有什么；**内置类型 agent（general-purpose / Explore）工具表固定、没有 MCP** → 代码调查类必须派自定义 agent。最常见的错漏是**只授内置 server 的 `mcp__idea__*`**（那样没有 `ide_find_references`，子代理只能改用文本搜索找引用）。
 
 最小授权（2026-11-20 按 server 实测工具面校准）：
 
@@ -199,11 +199,11 @@ tools:
   - mcp__idea-index__ide_diagnostics
   - mcp__idea-index__ide_sync_files
   - mcp__idea-index__ide_index_status
-  - mcp__idea-builtin__read_file
-  - mcp__idea-builtin__get_file_problems
-  - mcp__idea-builtin__lint_files
-  - mcp__idea-builtin__search_symbol
-  - mcp__idea-builtin__analyze_calls
+  - mcp__idea__read_file
+  - mcp__idea__get_file_problems
+  - mcp__idea__lint_files
+  - mcp__idea__search_symbol
+  - mcp__idea__analyze_calls
 ---
 ```
 

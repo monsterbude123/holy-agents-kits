@@ -16,7 +16,7 @@
 | Git Bash + curl | 下载/探测 | 有 |
 | node | JSON 解析（宿主机无 python） | v24 |
 | 本地代理 `http://127.0.0.1:10808` | JetBrains/GitHub 域名直连不通，**所有外网 curl 必须带 `-x http://127.0.0.1:10808`** | 系统代理（注册表 ProxyServer） |
-| devcontainer（可选） | 提取与容器一致的 JDK | `ai-ocr-std-services_devcontainer-app-1`（Temurin 25.0.5+8，路径 `/usr/local/sdkman/candidates/java/current`） |
+| devcontainer（可选） | 提取与容器一致的 JDK | 示例容器 `<project>_devcontainer-app-1`（Temurin 25.0.5+8，路径 `/usr/local/sdkman/candidates/java/current`；容器名以 `docker ps` 实测为准） |
 | JDK 20+（javap 用，可选） | 反编译排查 | 装好后即自持 |
 
 注意：从 Linux 容器 `docker cp` 出来的 JDK 是 **Linux 版**（ELF 二进制），Windows 宿主机跑不了；索引虽可经 jrt-fs 跨平台读，但稳妥做法是另下 Windows 版（Adoptium API：`https://api.adoptium.net/v3/binary/latest/25/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk`）。
@@ -92,7 +92,7 @@ JDK 放 `<workspace>\jdks\temurin-25-win`，`bin/java -version` 验证。**JDK �
   <component name="TrustedProjects">
     <option name="TRUSTED_PROJECT_PATHS">
       <map>
-        <entry key="D:/workplace/code/syx/ai-ocr-std-services" value="true" />
+        <entry key="D:/workplace/code/<project>" value="true" />
       </map>
     </option>
   </component>
@@ -117,7 +117,7 @@ JDK 放 `<workspace>\jdks\temurin-25-win`，`bin/java -version` 验证。**JDK �
 **现行姿势（2026-11-17 起验证多轮）**：Bash 工具用 `run_in_background: true` 直接跑 exe——后台任务跨轮持续存活，进程不会被回收：
 
 ```bash
-/d/workplace/idea-2026.2.5/bin/idea64.exe "D:\\workplace\\code\\syx\\ai-ocr-std-services" > <某日志> 2>&1   # run_in_background=true
+/d/workplace/idea-2026.2.5/bin/idea64.exe "D:\\workplace\\code\\<project>" > <某日志> 2>&1   # run_in_background=true
 ```
 
 就绪等待（**硬上限 60s、每次迭代输出进度**；一般 10-30s 内 29170 就返回 200）：

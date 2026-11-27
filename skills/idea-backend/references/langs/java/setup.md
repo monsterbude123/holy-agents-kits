@@ -2,7 +2,7 @@
 
 > **本分册的地位**：JVM 是 IDEA **全版本捆绑**的语言栈（社区版即可用）→ edition 门禁 = `community`，
 > 是所有语言里门槛最低的一档；它同时是 `idea-backend` 最早的实战场景（审查→修复流水线在
-> `ai-ocr-std-services` 上跑出 104 → 0）。
+> `idea-backend` 最早的实战 JVM 项目上跑出 104 → 0）。
 > **通用部分不在这里**：装环境/机器事实见 [../../setup-0to1.md](../../setup-0to1.md) 与 `scripts/setup-env.sh`；
 > 运行期能力档位见 [../../capability-matrix.md](../../capability-matrix.md) §3；检视规则与噪声豁免见
 > [profile.md](profile.md) 与 [rules/README.md](rules/README.md)。

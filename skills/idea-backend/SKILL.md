@@ -59,16 +59,16 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 
 | Server | 端点 | 工具 |
 | --- | --- | --- |
-| `idea`（内置，2026.2.5，25 个） | `http://127.0.0.1:64342/sse`（SSE） | `search_symbol`（项目/依赖/JDK 符号）、`analyze_calls`（调用树）、`read_file`（依赖/Jar/JDK 源码与反编译）、`get_file_problems`/`lint_files`、`build_project`、`apply_patch`、`search_text/regex/file`、`get_symbol_info`、`rename_refactoring`、`get_run_configurations`/`execute_run_configuration`、`execute_terminal_command`、`git_status`/`get_repositories` |
+| `idea`（内置，2026.2.5，2026-11-27 实测 24 个，以 `mcp-call.sh list` 实时为准） | `http://127.0.0.1:64342/sse`（SSE） | `search_symbol`（项目/依赖/JDK 符号）、`analyze_calls`（调用树）、`read_file`（依赖/Jar/JDK 源码与反编译）、`get_file_problems`/`lint_files`、`build_project`、`apply_patch`、`search_text/regex/file`、`get_symbol_info`、`rename_refactoring`、`get_run_configurations`/`execute_run_configuration`、`execute_terminal_command`、`git_status`/`get_repositories` |
 | `idea-index`（Index 插件，**上游版 16 个**） | `http://127.0.0.1:29170/index-mcp/streamable-http`（HTTP） | `ide_find_class`/`ide_find_file`/`ide_find_definition`/`ide_find_references`/`ide_find_implementations`/`ide_find_super_methods`、`ide_call_hierarchy`/`ide_type_hierarchy`、`ide_search_text`、`ide_diagnostics`、`ide_refactor_rename`/`ide_refactor_safe_delete`/`ide_move_file`、`ide_sync_files`、`ide_index_status`、`ide_project_status` |
-| `idea-index`（**monster 分支额外 3 个**） | 同上 | `ide_inspect`（按 scope 批检视，`files/uncommitted`=daemon-core 含 P3C + global 出 XML）、`ide_refactor_extract_method`（头less 抽方法）、`ide_create_from_template`（IDEA 文件模板建类型） |
+| `idea-index`（**monster 分支额外 4 个**，2026-11-27 live） | 同上 | `ide_inspect`（按 scope 批检视，`files/uncommitted`=daemon-core 含 P3C + global 出 XML）、`ide_refactor_extract_method`（头less 抽方法）、`ide_create_from_template`（IDEA 文件模板建类型）、`ide_run_control`（run 配置 status/stop/stopAll） |
 
 > **工具面以实测为准**：`bash scripts/mcp-call.sh list index` 拿当前 server 真实暴露的工具（判上游版 vs monster 版、判某工具在不在）。**文档写的工具可能不在你的插件版本里**（上游 5.20.7 就没有 `ide_inspect`）——判据与降级口径见 [references/ops-memo.md](references/ops-memo.md) §1-§2。
 
 ## 五、使用策略
 
 0. **调用一律走 scripts，禁止手搓 curl/JSON-RPC**（手搓已产生过：花括号拼接错、SSE 解析漏行、路径未转换等多次翻车）：
-   - **审查基线（主场景）**：`bash scripts/audit-baseline.sh [projectPath] [batchSize=25] [--whole]` —— 自动门禁 → 分批检视 → 归一化 `file:line | tool | desc` 清单分 MAIN/TEST/NOISE 三段。**手搓 curl 跑 6+ 次检视 = 25 分钟，它 28 秒**
+   - **审查基线（主场景）**：`bash scripts/audit-baseline.sh [projectPath] [batchSize=15] [--whole]` —— 自动门禁 → 分批检视 → 归一化 `file:line | tool | desc` 清单分 MAIN/TEST/NOISE 三段。**手搓 curl 跑 6+ 次检视 = 25 分钟，它 28 秒**
    - **改动后门禁**：`bash scripts/inspect-diff.sh` —— 自动取 `git diff HEAD + untracked` 代码文件集 → 检视 → 问题清单（`--all` 含文档）；任意工具调用：`bash scripts/mcp-call.sh index <tool> '<json-args>' [timeoutSec]`（或 `builtin`），输出即 content[0].text
 1. **先验就绪**：`ide_index_status` 通过后再做语义查询；VFS 落后先 `ide_sync_files`。
 2. **symbolId 复用**：名字法（`ide_find_class` → symbolId）先定位，拿到 `symbolId` 后续引用/层级调用复用它；位置法（`file` + `line`/`column` 1-based 落符号首字符 + `language`）是兜底 —— **但 `language` 参数的枚举是运行时算的**（= 该插件注册了 SymbolReferenceHandler 且该语言插件被探测到的语言集）：实测 Java/Kotlin/Python 放行、TS 在没有 JS/TS 插件时报错；**Go/Rust 永远不会进枚举**（插件没给它们注册 handler）。见 [references/capability-matrix.md](references/capability-matrix.md) §3.4。
@@ -83,7 +83,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
    | 调用树/层级/实现 | `analyze_calls` / `ide_call_hierarchy` / `ide_type_hierarchy` / `ide_find_implementations` | 语义关系 |
    | 新建类型文件 | `ide_create_from_template` | package/文件头/格式化自动 |
 5. **改名/删除**：先 `dryRun:true` 看冲突预检，用户明确要求才真改；`ide_refactor_safe_delete` 自带 usage 检查。不要用文本替换模拟重构。
-6. **检查自检闭环**：改动后跑 `scripts/inspect-diff.sh`（或 `get_file_problems` 文件级）核对无 error，再交项目既定构建通道（本仓构建在 devcontainer：`docker exec -u vscode ai-ocr-std-services_devcontainer-app-1 bash -lc "cd /workspace && mvn -q test"`）。
+6. **检查自检闭环**：改动后跑 `scripts/inspect-diff.sh`（或 `get_file_problems` 文件级）核对无 error，再交项目既定构建通道（示例：devcontainer 仓构建 `docker exec -u vscode <project>_devcontainer-app-1 bash -lc "cd /workspace && mvn -q test"`，容器名以 `docker ps` 实测为准）。
 7. **读依赖/JDK 源码**：内置 `read_file` 支持库路径与反编译，不要手动解 jar。
 8. **进程全部交 IDE 托管，agent 不自持后台进程**（用户裁定）：跑应用/服务用 `get_run_configurations` + `execute_run_configuration`（进程进 IDEA Run 面板，IDE 关闭即全部终止）。**一次性命令**用内置 `execute_terminal_command`——⚠️ 它是 **CreateProcess 直调、不是 shell**（PATH 取 IDEA 进程环境）：只做单步小命令；复合命令显式包 `cmd /c`（Windows）或 `bash -lc`；**禁止后台化**（`start /b`/`&` 会挂死整次调用）；构建/测试走项目既定通道。实测口径见 [references/ops-memo.md](references/ops-memo.md) §3。
 9. **分工**：查引用/改名/查错/检索分析（要精确）→ 本 skill；已知路径读文件 → 常规文件工具；**理解/梳理全貌 → codegraph，除非仓库声明 IDEA-only**（见下）。
@@ -141,7 +141,7 @@ description: 把本机 IDEA 当 agent 的多语言语义后端，分两段用。
 - **语言 × 能力档位矩阵（档位定义 / 探测判据 / 升档动作 / 新增分册契约）** → [references/capability-matrix.md](references/capability-matrix.md)
 - **分册内部件**：TS 分册的引文快照 [references/langs/ts/sources.md](references/langs/ts/sources.md)、运行期档位与侧载实验留档 [references/langs/ts/runtime.md](references/langs/ts/runtime.md)、真实仓库回归记录 [references/langs/ts/field-test.md](references/langs/ts/field-test.md)、逐步操作手册 [references/langs/ts/setup-manual.md](references/langs/ts/setup-manual.md)；Python 分册的引文快照 [references/langs/python/sources.md](references/langs/python/sources.md)、运行期档位实测 [references/langs/python/runtime.md](references/langs/python/runtime.md)；JVM 分册的引文快照 [references/langs/java/sources.md](references/langs/java/sources.md)、档位与检视噪声 [references/langs/java/profile.md](references/langs/java/profile.md)；Go/Rust 分册的门禁与平替 [references/langs/go/setup.md](references/langs/go/setup.md) / [references/langs/rust/setup.md](references/langs/rust/setup.md)、档位 [references/langs/go/runtime.md](references/langs/go/runtime.md) / [references/langs/rust/runtime.md](references/langs/rust/runtime.md)、引文底账 [references/langs/go/sources.md](references/langs/go/sources.md) / [references/langs/rust/sources.md](references/langs/rust/sources.md)；分册探测器 [scripts/langs/ts/detect.mjs](scripts/langs/ts/detect.mjs) / [scripts/langs/java/detect.mjs](scripts/langs/java/detect.mjs) / [scripts/langs/python/detect.mjs](scripts/langs/python/detect.mjs) / [scripts/langs/go/detect.mjs](scripts/langs/go/detect.mjs) / [scripts/langs/rust/detect.mjs](scripts/langs/rust/detect.mjs)（通用分发器按语言调用，新增语言照它的形状写）
 - **语义后端选型（IDEA vs VS Code/LSP/代码图：实测对照、协议级硬墙、平替清单、对比实验设计）** → [references/semantic-backend-options.md](references/semantic-backend-options.md)（⚠️ 它的 §4 旧选型表与比例阈值**已作废** —— 现行决策表见下一行）
-- **跨后端选型决策表（任务类型 × 语言 → 推荐后端 / 依据 / 证据等级 / 代价与前提 / 何时别选它）** → [references/capability-matrix.md](references/capability-matrix.md) **§7（SSOT）**（同源副本在 vscode-backend 技能的 runtime.md §8 —— 两个技能各自独立分发，各带一份；仓内门禁 `scripts/check-selection-table.js` 逐格对账两份副本与每个数字的出处指针）
+- **跨后端选型决策表（任务类型 × 语言 → 推荐后端 / 依据 / 证据等级 / 代价与前提 / 何时别选它）** → [references/capability-matrix.md](references/capability-matrix.md) **§7（SSOT）**（同源副本在 vscode-backend 技能的 runtime.md §8 —— 两个技能各自独立分发，各带一份；仓内门禁 `scripts/check-selection-table.js`（在 kit 仓根 scripts/，不随技能分发）逐格对账两份副本与每个数字的出处指针）
 - **审查→修复流水线（方法论 + 时间预算 + 反例集 + 子代理模板 + MCP 授权清单）** → [references/audit-fix-playbook.md](references/audit-fix-playbook.md)
 - **运维备忘（工具面实测、降级能力差距、终端真实语义、路径坑、索引归属）** → [references/ops-memo.md](references/ops-memo.md)
 - **IDEA 安装与部署（版本事实、目录、踩坑实录）** → [references/setup-0to1.md](references/setup-0to1.md)

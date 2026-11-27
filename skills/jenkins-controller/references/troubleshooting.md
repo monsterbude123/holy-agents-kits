@@ -8,7 +8,7 @@
 | 症状 | 根因 | 处理 |
 |---|---|---|
 | `sudo: sorry, you must have a tty` | sudo 默认要 tty，Jenkins `sh` 块没有 | sudoers 加 `Defaults:jenkins !use_pty` |
-| `sudo: a password is required`（明明在 sudoers 白名单里） | sudoers 是**命令 + 固定参数**的精确白名单，多带一个参数（如 `--no-pager`）就不匹配 | 调用必须照抄白名单原始形式：`sudo -n /bin/systemctl status ai-short-studio-prod.service` |
+| `sudo: a password is required`（明明在 sudoers 白名单里） | sudoers 是**命令 + 固定参数**的精确白名单，多带一个参数（如 `--no-pager`）就不匹配 | 调用必须照抄白名单原始形式：`sudo -n /bin/systemctl status <business>-prod.service` |
 | `sudo -u www npm install` EACCES（缓存目录） | 宝塔 npm 全局 cache 在 `/www/server/nodejs/cache`，容器没挂 → www 无权建目录；www 家目录也要可写 | 把 `/www/server/nodejs/cache` 挂进容器 + 给 www 可写的家目录；HOME 语义见 `references/controller-container.md` §2 |
 | 容器里 `systemctl: command not found` | 镜像没装 systemd | apt 装 systemd（只为拿 `/bin/systemctl`） |
 | `sudo systemctl restart` 连不上宿主 systemd | 没挂宿主 systemd socket | 挂 `/run/systemd/private` + `/run/dbus/system_bus_socket` |

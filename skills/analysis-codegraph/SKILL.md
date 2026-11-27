@@ -1,6 +1,6 @@
 ---
 name: analysis-codegraph
-description: 'Code-context tool for repositories indexed by codegraph. Invoke before answering a code question or making a non-trivial edit, and again whenever the investigation direction changes. Use it to locate a symbol, trace a call path, measure the blast radius of a rename or deprecation, survey an unfamiliar subsystem, or diagnose a bug by symbol and call path. One call returns verbatim source grouped by file plus the call graph and blast radius, replacing a Grep + Read + Grep loop. Do not use it for git history, docs, config files, greenfield generation, or literal string searches such as finding every console.log.'
+description: 'Code-context tool for repositories indexed by codegraph. Invoke before answering a code question or making a non-trivial edit, and again whenever the investigation direction changes. Use it to locate a symbol, trace a call path, measure the blast radius of a rename or deprecation, survey an unfamiliar subsystem, or diagnose a bug by symbol and call path. One call returns verbatim source grouped by file plus the call graph and blast radius, replacing a Grep + Read + Grep loop. Do not use it for git history, docs, config files, or literal string searches such as finding every console.log.'
 ---
 
 # Codegraph — 代码图谱分析

@@ -33,7 +33,11 @@ from pathlib import Path
 import paramiko
 
 SCRIPT = Path(__file__).resolve()
-ROOT = SCRIPT.parents[4]          # scripts -> … -> repo 根
+# 兼容源码/安装两种布局：向上找第一个含 .agents/ 子目录的祖先 = 项目根
+ROOT = next(
+    (p for p in SCRIPT.parents if (p / ".agents").is_dir()),
+    SCRIPT.parents[4],
+)
 ENV_FILE = ROOT / ".agents" / ".env"
 
 

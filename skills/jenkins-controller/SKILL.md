@@ -8,7 +8,9 @@ description: 容器化 Jenkins 控制器的部署、迁移、切换与体检。I
 只管**控制器本身**（跑 Jenkins 的容器/进程）：部署、迁移、切上游、安全收敛、体检。
 写流水线、改 Jenkinsfile、配凭据 → `jenkins-cli` 技能，不要在这里找。
 
-部署包在 `<repo>/test-190/jenkins/`（compose、Dockerfile、init.groovy.d、sudoers drop-in）；
+部署包**不入仓**（内容 = compose、Dockerfile、init.groovy.d、sudoers drop-in）；定位走
+`scripts/lib/pkg.sh` 的 `resolve_pkg_dir()`：`PKG_DIR` 环境变量 → 仓库内相对路径（仅当包真的在仓里）→
+服务器兜底 `/opt/deploy-services/test-190/jenkins`。
 服务器上脚本与包同根：`/opt/deploy-services/{.agents/skills/jenkins-controller,test-190/jenkins}`。
 
 ## §1 骨架流程

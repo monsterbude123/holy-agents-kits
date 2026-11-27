@@ -17,7 +17,7 @@ description: Jenkins 流水线编写与日常运维：写/生成/校验 Jenkinsf
 | 诉求 | 直接做 | 判据 |
 |---|---|---|
 | "写条流水线 / 改 Jenkinsfile" | `references/pipeline-authoring.md` 选模板 → 改 | lint error=0 |
-| "校验 Jenkinsfile" | `python scripts/validate_jenkinsfile.py <Jenkinsfile>` | 退出码 0，且输出 `error=0` |
+| "校验 Jenkinsfile" | `python scripts/validate_jenkinsfile.py <Jenkinsfile>` | 退出码 0，且输出含 `合计: ERROR=0` |
 | "抽一套共享库" | `python scripts/generate_shared_library.py` | 生成目录 + 骨架文件 |
 | "拉码 401/404/403、webhook 不触发" | `references/dood-and-gitlab.md` §2 | — |
 | "容器里 docker.sock 权限 / workspace 权限" | `references/dood-and-gitlab.md` §1 | — |
@@ -36,7 +36,7 @@ description: Jenkins 流水线编写与日常运维：写/生成/校验 Jenkinsf
 |---|---|---|---|
 | 1 选型 | Declarative / Scripted / Shared Library | 一句话决定 | 只有多仓库复用才抽库 → `references/pipeline-authoring.md` |
 | 2 写 | 按模板生成 Jenkinsfile | Jenkinsfile | 同上（模板 + 语法速查） |
-| 3 校验 | 跑 lint，按分级修 | error=0 的报告 | `scripts/validate_jenkinsfile.py`；规则表见 `references/lint-rules.md` |
+| 3 校验 | 跑 lint，按分级修 | 报告含 `合计: ERROR=0` | `scripts/validate_jenkinsfile.py`；规则表见 `references/lint-rules.md` |
 | 4 部署 | DooD 建镜像起容器 | 镜像 + 容器 | DooD 铁律见 `references/dood-and-gitlab.md` |
 | 5 排障 | 症状对照表定位 | 根因 + 修法 | `references/troubleshooting.md` §1 |
 
@@ -58,8 +58,8 @@ description: Jenkins 流水线编写与日常运维：写/生成/校验 Jenkinsf
 1. 授权靠 `group_add` + 宿主 docker 组 gid（`.env` 的 `DOCKER_GID`），**禁止 chmod 666 docker.sock**。
 2. `docker run -v` 里的路径是**宿主**路径；别把容器内的 workspace 路径当宿主路径挂。
 3. 产物归宿主 daemon → `post` 里 prune，临时容器 `docker rm -f`。
-4. 构建容器用户要与 workspace 属主（uid 1000）一致，否则 node 构建报 EACCES：
-   用 `--user 1000:1000` 或镜像里建同名用户。
+4. 构建容器用户要与 workspace 属主一致，否则 node 构建报 EACCES：
+   用 `--user <uid>:<gid>`（对齐容器内 jenkins 用户；官方镜像默认 `1000:1000`，本仓控制器迁移后为 `110:114`，见 `jenkins-controller`）或镜像里建同名用户。
 
 ### 2.4 控制器侧的硬约束（只列不改）
 

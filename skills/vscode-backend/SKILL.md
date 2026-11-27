@@ -13,10 +13,10 @@ description: 把 VS Code 与语言服务器当 agent 的语义后端，两条腿
 
 | 腿 | 干什么 | 装 | 怎么调 | 代价 |
 |---|---|---|---|---|
-| **① VS Code 自己的能力** | 定义 / 引用 / 工作区符号 / 文档符号 / 语义 token | `code --install-extension ConnorHallman.bifrost-mcp`；`bash [scripts/install-vscode-mcp.sh](scripts/install-vscode-mcp.sh) <工作区路径>` | 工程根 `.mcp.json` 指 `type:"sse"` ⇒ 宿主自带 MCP 客户端直接用 | **窗口必须常开**；诊断与改名两个工具在 0.0.14 实测是坏的 |
+| **① VS Code 自己的能力** | 定义 / 引用 / 工作区符号 / 文档符号 / 语义 token | `code --install-extension ConnorHallman.bifrost-mcp`；`bash [scripts/install-vscode-mcp.sh](scripts/install-vscode-mcp.sh) <工作区路径>` | 工程根 `.mcp.json` 指 `type:"sse"` ⇒ 宿主自带 MCP 客户端直接用 | **窗口必须常开**；诊断工具 0.0.14 实测不可用；改名（get_rename_locations）可用性随会话波动——用前先 dry-run 自检（见 `references/setup.md`） |
 | **② 窗口外的语义后端** | 引用 / 单文件诊断 / 改名删除前的影响面 | `npm install -g @blackwell-systems/agent-lsp` + `npm install -g typescript-language-server` + 全局 `typescript@5` | `.mcp.json` 指 `{"command":"agent-lsp","args":["typescript:typescript-language-server,--stdio"]}` ⇒ MCP stdio | **server spec 必须带 `,--stdio`**（少了它 broker 自杀，报 `daemon: broker did not start`）；诊断单文件 25s、影响面 19s |
 | **③ 跨语言代码图** | 跨语言符号图 / 影响面 | `npm install -g @colbymchenry/codegraph` | MCP 工具查符号与影响面 | 本技能**未测**它的档位 |
-| **④ 直连语言服务器**（不经 MCP） | **抽方法**（TS，落盘）/ **单文件 pull 诊断**（Python） | 腿 ② 已装好服务器（`typescript-language-server` / `pyright`） | 抽方法走仓内脚本 `scripts/lsp-refactor.mjs`（客户端用微软官方 `vscode-jsonrpc`）；单文件诊断见 `references/setup.md` §6.6 | 抽方法这条路**没有现成 MCP 工具面** —— 腿 ② 的 `refactor` / `get_diagnostics` 封装实测是坏的，服务器本身是好的 |
+| **④ 直连语言服务器**（不经 MCP） | **抽方法**（TS，落盘）/ **单文件 pull 诊断**（Python） | 腿 ② 已装好服务器（`typescript-language-server` / `pyright`） | 抽方法走仓内脚本 `scripts/lsp-refactor.mjs`（客户端用微软官方 `vscode-jsonrpc`）；单文件诊断见 `references/setup.md` §6.6 | 抽方法这条路**没有现成 MCP 工具面** —— 腿 ② 的 `refactor`（tsserver 侧实测 30s 超时）与 `get_diagnostics`（实测恒返 0 条）封装不可用，服务器本身是好的 |
 | **⑤ VS Code 宿主型 MCP（vsc-lsp-mcp）** | **全项目问题清单**（= Inspect Code 等价）/ **全局改名**（落盘） | `code --install-extension CJL.lsp-mcp` | `.mcp.json` 指 `{"type":"http","url":"http://127.0.0.1:9527/mcp"}` ⇒ 工具只有一个 `execute_lsp`，能力在 `operation` 枚举里（`workspace_diagnostics` / `prepare_rename` / `rename_preview` / `rename_apply` …） | **窗口必须常开**；清单只含 VS Code 已分析过的文件；TS 上它的 `code_actions` 会 ENOENT（抽方法别走它） |
 
 > 腿 ② 的 `--stdio` 与「doctor 报 ok 不等于 daemon 链路可用」的坑，写在 `references/setup.md` 的 agent-lsp 段 —— **照抄命令前先读那一段**。

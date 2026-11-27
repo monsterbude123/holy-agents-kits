@@ -9,8 +9,6 @@ Official docs: [Install](https://daisyui.com/docs/install/) ·
 [Components](https://daisyui.com/docs/card/) ·
 [Tailwind v4 with Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs)
 
-Vendored background: `../vendor/ui-ux-pro-max/skills/design-system/references/`.
-
 ## 1. Installation
 
 Tailwind v4 is configured in CSS, not in a JavaScript config file. Do not create
@@ -214,7 +212,7 @@ is the exception.
 | `select-bordered` | `select` | 同上 |
 | `card-compact` | `card-sm` | 紧凑卡片改用尺寸修饰符 |
 | `card-bordered` | `card-border` | 需显式描边时使用 |
-| `join` / `join-item` | `flex gap-*` 或 `label.input` | **整个组件在 5.x 被移除**；输入框+图标用 `<label class="input"><svg/><input class="grow"/></label>` |
+| `btn-group` / `input-group` | `join` / `join-item` | **4.x 的 `btn-group`/`input-group` 在 5.x 被移除**，官方替代是 `join`/`join-item`（对官方升级指南核实，5.x 有效）；输入框+图标用 `<label class="input"><svg/><input class="grow"/></label>` |
 | `tabs-boxed` | `tabs-box` / `tabs-border` | `tabs-boxed` 已移除，`tabs-box` 为分段容器，`tabs-border` 为下划线 |
 | `chip` / `chip-primary` / `chip-outline` | `btn btn-xs` / `badge` | 从未存在于 DaisyUI；筛选标签用 `btn btn-xs`（选中 `btn-primary`，未选 `btn-ghost bg-base-200`） |
 | `alert-sm` / `alert-xs` | `alert` + `text-sm` | alert 没有尺寸修饰符，写了无效 |
@@ -242,17 +240,17 @@ is the exception.
 # Windows / PowerShell — 排除 admin 路由树
 Get-ChildItem -Path src -Recurse -Include *.tsx |
   Where-Object { $_.FullName -notmatch '\\admin\\' } |
-  Select-String -Pattern 'input-bordered|textarea-bordered|select-bordered|card-compact|card-bordered|alert-sm|\bjoin-item\b|tabs-boxed|chip-|form-control|label-text'
+  Select-String -Pattern 'input-bordered|textarea-bordered|select-bordered|card-compact|card-bordered|alert-sm|\bbtn-group\b|input-group|tabs-boxed|chip-|form-control|label-text'
 ```
 
 ```bash
 # macOS / Linux
-grep -rn "input-bordered\|textarea-bordered\|select-bordered\|card-compact\|card-bordered\|alert-sm\|join-item\|tabs-boxed\|chip-\|form-control\|label-text" src --exclude-dir=admin
+grep -rn "input-bordered\|textarea-bordered\|select-bordered\|card-compact\|card-bordered\|alert-sm\|btn-group\|input-group\|tabs-boxed\|chip-\|form-control\|label-text" src --exclude-dir=admin
 ```
 
 ### 8.4 交付检查项
 
 - [ ] 容器、输入、提示、弹窗、加载、标签均优先复用 DaisyUI 组件，未用工具类重造其视觉。
-- [ ] 无 `input-bordered` / `textarea-bordered` / `select-bordered` / `card-compact` / `card-bordered` / `join-item` / `tabs-boxed` / `chip-*`。
+- [ ] 无 `input-bordered` / `textarea-bordered` / `select-bordered` / `card-compact` / `card-bordered` / `btn-group` / `input-group` / `tabs-boxed` / `chip-*`（`join` / `join-item` 是合法替代，不算命中）。
 - [ ] 无原始调色板（`bg-gray-*`、`text-blue-*` 等）、无 `#hex`、无 `rgb()`；背景与 `-content` 前景成对出现。
 - [ ] 上述验收命令无输出，且结果已写入交付说明（改动的页面 + 复用的组件 + 命令实际输出）。

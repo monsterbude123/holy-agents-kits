@@ -207,7 +207,7 @@ templates/<lang>-*/                # 可选：脚手架模板
 > **这张表的读法**：每行给「推荐（主 / 备）· 依据（数字或可逐字核对的事实 + 出处指针）· 证据等级 · 代价与前提 · 何时别选它」。
 > **证据等级**四档：`实测`（本 phase 的同题对照实验）· `结构事实`（协议层 / edition 门禁事实，出处可逐字核对）· `既有实测`（phase 01/02 的实测）· `未测`（写明为什么没测、需要什么才能测）。
 > **口径提醒**：各后端的「引用」口径不同 —— IDEA = 真代码引用 · agent-lsp / pyright = 引用位置 · BifrostMCP = 扩展侧 provider · codegraph = 受影响符号（含 import 边与成员）⇒ **数字不可直接相减**。
-> **同源副本**：本节在两个技能里各存一份（技能 idea-backend 的 references/capability-matrix.md 与技能 vscode-backend 的 references/runtime.md），**逐字相同**；仓内门禁 `scripts/check-selection-table.js` 逐格对账（两份 JSON 块 · 行数 · 每个数字的出处指针 · 禁词）。
+> **同源副本**：本节在两个技能里各存一份（技能 idea-backend 的 references/capability-matrix.md 与技能 vscode-backend 的 references/runtime.md），**逐字相同**；仓内门禁 `scripts/check-selection-table.js`（在 kit 仓根 scripts/，不随技能分发）逐格对账（两份 JSON 块 · 行数 · 每个数字的出处指针 · 禁词）。
 
 | 任务类型 × 语言 | 推荐后端（主 / 备） | 依据（数字或可逐字核对的事实 + 出处） | 证据等级 | 代价与前提 | 何时别选它 |
 |---|---|---|---|---|---|
