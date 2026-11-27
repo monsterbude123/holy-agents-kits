@@ -26,19 +26,19 @@ RUNTIMES = {
     "node": {
         "script": "run.mjs",
         "template": "run.mjs.tmpl",
-        "run_cmd": 'node "<skill_dir>/scripts/run.mjs" "hello"',
+        "run_cmd": 'node "{script_dir}/scripts/run.mjs" "hello"',
         "run_note": "Node ESM ≥ 20.12，零依赖",
     },
     "python": {
         "script": "run.py",
         "template": "run.py.tmpl",
-        "run_cmd": 'python "<skill_dir>/scripts/run.py" "hello"',
+        "run_cmd": 'python "{script_dir}/scripts/run.py" "hello"',
         "run_note": "Python 标准库，零依赖",
     },
     "uv": {
         "script": "run.py",
         "template": "run.py.tmpl",
-        "run_cmd": 'uv run "<skill_dir>/scripts/run.py" "hello"',
+        "run_cmd": 'uv run "{script_dir}/scripts/run.py" "hello"',
         "run_note": "Python + uv，依赖写在脚本头 PEP 723 块",
     },
 }
@@ -98,7 +98,10 @@ description 决定触发率：写清「做什么」+「什么时候用」，必�
 ## §4 脚本
 
 <!-- 可执行的确定性流程一律固化到 scripts/，正文只留调用方式。
-     若报缺少环境变量：引导用户在 <技能目录>/.env 配置（对照 .env.example）。 -->
+     若报缺少环境变量：引导用户在本技能目录 .env 配置（对照 .env.example）。 -->
+
+**直接执行下面的命令，不要先读脚本源码**；命令报错或输出不符合预期时才读源码，
+参数不确定先跑 `--help`，不要靠读源码猜参数。
 
 ```bash
 {run_cmd}
@@ -176,7 +179,9 @@ def main(argv=None) -> int:
     skill_md.write_text(
         SKILL_MD_TEMPLATE.format(name=name, description=description, title=title,
                                  feedback_url=FEEDBACK_URL,
-                                 run_cmd=runtime["run_cmd"], run_note=runtime["run_note"]),
+                                 # 生成时展开成真实绝对路径：命令可直接复制运行，不留占位符（issue #25）
+                                 run_cmd=runtime["run_cmd"].format(script_dir=str(skill_dir.resolve())),
+                                 run_note=runtime["run_note"]),
         encoding="utf-8",
     )
     (skill_dir / "references" / "INDEX.md").write_text(REFERENCES_INDEX_TEMPLATE, encoding="utf-8")

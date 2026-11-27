@@ -74,10 +74,13 @@ MUST / NEVER / ROLLBACK 三类不可协商规则，**每条都要能被机器或
 2. 做中性化：剥离情绪词、保留事实/意图/约束，**原始话术必须留在输出里**（否则用户失去审计能力）。
 3. 跑 `verify` 校验：不通过**不得**进入下游任务。
 
+脚本位于本技能安装目录的 `scripts/` 下（下例按默认安装位置展开；装在别处时替换路径前缀）。
+**直接执行下面的命令，不要先读脚本源码**；报错或输出不符合预期时才读源码。
+
 ```bash
-python <skill_dir>/scripts/emotional-neutralize.py --self-test
-python <skill_dir>/scripts/emotional-neutralize.py temperature --emotion-score 0.75 --history-count 3 --days-ago 2
-python <skill_dir>/scripts/emotional-neutralize.py verify --original "…" --neutral "…" --annotations a.json
+python "$HOME/.agents/skills/session-distiller/scripts/emotional-neutralize.py" --self-test
+python "$HOME/.agents/skills/session-distiller/scripts/emotional-neutralize.py" temperature --emotion-score 0.75 --history-count 3 --days-ago 2
+python "$HOME/.agents/skills/session-distiller/scripts/emotional-neutralize.py" verify --original "…" --neutral "…" --annotations a.json
 ```
 
 温度值 = 该诉求域的历史失败累积指数，不是当次情绪强度：**高温 = 规则冲突已固化，先自省再动手**。

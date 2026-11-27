@@ -106,6 +106,10 @@ LOCAL_PATH_RE = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|[A-Za-z]%3[Aa][\\
 # 正文里出现这类变量名说明技能需要密钥配置，应配套 .env.example（运行时协议 §5.2）
 ENV_HINT_RE = re.compile(r"\b[A-Z][A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)\b")
 
+# 正文命令含这类占位符 = 不可直接复制运行（运行时协议 §5.3）。
+# Agent 需要二次猜测替换语义，实测会诱导先读脚本源码甚至绕过脚本重写逻辑（issue #25）。
+UNRUNNABLE_RE = re.compile(r"<skill_dir>|<skill_directory>|<skill_path>|<技能目录>", re.IGNORECASE)
+
 
 # --------------------------------------------------------------------------
 # YAML 解析：PyYAML 优先，缺失时退化
@@ -604,6 +608,15 @@ def validate_skill(
             "body.code",
             "SKILL.md 正文内嵌了 %d 段实现型代码（%s）；实现必须固化到 scripts/，正文只留调用方式"
             % (len(blocks), langs),
+        )
+
+    # ---- 不可运行占位符（运行时协议 §5.3，issue #25） -------------------
+    if UNRUNNABLE_RE.search(info.body):
+        add(
+            "error",
+            "body.unrunnable",
+            "正文命令含占位符（<skill_dir> / <技能目录> 等）：命令必须写成可直接复制运行的真实路径，"
+            "否则 Agent 会先读脚本源码而不是执行（运行时协议 §5.3/§5.4）",
         )
 
     # ---- 密钥文件防护（运行时协议 §5.2） -------------------------------
