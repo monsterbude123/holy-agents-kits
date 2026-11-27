@@ -27,8 +27,8 @@ const argv = process.argv.slice(2);
 const cmd = argv[0];
 const opt = parseArgs(argv.slice(1));
 
-const out = [];
-const say = (...a) => { const s = a.map(String).join(' '); out.push(s); process.stderr.write(s + '\n'); };
+// 日志实时写 stderr（不缓存）：出错时也不需要重放——重放会让每行出现两遍。
+const say = (...a) => { process.stderr.write(a.map(String).join(' ') + '\n'); };
 
 const DEFAULT_SLICE = SLICE_BYTES.free; // 4MB：普通用户也能用的下限
 const DEFAULT_STATE = join(homedir(), '.baidu-transfer-state');
