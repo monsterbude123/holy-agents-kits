@@ -1,6 +1,6 @@
 ---
 name: skill-creator-v2
-description: 创建、改造与评测 Agent Skill——生成技能骨架、把超长 SKILL.md 拆到 references/、把重复代码固化成 scripts/、校验技能是否符合规范、跑测试用例并根据人工反馈迭代、优化 description 触发率。当用户要「写一个 skill」「改 skill」「新增技能」「SKILL.md 太长」「拆分 references」「技能校验」「打包 skill」「评测 skill」时加载。触发词：skill、技能、SKILL.md、frontmatter、references、scripts、scaffold、触发率、评测、benchmark。
+description: 创建、改造、校验与评审 Agent Skill——生成技能骨架、把超长 SKILL.md 拆到 references/、把重复代码固化成 scripts/、校验技能是否符合规范、评审入库前的技能（命令对账、脱敏、分级）、跑测试用例并根据人工反馈迭代、优化 description 触发率。当用户要「写一个 skill」「改 skill」「新增技能」「SKILL.md 太长」「拆分 references」「技能校验」「评审 skill」「技能评审」「打包 skill」「评测 skill」时加载。触发词：skill、技能、SKILL.md、frontmatter、references、scripts、scaffold、触发率、评测、评审、benchmark。
 ---
 
 # skill-creator · 技能的开发、维护与评测
@@ -148,7 +148,7 @@ python .agents/skills/skill-creator-v2/scripts/split_skill.py skills/new-skill -
 
 写：[creating-skills.md](references/creating-skills.md)。测：[evaluating.md](references/evaluating.md)、
 [schemas.md](references/schemas.md)、[benchmark-schemas.md](references/benchmark-schemas.md)。
-改：[improving.md](references/improving.md)、[description-optimization.md](references/description-optimization.md)。
+改：[improving.md](references/improving.md)、[description-optimization.md](references/description-optimization.md)。审：[review-protocol.md](references/review-protocol.md)（三层评审、失败形状分级、检查项须挂历史案例）。
 宿主差异：[environments.md](references/environments.md)。
 
 > 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new
