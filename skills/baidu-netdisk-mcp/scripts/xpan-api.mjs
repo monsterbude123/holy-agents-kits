@@ -65,12 +65,32 @@ async function readJson(res, what) {
 
 const form = (o) => new URLSearchParams(o).toString();
 
+// 带超时的 fetch。
+// 为什么不用 AbortSignal.timeout()：本仓 counter-examples 记着它是不保活的定时器，
+// 在顶层 await 里会让进程提前退出（unsettled top-level await）。
+// 这里自己拿 AbortController + **ref 定时器**（clearTimeout 在 finally 里，不会泄漏）。
+// 没有超时的话，服务端半死不活时 fetch 永不返回，CLI 就停在某个进度刻度上一动不动。
+export async function timedFetch(url, init, timeoutMs) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: ac.signal });
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      throw new XpanError(`请求超时（${Math.round(timeoutMs / 1000)}s 没等到响应）：${new URL(url).pathname}`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // openapi GET
 export async function xpanGet(token, endpoint, params = {}) {
   const u = new URL(OPENAPI + endpoint);
   u.searchParams.set('access_token', token);
   for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
-  return readJson(await fetch(u), endpoint);
+  return readJson(await timedFetch(u, {}, 60_000), endpoint);
 }
 
 // openapi POST（application/x-www-form-urlencoded）
@@ -78,7 +98,7 @@ export async function xpanPost(token, endpoint, body) {
   const u = new URL(OPENAPI + endpoint);
   u.searchParams.set('access_token', token);
   return readJson(
-    await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form(body) }),
+    await timedFetch(u, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form(body) }, 60_000),
     endpoint,
   );
 }
@@ -112,7 +132,7 @@ export async function uploadSlice(token, { path, uploadid, partseq, buffer }) {
   u.searchParams.set('partseq', String(partseq));
   const fd = new FormData();
   fd.append('file', new Blob([buffer]), 'file');
-  const r = await readJson(await fetch(u, { method: 'POST', body: fd }), 'superfile2');
+  const r = await readJson(await timedFetch(u, { method: 'POST', body: fd }, 300_000), 'superfile2');
   return { md5: r.md5, requestId: r.request_id };
 }
 

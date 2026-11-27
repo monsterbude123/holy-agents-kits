@@ -19,6 +19,7 @@ license: MIT
 - **按用途重排** = 写 spec（{from,to,name}）→ `plan` 校验源路径在库中 → `move` 执行 → 写 `/99_索引/` 索引
 - **备份模型到网盘** = `model-backup.mjs pack`（模型 + 同名附件 → 加密 zip）→ `upload` → 台账；还原走 `restore`
 - **传文件（要进度/续传/校验）** = `transfer.mjs upload|download` —— 原生分片上传，每片一个进度刻度，断点续传，sha256 校验
+  （**只支持单文件**，目录要先打包；续传会在本地文件已改变时自动作废重来）
 - **只查一两个目录** = 直接用 `file_list` / `file_meta` 工具，别灌库
 - **岔路**：`scan` 撞上限 → 调大 `--depth`/`--max-dirs` 增量续灌；`move` 报 -9 → 源已被搬走，回目标核对；报 -8 → 目录太大，改 `--async=1`
 

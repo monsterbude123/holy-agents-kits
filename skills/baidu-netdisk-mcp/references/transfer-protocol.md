@@ -54,6 +54,13 @@
 实测：10 片的文件传到第 3 片被杀 → 重跑 → 服务端回 `block_list:[1,2]`（只缺 2 片），
 进度条从 40% 起步，8.5s 完成（全量要 14s）。
 
+### 续传的前提：本地文件不能变
+
+状态文件里记着 `uploadid` + 已传片 + **文件 sha256**。重跑时若 sha256 对不上
+（文件被重新生成 / 被别的进程替换），**必须放弃旧状态、从头来** ——
+否则服务端留着旧内容的头几片、我们再补新内容的后几片，
+网盘上就是一份**拼接出来的损坏文件**，而台账里记的 sha256 是新文件的，对不上也查不出来。
+
 ### 秒传：用不了（实测）
 
 官方 SDK 的 precreate 还带 `content-md5` / `slice-md5` 两个参数，就是为秒传准备的。
@@ -161,3 +168,9 @@ node "$SK/scripts/transfer.mjs" ledger
 - **改了 `--slice` 就等于换了分片** —— 续传前别改切片大小。
 - **网盘 md5 ≠ 标准 md5** —— 本地校验用自己的 sha256。
 - **Git Bash 下跑这些脚本要 `export MSYS2_ARG_CONV_EXCL='*'`** —— 否则 `/apps/...` 被转成 Git 安装目录下的路径。
+- **块内 `const` 别遮蔽外层同名变量** —— `const remote = await listDir(…, remote.slice(…))`
+  会触发 TDZ，每次都抛 `ReferenceError` 再被 catch 吞掉，
+  表现为「校验跳过」——**校验其实一次都没跑**（本仓真实踩过）。
+- **openapi 调用要带超时** —— 服务端半死不活时 fetch 永不返回，
+  CLI 就停在某个进度刻度上一动不动。脚本用 `AbortController` + ref 定时器自己控，
+  **不用 `AbortSignal.timeout()`**（它不保活，顶层 await 里会让进程提前退出）。

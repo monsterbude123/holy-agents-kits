@@ -132,5 +132,44 @@ eq('值里有等号', parseArgs(['--k=a=b'])['k'], 'a=b');
   rmSync(dir, { recursive: true, force: true });
 }
 
+// ---- transfer 的续传状态逻辑 ----
+// 这三个函数直接决定「续传会不会用错内容」，是数据正确性相关的新逻辑，必须有测试。
+{
+  const { mkdtempSync, writeFileSync, readdirSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { statePathFor, readState, writeState } = await import('./transfer.mjs');
+
+  const dir = mkdtempSync(join(tmpdir(), 'bnm-state-'));
+  const REMOTE = '/apps/bdpan/model-backup/x.zip';
+
+  // 同一个远端路径 → 同一个状态文件（否则续传找不到自己）
+  const p1 = statePathFor(REMOTE, dir);
+  const p2 = statePathFor(REMOTE, dir);
+  eq('同一远端路径状态文件一致', p1, p2);
+  if (statePathFor('/apps/bdpan/model-backup/y.zip', dir) === p1) {
+    console.error('FAIL 不同远端路径的状态文件应该不同');
+    failed++;
+  } else passed++;
+
+  // 写 → 读回一致
+  const obj = { remote: REMOTE, uploadid: 'U1', done: [0, 1, 2], sliceSize: 4194304, sha256: 'abc123' };
+  writeState(p1, obj);
+  eq('状态写入读回一致', JSON.stringify(readState(p1)), JSON.stringify(obj));
+
+  // 原子写：不留 .tmp 残留
+  const leftovers = readdirSync(dir).filter((f) => f.endsWith('.tmp'));
+  eq('原子写不留 .tmp 残留', leftovers.length, 0);
+
+  // 坏文件要容忍（返回 null），不能抛
+  writeFileSync(p1, '{ 这不是合法 JSON');
+  eq('坏状态文件返回 null 而不是抛错', readState(p1), null);
+
+  // 状态文件不存在也要返回 null
+  eq('状态文件不存在返回 null', readState(join(dir, 'nope.json')), null);
+
+  rmSync(dir, { recursive: true, force: true });
+}
+
 console.log(`${failed ? 'FAIL' : 'OK'}：${passed} 通过，${failed} 失败`);
 process.exit(failed ? 1 : 0);

@@ -18,9 +18,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync, appendFileSync, openSync, readSync, closeSync, unlinkSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { parseArgs, num, parseSize } from './args.mjs';
 import { digestFile, sha256File, SLICE_BYTES } from './hashes.mjs';
-import { resolveToken, precreate, uploadSlice, createFile, downloadLink, listDir, XpanError } from './xpan-api.mjs';
+import { resolveToken, precreate, uploadSlice, createFile, downloadLink, listDir, timedFetch, XpanError } from './xpan-api.mjs';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -84,14 +85,14 @@ function makeProgress(total, label) {
 // ---- 状态文件（续传用） ----
 // 关键：**每传完一片就落盘**。进程被杀 / 断网，下一次带上 uploadid 重跑，
 // 服务端会回「还缺哪几片」，只补缺的。
-function statePathFor(remote, dir) {
+export function statePathFor(remote, dir) {
   const key = createHash('sha1').update(remote).digest('hex').slice(0, 16);
   return join(dir, `${key}.json`);
 }
-function readState(p) {
+export function readState(p) {
   try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; }
 }
-function writeState(p, obj) {
+export function writeState(p, obj) {
   mkdirSync(dirname(p), { recursive: true });
   const tmp = `${p}.${randomBytes(4).toString('hex')}.tmp`;
   writeFileSync(tmp, JSON.stringify(obj));
@@ -150,11 +151,18 @@ async function cmdUpload() {
   // 续传：带上次的 uploadid
   const sp = statePathFor(remote, stateDir);
   const prev = readState(sp);
+  // 文件变了就不能复用旧 uploadid：否则服务端留着旧内容的头几片、
+  // 我们再补新内容的后几片 → 网盘上是拼接出来的损坏文件。
+  const canResume = !!prev && prev.sha256 === digest.sha256 && prev.sliceSize === sliceSize;
+  if (prev && !canResume) {
+    say('  本地文件自上次上传以来已改变（或切片大小变了）→ 放弃旧续传状态，重新开始');
+    try { unlinkSync(sp); } catch {}
+  }
   const pre = await withRetry(
-    () => precreate(token, { path: remote, size: digest.size, blockList: digest.blockList, uploadid: prev?.uploadid }),
+    () => precreate(token, { path: remote, size: digest.size, blockList: digest.blockList, uploadid: canResume ? prev.uploadid : undefined }),
     retries, '预上传',
   );
-  const resumed = !!prev?.uploadid;
+  const resumed = canResume;
   say(`  uploadid ${pre.uploadid.slice(0, 24)}… · 服务端要求传 ${pre.missing.length}/${digest.blocks.length} 片${resumed ? '（续传）' : ''}`);
 
   // 进度起点：已完成的片（服务端说不用传的）算已完成
@@ -177,7 +185,7 @@ async function cmdUpload() {
     }
     doneSet.add(idx);
     doneBytes += meta.size;
-    writeState(sp, { remote, uploadid: pre.uploadid, done: [...doneSet].sort((a, b) => a - b), sliceSize, updatedAt: Date.now() });
+    writeState(sp, { remote, uploadid: pre.uploadid, done: [...doneSet].sort((a, b) => a - b), sliceSize, sha256: digest.sha256, updatedAt: Date.now() });
     prog.tick(doneBytes);
   }
   prog.done();
@@ -189,10 +197,14 @@ async function cmdUpload() {
   );
   // 端到端核对：建档成功不等于远端就是我们要的那份 —— 查一眼远端实际大小
   try {
-    const remote = await listDir(token, remote.slice(0, remote.lastIndexOf('/')) || '/', 200);
-    const hit = remote.find((i) => i.path === (cr.path || remote));
-    if (hit && Number(hit.size) !== digest.size) {
+    const items = await listDir(token, remote.slice(0, remote.lastIndexOf('/')) || '/', 200);
+    const hit = items.find((i) => i.path === (cr.path || remote));
+    if (!hit) {
+      say('  （远端大小核对跳过：刚建的文件还没出现在目录列表里）');
+    } else if (Number(hit.size) !== digest.size) {
       throw new Error(`远端大小对不上：本地 ${digest.size}，远端 ${hit.size}`);
+    } else {
+      say(`  远端大小核对通过：${hit.size} 字节`);
     }
   } catch (e) {
     if (e.message.startsWith('远端大小对不上')) throw e;
@@ -267,7 +279,7 @@ async function cmdDownload() {
   }
 
   const headers = done > 0 ? { Range: `bytes=${done}-` } : {};
-  const res = await fetch(link.dlink, { headers });
+  const res = await timedFetch(link.dlink, { headers }, 1_800_000); // 30 分钟：大包在慢网速下也要够
   if (!res.ok && res.status !== 206) {
     throw new XpanError(`下载 HTTP ${res.status}`, { status: res.status });
   }
@@ -325,40 +337,71 @@ async function cmdHash() {
   say(`  sha256 ${d.sha256}`);
   say(`  md5    ${d.md5}`);
   say(`  ${d.blocks.length} 片（每片 ${human(sliceSize)}）`);
-  for (const b of d.blocks) say(`    #${b.index} ${human(b.size).padStart(8)}  md5 ${b.md5}  sha256 ${b.sha256.slice(0, 16)}…`);
+  const shownN = Math.min(d.blocks.length, 20);
+  for (const b of d.blocks.slice(0, shownN)) say(`    #${b.index} ${human(b.size).padStart(8)}  md5 ${b.md5}  sha256 ${b.sha256.slice(0, 16)}…`);
   return { file, size: d.size, sha256: d.sha256, md5: d.md5, sliceSize, blocks: d.blocks, blockList: d.blockList };
 }
 
-function ledgerPath(dir) {
-  return join(dir ? resolve(dir) : DEFAULT_STATE, 'ledger.jsonl');
+// 台账目录只有一个解析入口：写账本与读账本必须指向同一个地方，
+// 否则会出现「upload 写进 A、ledger 读的是 B」→ 用户以为账本丢了。
+function ledgerDir() {
+  const d = opt['ledger-dir'] || opt.dir;
+  return d ? resolve(d) : DEFAULT_STATE;
+}
+function ledgerPath() {
+  return join(ledgerDir(), 'ledger.jsonl');
 }
 function appendLedger(entry) {
-  const p = ledgerPath(opt['ledger-dir'] || opt.dir);
+  const p = ledgerPath();
   mkdirSync(dirname(p), { recursive: true });
   appendFileSync(p, JSON.stringify(entry) + '\n');
 }
+// 只读文件尾部：台账只增不减，一次读全量会把内存和 stdout 一起撑爆。
+function readTailLines(p, maxLines) {
+  const fd = openSync(p, 'r');
+  try {
+    const size = statSync(p).size;
+    const want = Math.min(size, 512 * 1024);
+    const buf = Buffer.alloc(want);
+    readSync(fd, buf, 0, want, size - want);
+    let text = buf.toString('utf8');
+    if (want < size) {
+      const nl = text.indexOf('\n');       // 丢掉被切断的那一行
+      text = nl >= 0 ? text.slice(nl + 1) : '';
+    }
+    return text.split('\n').filter(Boolean).slice(-maxLines);
+  } finally { closeSync(fd); }
+}
 function cmdLedger() {
-  const p = ledgerPath(opt.dir);
-  if (!existsSync(p)) { say(`台账不存在：${p}`); return { ledger: p, entries: [] }; }
-  const entries = readFileSync(p, 'utf8').trim().split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  const p = ledgerPath();
+  if (!existsSync(p)) { say(`台账不存在：${p}`); return { ledger: p, count: 0, entries: [] }; }
+  const limit = num(opt.limit, 20);
+  const entries = readTailLines(p, limit)
+    .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
   for (const e of entries) {
     say(`  ${e.ts}  ${e.op}  ${human(e.bytes || 0).padStart(9)}  ${e.sha256 ? e.sha256.slice(0, 12) + '…' : ''}  ${e.remote || e.to || ''}`);
   }
-  return { ledger: p, count: entries.length, entries };
+  if (entries.length >= limit) say(`  （只显示最后 ${limit} 条；--limit 调整，全量在 ${p}）`);
+  return { ledger: p, count: entries.length, shown: entries.length, entries };
 }
 
 // ---------- 分派 ----------
+// 只有「直接跑这个文件」才走 CLI；被 import 时只导出函数（自测要测状态文件逻辑）。
 const COMMANDS = { upload: cmdUpload, download: cmdDownload, hash: cmdHash, ledger: cmdLedger };
-try {
-  if (!cmd || !COMMANDS[cmd]) {
-    process.stderr.write('用法: transfer.mjs <upload|download|hash|ledger> [选项]\n');
+export { cmdUpload, cmdDownload, cmdHash, cmdLedger };
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    if (!cmd || !COMMANDS[cmd]) {
+      process.stderr.write('用法: transfer.mjs <upload|download|hash|ledger> [选项]\n');
+      process.exit(1);
+    }
+    const data = await COMMANDS[cmd]();
+    process.stdout.write(JSON.stringify({ ok: true, command: cmd, data }) + '\n');
+    process.exit(0);
+  } catch (e) {
+    if (out.length) process.stderr.write(out.join('\n') + '\n');
+    process.stdout.write(JSON.stringify({ ok: false, error: e.message, detail: e.detail || null }) + '\n');
     process.exit(1);
   }
-  const data = await COMMANDS[cmd]();
-  process.stdout.write(JSON.stringify({ ok: true, command: cmd, data }) + '\n');
-  process.exit(0);
-} catch (e) {
-  if (out.length) process.stderr.write(out.join('\n') + '\n');
-  process.stdout.write(JSON.stringify({ ok: false, error: e.message, detail: e.detail || null }) + '\n');
-  process.exit(1);
 }
