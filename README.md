@@ -1,6 +1,6 @@
 # holy-agents-kits
 
-> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、VS Code / 语言服务器语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、巨石代码库消肿与安全拔除、会话蒸馏成技能包、Vibe Coding 组件规范、子域名发布、Skill 本身怎么开发与校验。
+> 一组可直接加载的 Agent Skill：Jenkins 流水线与控制器、基于 new-api 的应用开发与命令行运维、代码图谱检索、IDEA 语义后端、VS Code / 语言服务器语义后端、选择性分支同步、规则层治理、文档内容管理、知识可视化、文档结构化索引与新鲜度验证、巨石代码库消肿与安全拔除、会话蒸馏成技能包、Vibe Coding 组件规范、子域名发布、Skill 本身怎么开发与校验。
 > 一条命令装进你的 agent。
 
 ```bash
@@ -69,6 +69,11 @@ mindmap
       canvas 树披露式明细
       关联边有据可查
       单文件离线交付
+    doc-map-manager
+      docs 目录结构化索引
+      新鲜度反幻觉验证
+      影响面分析
+      语义检索可选增强
     skill-creator-v2
       Skill 骨架生成
       正文拆分 references
@@ -105,6 +110,7 @@ mindmap
 | `rules-layer-governance` | 给 AGENTS.md / SKILL.md 这类规则文件做立法、瘦身、下沉门禁与独立复核 | 「AGENTS.md 太肥了」「把规则下沉成脚本门禁」 |
 | `human-docs` | 文档按读者分离：给人看的表达层 + 给 agent 的记忆层 | 「写份给人看的文档」「这笔记下个上下文就忘了」 |
 | `knowledge-surface` | 把 Markdown 文档库变成一眼全图 + 披露式明细的可探索界面 | 「把这堆文档做成脑图」「给我个能钻进去的知识图谱」 |
+| `doc-map-manager` | 给 docs/ 建结构化索引（SQLite + 链接图谱 + 新鲜度评分），agent 检索文档的唯一入口：grab/lookup/语义搜索 + 影响面分析 | 「文档索引」「这篇文档被谁引用」「改它影响哪些文档」「语义搜索文档」 |
 | `skill-creator-v2` | 开发、拆分、校验、评测 Skill 本身 | 「写一个 skill」「SKILL.md 太长」 |
 | `codebase-slimming` | 巨石代码库消肿与安全拔除：全景摸底五张账本 → 三权分立定靶心 → 剪断寄生 → 整包拔除 → 门禁棘轮，数万行真实净减 | 「代码库太臃肿」「老代码整包下线」「死代码排查」「代码分布摸底」 |
 | `session-distiller` | 从完整会话历史蒸馏可验证、可复用的技能包，附错误路径诊断与反向提示词 | 「把这次会话提炼成 skill」「蒸馏会话」「诊断 agent 反复道歉」 |
@@ -145,7 +151,7 @@ npx holy-agents-kits install jenkins-cli --force
 
 **卸载**：删除 `~/.agents/skills/<skill-name>` 目录即可。安装器不会写注册表，不会留残留。
 
-## 十六个技能分别做什么
+## 十七个技能分别做什么
 
 ### analysis-codegraph —— 按符号查代码
 
@@ -273,6 +279,14 @@ npx holy-agents-kits install jenkins-cli --force
 
 **边界**：凭据只从仓库根 `.agents/.env` 读取，绝不回显。
 
+### doc-map-manager —— 文档结构化索引与新鲜度验证
+
+**可观察行为**：为 docs/ 目录构建 SQLite 索引（标题/章节行号/面包屑 + 链接图谱 + 标签 + 新鲜度评分）；agent 用 `--grab`/`--lookup` 毫秒级取正文、`--context-mode` 查入站/出站链接、`--impact` 做修改前影响面分析、`--detect-changes` 找需要同步的关联文档；语义检索（ChromaDB/Zvec）可选增强，缺失自动降级标准库。
+
+**用法**：说「文档索引」「这篇文档被谁引用」「改它影响哪些文档」「语义搜索文档」，agent 建索引后按问题选 grab/lookup/impact。
+
+**边界**：只管「建索引 + 查询 + 新鲜度/影响面」，给人看的可视化全图走 `knowledge-surface`，代码符号图走 `analysis-codegraph`；索引库 SQLite 禁止直接 Read，必须走 `query-index.py`。
+
 ## 仓库结构
 
 ```
@@ -289,6 +303,7 @@ holy-agents-kits/
 │   ├── rules-layer-governance/     SKILL.md + references/ + templates/
 │   ├── human-docs/                 SKILL.md + references/
 │   ├── knowledge-surface/          SKILL.md + references/ + scripts/ + assets/
+│   ├── doc-map-manager/            SKILL.md + references/ + scripts/
 │   ├── skill-creator-v2/           SKILL.md + references/ + scripts/ + assets/templates/
 │   ├── codebase-slimming/          SKILL.md + references/（含实证案例库）
 │   ├── session-distiller/          SKILL.md + references/ + scripts/ + templates/ + examples/
@@ -330,7 +345,7 @@ npx holy-agents-kits feedback
 - `git-selective-branch-sync` 针对同一仓库内的两个分支，跨仓库搬运不适用。
 - `vscode-backend` 需要本机装好 VS Code（BifrostMCP 扩展 + `CJL.lsp-mcp` 扩展）与语言服务器（agent-lsp + typescript-language-server + TypeScript 5.x）；窗口开着那条腿依赖 VS Code 窗口活着，窗口外那条腿不需要；机器事实写在技能内的 `config.json`（不入库、不分发），`.mcp.json` 由安装脚本生成。
 - `skill-creator-v2` 的触发率评测脚本依赖 `claude` CLI；本机没有时走人工跑用例的降级路径，技能里写明了。
-- `rules-layer-governance`、`human-docs`、`codebase-slimming`、`session-distiller` 与 `vibe-coding-standards` 是纯方法论技能，不需要外部服务、机器或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改；`codebase-slimming` 的语义判定委托 `vscode-backend` 技能。
+- `rules-layer-governance`、`human-docs`、`codebase-slimming`、`session-distiller`、`vibe-coding-standards` 与 `doc-map-manager` 是纯方法论/自带脚本技能，不需要外部服务或凭据；`rules-layer-governance` 的门禁脚本由技能内的 `templates/` 生成，落到项目里再按项目自己的路径改；`codebase-slimming` 的语义判定委托 `vscode-backend` 技能；`doc-map-manager` 需要 Python ≥ 3.9（精确查询仅标准库，语义检索为可选增强依赖）。
 - `website-helper-skill` 需要一台可部署的服务器与可控 DNS 的域名（HTTPS 证书自动申请）；凭据只从仓库根 `.agents/.env` 读取，绝不回显。
 - `knowledge-surface` 的构建脚本零依赖，只需 Node ≥ 18；`--echarts` 指定本地 `echarts.min.js` 则产物离线自包含，不给则走 CDN（需联网打开）。
 - 本仓库只放技能与方法，不含业务代码、部署包和任何真实凭据。
