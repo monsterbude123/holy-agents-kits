@@ -97,6 +97,18 @@ openapi 的 `isdir` 字段是独立的，更可靠。
 
 **✅**：`AbortController` + `setTimeout`（ref 定时器）自己控超时，长响应用 `body.getReader()` 增量读。
 
+### ❌ 用 `Number('50MB')` 当体积阈值
+
+**现象**：`dup --min-size=50MB` 跑得**没有任何报错**，stdout 是 `{"ok":true,"data":{"groups":0,…}}`，
+`合计可回收: 0B` —— 看起来像「网盘里没有重复文件」。实际同一份库里 **541 组、261.6GB** 可回收。
+**原因**：`Number('50MB')` 是 **NaN**，而 `size >= NaN` 恒为 false，筛选条件永远不成立。
+姊妹坑：同一脚本里 `big --min=5GB` 查表漏了 `'GB'` 键，回落成倍率 1，
+阈值从 5GB 变成 **5 字节**，结果反过来是「全都要」。
+两个都不报错、退出码都是 0 —— 这类比报错更坏的**静默假结论**。
+**✅**：体积解析统一走 `scripts/args.mjs` 的 `parseSize()`（认 `B/K/KB/M/MB/G/GB/T/TB`，
+大小写不敏感），**解析不出来就抛错**；普通数字走 `num()`，同样对 NaN 抛错。
+配套铁律：同一个参数解析逻辑**只留一份**，别在三个脚本里各抄一遍——抄三份就会抄出三种严格度。
+
 ### ❌ Git Bash 下不关路径转换
 
 **现象**：`--path=/课程` 被 MSYS 转成 Git 安装目录下的 `课程`（如 `Program Files/Git/课程`），接口回 `errno -7`；
@@ -166,12 +178,16 @@ openapi 的 `isdir` 字段是独立的，更可靠。
 
 ### ❌ 用 `zip -mhe=on` 想连文件名一起加密
 
-**现象**：`exit=2` fatal error —— **ZIP 格式不支持加密文件头**，`-mhe` 只有 7z 格式支持。
+**现象**：**exit=0 + 打印用法横幅 + 不产出任何包**（实测 `zip -P p -mhe=on a.txt out.zip`）。
+**ZIP 格式不支持加密文件头**，`-mhe` 只有 7z 格式支持；zip 把 `-mhe=on` 当成
+`-m`(move) `-h` `-e=on` 的组合短选项，认不出来就打印用法——**却仍返回 0**，
+所以只判退出码的脚本会以为压好了，这是**静默失败**。
 **✅**：通用 zip 只能加密内容（`zip -P`），文件名可见；要连文件名一起加密就得放弃通用 zip。
 
 ### ❌ 把中文名直接放进 zip
 
-**现象**：GnuWin32 的 zip 是 ANSI 编译，中文名在包内变成 `#U95ea#U4eae#U7f8e...` 转义，
-跨机器还原就废了。
+**现象**：GnuWin32 的 zip 是 ANSI 编译且**没有 `-UN` 选项**——实测本机**根本建不出包**：
+只含中文名 → `exit=12 Nothing to do! (????.txt)`；中英混合 → `exit=3 Zip file structure invalid`。
+在能匹配到名字的环境里则会被存成 `#U95ea#U4eae#U7f8e...` 转义，跨机器还原同样会废。
 **✅**：包内一律 ASCII 名（`model.safetensors` / `model.json` / `manifest.json`），
 原名与 sha256 记在 manifest 里，还原时换回。

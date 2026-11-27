@@ -25,6 +25,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
+import { parseArgs, num, parseSize } from './args.mjs';
 
 const CFG = process.env.ZCODE_CFG || localConfig().zcodeConfig
   || join(homedir(), '.zcode', 'cli', 'config.json');
@@ -33,12 +34,7 @@ const DB_PATH = process.env.BAIDU_DB || localConfig().inventoryDb
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const opt = {};
-for (const a of argv.slice(1)) {
-  const m = /^--([a-z-]+)(?:=(.*))?$/.exec(a);
-  if (m) opt[m[1]] = m[2] === undefined ? true : m[2];
-}
-const num = (v, d) => (v === undefined ? d : Number(v));
+const opt = parseArgs(argv.slice(1));
 
 const out = [];
 const say = (...a) => out.push(a.map((x) => (typeof x === 'string' ? x : String(x))).join(' '));
@@ -265,9 +261,7 @@ function cmdDu() {
 }
 
 function cmdBig() {
-  const m = opt.min ? String(opt.min).match(/^([\d.]+)([KMGT]?B?)$/i) : null;
-  const mult = m ? ({ K: 1024, M: 1024 ** 2, G: 1024 ** 3, T: 1024 ** 4 })[m[2].toUpperCase()] || 1 : 1024 ** 3;
-  const thr = m ? Number(m[1]) * mult : 5 * 1024 ** 3;
+  const thr = parseSize(opt.min, 5 * 1024 ** 3);
   const rows = [...dirSizes().entries()].filter(([, v]) => v.bytes >= thr)
     .sort((a, b) => b[1].bytes - a[1].bytes).slice(0, 80)
     .map(([dir, v]) => ({ dir, ...v }));
@@ -277,7 +271,7 @@ function cmdBig() {
 }
 
 function cmdDup() {
-  const minSize = num(opt['min-size'], 1024);
+  const minSize = parseSize(opt['min-size'], 1024);
   const raw = db.prepare([
     'SELECT md5, COUNT(*) n, MAX(size) sz, GROUP_CONCAT(path, char(10)) paths',
     "FROM nodes WHERE is_dir=0 AND md5<>'' AND size>=?",

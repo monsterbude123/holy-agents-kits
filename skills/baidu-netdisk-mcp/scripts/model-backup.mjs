@@ -26,6 +26,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, appendFileSync, writeFileSync, unlinkSync, renameSync, openSync, readSync, closeSync, linkSync, copyFileSync, rmSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { parseArgs, num } from './args.mjs';
 
 // 解析可执行文件：Windows 上 Node 的 spawn 不走 shell，PATH 里的 shell 包装脚本
 // （如用户主目录下的 bin/zip 包装脚本）无法被 spawnSync 执行 —— 必须指向真实的 .exe。
@@ -82,12 +83,7 @@ const ATTACH_MARKERS = ['.cm-info', '.preview', '.civitai', '.info', '.metadata'
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const opt = {};
-for (const a of argv.slice(1)) {
-  const m = /^--([a-z-]+)(?:=(.*))?$/.exec(a);
-  if (m) opt[m[1]] = m[2] === undefined ? true : m[2];
-}
-const num = (v, d) => (v === undefined ? d : Number(v));
+const opt = parseArgs(argv.slice(1));
 const dryRun = !!opt['dry-run'];
 const asJson = !!opt.json;
 

@@ -26,16 +26,13 @@ function localConfig() {
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { parseArgs, num } from './args.mjs';
 
 const CFG = process.env.ZCODE_CFG || localConfig().zcodeConfig
   || join(homedir(), '.zcode', 'cli', 'config.json');
 
 const argv = process.argv.slice(2);
-const opt = {};
-for (const a of argv) {
-  const m = /^--([a-z-]+)(?:=(.*))?$/.exec(a);
-  if (m) opt[m[1]] = m[2] === undefined ? true : m[2];
-}
+const opt = parseArgs(argv);
 const log = (...a) => process.stderr.write(a.map(String).join(' ') + '\n');
 
 if (!opt.spec) {
@@ -43,21 +40,6 @@ if (!opt.spec) {
   process.stdout.write(JSON.stringify({ ok: false, error: '缺少 --spec' }) + '\n');
   process.exit(1);
 }
-
-const raw = JSON.parse(readFileSync(opt.spec, 'utf8'));
-// 形状归一：数组 / {moves} / {phase1,phase2}（phase2 在 phase1 之后执行）
-const phases = Array.isArray(raw)
-  ? [raw]
-  : (raw.moves ? [raw.moves] : [raw.phase1 || [], raw.phase2 || []].filter((p) => p.length));
-const norm = (arr) => arr.map((x) => ({
-  group: x.group || 'move',
-  path: x.path ?? x.from,
-  dest: x.dest ?? x.to,
-  newname: x.newname ?? x.name,
-}));
-
-const BATCH = Number(opt.batch || 10);
-const ASYNC = Number(opt.async ?? 0);
 
 // ---------- MCP 桥 ----------
 let mcp = null;
@@ -123,45 +105,72 @@ async function ensureDir(path) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------- 执行 ----------
-await mcpStart();
+// 包 try/catch：契约是「stdout 一定是一行 JSON 信封，失败 exit=1」。
+// 不包的话任何异常都变成裸堆栈，调用方拿到空 stdout。
 const results = [];
 let ok = 0, fail = 0;
+try {
+  const BATCH = num(opt.batch, 10);
+  const ASYNC = num(opt.async, 0);
 
-for (const [pi, phase] of phases.entries()) {
-  const items = norm(phase);
-  log(`\n=== phase ${pi + 1}: ${items.length} 项 (async=${ASYNC}) ===`);
-  for (const d of [...new Set(items.map((x) => x.dest))]) await ensureDir(d);
+  // 形状归一：数组 / {moves} / {phase1,phase2}（phase2 在 phase1 之后执行）
+  const raw = JSON.parse(readFileSync(opt.spec, 'utf8'));
+  const phases = Array.isArray(raw)
+    ? [raw]
+    : (raw.moves ? [raw.moves] : [raw.phase1 || [], raw.phase2 || []].filter((p) => p.length));
+  const norm = (arr) => arr.map((x) => ({
+    group: x.group || 'move',
+    path: x.path ?? x.from,
+    dest: x.dest ?? x.to,
+    newname: x.newname ?? x.name,
+  }));
 
-  for (let i = 0; i < items.length; i += BATCH) {
-    const batch = items.slice(i, i + BATCH);
-    const filelist = batch.map((x) => ({ path: x.path, dest: x.dest, newname: x.newname }));
-    const j = await callTool('file_move', { async: ASYNC, ondup: 'skip', filelist: JSON.stringify(filelist) });
-    const info = Array.isArray(j?.info) ? j.info : [];
-    const byPath = new Map(info.map((it) => [it.path, it]));
-    let bOk = 0, bBad = 0;
+  await mcpStart();
 
-    for (const x of batch) {
-      const it = byPath.get(x.path);
-      let bad = !it || (it.errno !== undefined && it.errno !== 0);
-      // errno -9 = 源不存在。多半是前一轮 async=1 的移动已延迟落地。
-      // 回源/目标核对：源真不在、且目标已在 = 已完成（幂等）。
-      if (bad && ASYNC === 0) {
-        const srcGone = !(await pathExists(x.path));
-        const dstThere = await pathExists(x.dest + '/' + x.newname);
-        if (srcGone && dstThere) { bad = false; log(`    = 已就位 ${x.newname}`); }
+  for (const [pi, phase] of phases.entries()) {
+    const items = norm(phase);
+    log(`\n=== phase ${pi + 1}: ${items.length} 项 (async=${ASYNC}) ===`);
+    for (const d of [...new Set(items.map((x) => x.dest))]) await ensureDir(d);
+
+    for (let i = 0; i < items.length; i += BATCH) {
+      const batch = items.slice(i, i + BATCH);
+      const filelist = batch.map((x) => ({ path: x.path, dest: x.dest, newname: x.newname }));
+      const j = await callTool('file_move', { async: ASYNC, ondup: 'skip', filelist: JSON.stringify(filelist) });
+      const info = Array.isArray(j?.info) ? j.info : [];
+      const byPath = new Map(info.map((it) => [it.path, it]));
+      let bOk = 0, bBad = 0;
+
+      for (const x of batch) {
+        const it = byPath.get(x.path);
+        let bad = !it || (it.errno !== undefined && it.errno !== 0);
+        // errno -9 = 源不存在。多半是前一轮 async=1 的移动已延迟落地。
+        // 回源/目标核对：源真不在、且目标已在 = 已完成（幂等）。
+        if (bad && ASYNC === 0) {
+          const srcGone = !(await pathExists(x.path));
+          const dstThere = await pathExists(x.dest + '/' + x.newname);
+          if (srcGone && dstThere) { bad = false; log(`    = 已就位 ${x.newname}`); }
+        }
+        results.push({ ...x, ok: !bad, to: it?.to_path, err: bad ? (it?.errno ?? 'no-info') : undefined });
+        if (bad) { bBad++; fail++; log(`    FAIL ${x.path}  errno=${it?.errno ?? 'no-info'}`); }
+        else { bOk++; ok++; }
       }
-      results.push({ ...x, ok: !bad, to: it?.to_path, err: bad ? (it?.errno ?? 'no-info') : undefined });
-      if (bad) { bBad++; fail++; log(`    FAIL ${x.path}  errno=${it?.errno ?? 'no-info'}`); }
-      else { bOk++; ok++; }
+      log(`[batch ${Math.floor(i / BATCH) + 1}] ${batch.length} 项 -> 成功 ${bOk} 失败 ${bBad}`);
+      await sleep(400);
     }
-    log(`[batch ${Math.floor(i / BATCH) + 1}] ${batch.length} 项 -> 成功 ${bOk} 失败 ${bBad}`);
-    await sleep(400);
   }
-}
 
-const failed = results.filter((r) => !r.ok);
-if (opt.result) writeFileSync(opt.result, JSON.stringify({ ok: !failed.length, results }, null, 1));
-log(`\nDONE ok=${ok} fail=${fail}`);
-process.stdout.write(JSON.stringify({ ok: fail === 0, moved: ok, failed: fail, failures: failed }) + '\n');
-try { mcp.child.kill(); } catch {}
-process.exit(fail ? 1 : 0);
+  const failed = results.filter((r) => !r.ok);
+  if (opt.result) writeFileSync(opt.result, JSON.stringify({ ok: !failed.length, results }, null, 1));
+  log(`\nDONE ok=${ok} fail=${fail}`);
+  process.stdout.write(JSON.stringify({ ok: fail === 0, moved: ok, failed: fail, failures: failed }) + '\n');
+  try { mcp?.child.kill(); } catch {}
+  process.exit(fail ? 1 : 0);
+} catch (e) {
+  // 中途失败也要留下「已经搬了哪些」的记录：调用方据此判断该不该重跑。
+  const failed = results.filter((r) => !r.ok);
+  if (opt.result) { try { writeFileSync(opt.result, JSON.stringify({ ok: false, error: e.message, results }, null, 1)); } catch {} }
+  log(`ERROR ${e.message}`);
+  process.stdout.write(JSON.stringify({ ok: false, error: e.message, moved: ok, failed: fail, failures: failed, results }) + '\n');
+  try { mcp?.child.kill(); } catch {}
+  process.exit(1);
+}
