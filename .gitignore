@@ -36,3 +36,6 @@ skills/idea-backend/fixtures/**/.idea/
 skills/idea-backend/fixtures/**/.codegraph/
 skills/idea-backend/fixtures/**/.mcp.json
 skills/idea-backend/fixtures/**/bifrost.config.json
+
+# 任务票（过程产物，不入库）
+.tasks/
