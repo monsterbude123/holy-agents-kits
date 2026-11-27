@@ -8,10 +8,12 @@
 - `dirsize.md` —— 拿目录权威体积的正确接口（openapi `method=dirsize` 提交 + web 端
   `/mid_mucw/api/ostp/file/taskQuery` 取结果，path 支持逗号分隔批量）、为什么 openapi
   自己枚举文件加总会偏低、以及怎么从网盘 JS bundle 挖出未知接口。要目录大小时读。
-- `counter-examples.md` —— 反例清单：这次实际犯过的 29 个错（枚举文件算目录体积会少一半、
+- `counter-examples.md` —— 反例清单：这次实际犯过的 33 个错（枚举文件算目录体积会少一半、
   猜接口名、category 判目录、按 100 判断末页、make_dir 默认 rtype 造出时间戳空目录、
   async=1 误判失败、AbortSignal.timeout 提前退出、Git Bash 路径转换、并发开 mcp-remote、
   误以为 MCP 没有删除、agent 先读源码而不执行…）。动手前扫一眼。
+- `counter-examples-runtime.md` —— 反例清单（脚本与运行时这一层）：参数解析的 NaN、块内 const 遮蔽、
+  MCP 返回的 JSON 末尾少一个 `}`、`filelist` 参数类型、超大目录拖垮整批、幂等回查掩盖失败、扫描不剪枝。改脚本前读。
 - `model-backup-method.md` —— 模型备份方法（我们自己的做法）：模型 + 同名附件 → zip 加密 → 上传网盘 → 台账，
   含命名/密码约定、还原流程与踩过的坑。要备份模型或还原备份时读。
 - `transfer-protocol.md` —— 传输协议与实测边界：百度原生分片上传三段式、服务端驱动的续传、
