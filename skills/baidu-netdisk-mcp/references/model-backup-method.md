@@ -58,10 +58,14 @@ node "$SK/scripts/model-backup.mjs" pick --root="$ROOT/models" --include=loras -
 # 打包（加密）
 node "$SK/scripts/model-backup.mjs" pack --root="$ROOT/models" --include=loras --limit=2
 
-# 校验（正确密码 exit=0；错误密码 exit=82 incorrect password）
+# 校验（正确密码 → 脚本 exit=0；错误密码 → 脚本 exit=1，
+#        stdout: {"ok":false,"error":"校验失败：密码错或包已损坏"}）
+# 注意：exit=82 是脚本内部 unzip 子进程的码，只出现在 stderr 的
+#       "unzip -P****** -t … -> exit=82" 那一行，别拿它当脚本退出码判
 node "$SK/scripts/model-backup.mjs" verify --pack=<包.zip> --password=<密码>
 
 # 还原（解压 → 按 manifest 还原原始文件名 → 逐个 sha256 校验）
+# 判据：stderr 出现 `sha256 校验: N/N 通过` 且脚本 exit=0
 node "$SK/scripts/model-backup.mjs" restore --pack=<包.zip> --to=<还原目录> --password=<密码>
 
 # 上传（只允许 /apps/bdpan/ 下）+ 回写台账
@@ -71,7 +75,8 @@ node "$SK/scripts/model-backup.mjs" upload --pack=<包.zip> --remote=/apps/bdpan
 node "$SK/scripts/model-backup.mjs" ledger --dir="$WORK"
 ```
 
-通用开关：`--dry-run`（只演练不写）、`--json`（stdout 单行 JSON 信封）。
+通用开关：`--dry-run`（只演练不写）；`--json`（**静音 stderr 的人读输出**——
+stdout 的单行 JSON 信封**本来就一直输出**，与本开关无关，别以为不加 `--json` 就没信封）。
 
 ## 包内结构
 
@@ -82,8 +87,10 @@ model.json         附件（按扩展名命名，重名加序号）
 model.jpeg         附件
 ```
 
-包内**一律 ASCII 名**：Info-ZIP 的 Windows（GnuWin32）构建是 ANSI 编译，
-中文名会被存成 `#U95ea#U4eae...` 转义，跨机器还原就废了。
+包内**一律 ASCII 名**：Info-ZIP 的 Windows（GnuWin32）构建是 ANSI 编译且**没有 `-UN` 选项**——
+实测本机中文名直接让 zip **建不出包**（只含中文名 → `exit=12 Nothing to do!`；
+中英混合 → `exit=3 Zip file structure invalid`）。在能匹配到名字的环境里，
+中文名会被存成 `#U95ea#U4eae...` 转义，跨机器还原同样会废。
 还原时由 `manifest.json` 把 ASCII 暂存名换回原始名。
 
 ## 前置依赖
@@ -108,7 +115,9 @@ exec "$(cygpath -u "$(printenv 'ProgramFiles(x86)')")/GnuWin32/bin/zip.exe" "$@"
 
 ## 踩过的坑
 
-- **`zip -mhe=on` 不支持 zip 格式**（只有 7z 支持），一用就 exit=2 fatal error。
+- **`zip -mhe=on` 不支持 zip 格式**（只有 7z 支持）。实测本机
+  `zip -P p -mhe=on a.txt out.zip` → **exit=0、打印用法横幅、但不产出任何包**——
+  这是**静默失败**，只判退出码的脚本会以为压好了。
   想加密文件名头就得用 7z 格式，那就不是通用 zip 了。
 - **zip 遇到缺失文件只 warning、退出码仍是 0**，不能只看退出码判成败；
   脚本失败时会再跑一次不加 `-q` 的，把真实报错抓出来。

@@ -25,6 +25,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
+import { parseArgs, num, parseSize } from './args.mjs';
 
 const CFG = process.env.ZCODE_CFG || localConfig().zcodeConfig
   || join(homedir(), '.zcode', 'cli', 'config.json');
@@ -33,12 +34,7 @@ const DB_PATH = process.env.BAIDU_DB || localConfig().inventoryDb
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
-const opt = {};
-for (const a of argv.slice(1)) {
-  const m = /^--([a-z-]+)(?:=(.*))?$/.exec(a);
-  if (m) opt[m[1]] = m[2] === undefined ? true : m[2];
-}
-const num = (v, d) => (v === undefined ? d : Number(v));
+const opt = parseArgs(argv.slice(1));
 
 const out = [];
 const say = (...a) => out.push(a.map((x) => (typeof x === 'string' ? x : String(x))).join(' '));
@@ -265,9 +261,7 @@ function cmdDu() {
 }
 
 function cmdBig() {
-  const m = opt.min ? String(opt.min).match(/^([\d.]+)([KMGT]?B?)$/i) : null;
-  const mult = m ? ({ K: 1024, M: 1024 ** 2, G: 1024 ** 3, T: 1024 ** 4 })[m[2].toUpperCase()] || 1 : 1024 ** 3;
-  const thr = m ? Number(m[1]) * mult : 5 * 1024 ** 3;
+  const thr = parseSize(opt.min, 5 * 1024 ** 3);
   const rows = [...dirSizes().entries()].filter(([, v]) => v.bytes >= thr)
     .sort((a, b) => b[1].bytes - a[1].bytes).slice(0, 80)
     .map(([dir, v]) => ({ dir, ...v }));
@@ -277,7 +271,7 @@ function cmdBig() {
 }
 
 function cmdDup() {
-  const minSize = num(opt['min-size'], 1024);
+  const minSize = parseSize(opt['min-size'], 1024);
   const raw = db.prepare([
     'SELECT md5, COUNT(*) n, MAX(size) sz, GROUP_CONCAT(path, char(10)) paths',
     "FROM nodes WHERE is_dir=0 AND md5<>'' AND size>=?",
@@ -332,7 +326,10 @@ function cmdPlan() {
   const spec = JSON.parse(readFileSync(specPath, 'utf8'));
   const moves = spec.moves || spec.phase1 || [];
   const sizes = dirSizes();
-  const known = new Set(db.prepare('SELECT path FROM nodes WHERE is_dir=1').all().map((r) => r.path));
+  // 白名单要含**文件**：重复副本清理搬的是文件，只收目录的话
+  // 每一项都会被判「未命中缓存」，计划直接空掉（实测 335 项全被拒）。
+  const known = new Set(db.prepare('SELECT path FROM nodes').all().map((r) => r.path));
+  const fileRow = (p) => db.prepare('SELECT size, is_dir FROM nodes WHERE path=?').get(p);
   const accepted = [];
   const rejected = [];
   say(`\n=== 移动计划校验 (${moves.length} 项) ===`);
@@ -341,7 +338,11 @@ function cmdPlan() {
     const to = m.dest ?? m.to;
     const name = m.newname ?? m.name;
     if (!known.has(from)) { rejected.push({ from, reason: '源路径不在缓存里(未扫描?)' }); say(`  ?? ${from}  未命中缓存`); continue; }
-    const v = sizes.get(from) || { bytes: 0, files: 0 };
+    // 目录用汇总体量，文件用自身大小
+    const row = fileRow(from);
+    const v = sizes.get(from) || (row && !row.is_dir
+      ? { bytes: Number(row.size || 0), files: 1 }
+      : { bytes: 0, files: 0 });
     say(`${human(v.bytes).padStart(9)}  ${String(v.files).padStart(6)} 文件  ${from}`);
     say(`${''.padStart(9)}  ${''.padStart(6)}        -> ${to}/${name}`);
     accepted.push({ group: m.group || 'move', path: from, dest: to, newname: name, bytes: v.bytes, files: v.files });
