@@ -4,6 +4,23 @@
 
 > ⚠️ **口径**：0.8.0 是 npm 上的第一个带本文件的版本。**已装 0.7.0 的用户看不到本期之前的增量**（0.7.0 及更早没有本文件）—— 这里不假装有历史，往后每版往下追加。
 
+## 0.12.0
+
+> **这一版新增 `baidu-netdisk-mcp`** —— 盘点并治理百度网盘：把网盘目录树灌进**本地 SQLite**，
+> 之后体量汇总、md5 重复检测、路径深度全部本地查；治理走「隔离 → 重排 → 索引」三步，全是服务端 move、可逆。
+
+### 变更
+
+- **新增技能 `baidu-netdisk-mcp`**（`skills/baidu-netdisk-mcp/`）
+  - `scripts/baidu-netdisk-db.mjs` —— 本地盘点库：`scan` 灌库（增量、双上限）/ `stats` / `du` / `big` /
+    `dup` / `deep` / `find` / `plan` / `dump`；stdout 单行 JSON 信封，人读表格走 stderr
+  - `scripts/baidu-netdisk-move.mjs` —— 幂等移动器：小批量 + `async:0` + 逐项解析 `info[]`，
+    遇 `errno -9`（源已被搬走）回源/目标核对
+- **目录体积走网盘自己的 `dirsize` 接口**，不自己枚举文件累加 —— 深层树上枚举会少算一半
+  （实测一棵树枚举得 281 GB、官方 727 GB）。接口与 openapi/web 两侧鉴权差异记在 `references/dirsize.md`
+- **反例清单 `references/counter-examples.md`** —— 12 个已踩过的坑（分页每页 10 条、`make_dir` 默认重命名、
+  `category` 字段不可靠、`file_move` 的 async 语义、`AbortSignal.timeout` 不保活、Git Bash 路径转换…）
+
 ## 0.10.3
 
 > **这一版给 `jenkins-cli` 补齐 5 个 P0 + 3 个 P1 缺口** —— 来源是 deploy-services 仓 `jenkins-ci` 技能移除前的逐节对比反馈，加上 2026-11-25 在内网 Jenkins 上真实跑通 GitLab→Jenkins→DooD 构建→部署全链路期间的 4 起可归因事故。全部内容有实战事故支撑，不补齐随 `jenkins-ci` 移除即彻底丢失。
