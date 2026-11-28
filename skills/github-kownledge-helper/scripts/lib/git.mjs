@@ -9,6 +9,45 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { StringDecoder } from 'node:string_decoder';
 
+/**
+ * 连同整棵进程树一起杀掉。
+ *
+ * 为什么需要：git clone 会派生 git-remote-https / git index-pack 子进程。
+ * 只 kill 直接子进程（child.kill）会留下孤儿进程继续下载 —— 父命令已返回失败，
+ * 但 git 还在往目标目录写数据，clone 失败时 git 自己又会删目录，数据全部白费。
+ * Windows 上 taskkill /T 按进程树杀；POSIX 上靠进程组（detached + kill(-pgid)）。
+ */
+export function killTree(child, signal = 'SIGTERM') {
+  if (!child || child.killed) return;
+  if (process.platform === 'win32') {
+    try {
+      // /T = 杀子进程树, /F = 强制
+      execFileSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+        stdio: 'ignore',
+        timeout: 10_000,
+      });
+      return;
+    } catch {
+      /* 进程可能已退出，落到下面的兜底 */
+    }
+  }
+  try {
+    // 负 pid = 整个进程组（POSIX）
+    if (process.platform !== 'win32' && child.pid) {
+      process.kill(-child.pid, signal);
+      return;
+    }
+  } catch {
+    /* 进程组已退出，落到下面的兜底 */
+  }
+  try {
+    child.kill(signal);
+  } catch {
+    /* 已经死了 */
+  }
+}
+
+
 /** 读操作：成功返回 stdout，失败返回空字符串 */
 export function git(cwd, args) {
   const r = gitRun(cwd, args);
@@ -42,13 +81,18 @@ export function gitRun(cwd, args) {
  * @param onLine 每行回调（line 含 \r 已被规范化为 \n）
  */
 export function gitStream(cwd, args, onLine, options = {}) {
-  const { label = 'git', silent = false, timeoutMs = 5 * 60_000 } = options;
+  const { label = 'git', silent = false, timeoutMs = 5 * 60_000, detached = false } = options;
   const tag = `[${label}]`;
 
   return new Promise((resolve) => {
     let child;
     try {
-      child = spawn('git', args, { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+      child = spawn('git', args, {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        // 独立进程组：POSIX 上 killTree 才能用 kill(-pid) 杀整棵树
+        detached: detached && process.platform !== 'win32',
+      });
     } catch (e) {
       // spawn 本身失败（如 ENOENT）
       onLine(`spawn failed: ${e.message}`, 'stderr');
@@ -85,10 +129,10 @@ export function gitStream(cwd, args, onLine, options = {}) {
       timeoutMs > 0
         ? setTimeout(() => {
             timedOut = true;
-            onLine(`TIMEOUT after ${timeoutMs}ms, killing...`, 'stderr');
-            child.kill('SIGTERM');
+            onLine(`TIMEOUT after ${timeoutMs}ms, killing process tree...`, 'stderr');
+            killTree(child, 'SIGTERM');
             // 5s 后仍未退，强杀
-            setTimeout(() => child.kill('SIGKILL'), 5_000);
+            setTimeout(() => killTree(child, 'SIGKILL'), 5_000);
           }, timeoutMs)
         : null;
 

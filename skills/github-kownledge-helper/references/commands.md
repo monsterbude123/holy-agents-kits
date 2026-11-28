@@ -76,6 +76,12 @@ node scripts/cli.mjs add <owner/repo>              # e.g. add facebook/react
 node scripts/cli.mjs add <https URL>               # 接受 https URL，自动推 owner/repo
 node scripts/cli.mjs add <owner/repo> --group ai-app  # 聚合目录
 node scripts/cli.mjs add <owner/repo> --no-build-index  # 跳过 doc manager 增量索引
+node scripts/cli.mjs add <owner/repo> --shallow    # 直接浅克隆（慢速网络）
+node scripts/cli.mjs add <owner/repo> --timeout 90  # 覆盖 clone 超时（分钟）
+
+# 批量收录（顺序执行、已收录自动跳过、单仓失败不中断、结束统一收口 manifest）
+node scripts/cli.mjs add-batch <owner/repo> <owner/repo> ...  # 支持断点续跑
+node scripts/cli.mjs add-batch <owner/repo> ... --shallow --timeout 90
 
 # 验证 doc manager 索引（每仓 query 一次，汇总 🟢/🟡/🔴/missing）
 node scripts/cli.mjs verify-docs

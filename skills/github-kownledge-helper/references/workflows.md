@@ -11,18 +11,24 @@
 
 ```
 决策树：
+├── 一次收录几个仓？ → 多个走 add-batch（顺序 + 断点续跑 + 统一收口）
+│                      单个走 add
 ├── 输入形态？ → owner/repo 与 https URL 都接受，CLI 归一化
 ├── 是否有主题归属？ → 有则 --group <group>，否则落顶层
 ├── 是否需要 doc manager 索引？ → 批量收录 / CI 场景加 --no-build-index
+├── 网络是否受限？ → 慢速网络（实测 ~1 MB/s）加 --shallow 直接浅克隆；
+│                    否则默认完整克隆，失败自动降级浅克隆重试
 └── 执行
-    └─ node scripts/cli.mjs add <owner/repo> [--group <group>] [--no-build-index]
+    └─ node scripts/cli.mjs add <owner/repo> [--group <group>] [--no-build-index] [--shallow] [--timeout <分钟>]
+    └─ node scripts/cli.mjs add-batch <owner/repo> <owner/repo> ... [--group <group>] [--shallow] [--timeout <分钟>]
 ```
 
 - 目标路径约定、命名规范 → [rules.md §1、§2](./rules.md)
-- clone 策略（完整 / 浅克隆降级）、失败不静默 → [rules.md §4](./rules.md)
+- clone 策略（完整 / 浅克隆降级 / 超时可配 / 超时杀进程树）、失败不静默 → [rules.md §4](./rules.md)
 - manifest 追加与原子写入 → [rules.md §3](./rules.md)
 - 文档同步白名单与增量索引 → [rules.md §5](./rules.md)
 - 目录已存在但未登记 → 不强行覆盖，先问用户（见 rules.md §4 的失败处理原则）
+- 批量收录的顺序执行、已收录跳过、单仓失败不中断 → rules.md §4.9
 
 ## 2. UPDATE — 更新单仓
 

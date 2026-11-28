@@ -1,5 +1,5 @@
 // add.mjs — 收录新仓库（clone + manifest + docs）
-// 流程：查重 → 完整 clone（无 --depth）→ 读 git 状态 → 追加 manifest → 同步 docs → 触发增量索引
+// 流程：查重 → clone（完整优先，失败降级浅克隆）→ 读 git 状态 → 追加 manifest → 同步 docs → 触发增量索引
 
 import { mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,6 +13,7 @@ import {
 import { nowIsoShanghai } from '../lib/time.mjs';
 import { buildEntryFromRepo } from '../lib/buildEntryFromRepo.mjs';
 import { gitStream } from '../lib/git.mjs';
+import { cloneWithFallback, cleanupPartialClone, DEFAULT_CLONE_TIMEOUT_MS } from '../lib/cloneStrategy.mjs';
 import { runSyncDocs } from './sync-docs.mjs';
 import { parseRepoInput } from '../lib/parseRepoInput.mjs';
 import { runBuildIndex } from '../lib/buildIndex.mjs';
@@ -63,29 +64,40 @@ export async function addRepo(input, cwd = process.cwd()) {
     };
   }
 
-  // 3. 完整 clone（无 --depth）
-  mkdirSync(join(absTarget, '..'), { recursive: true });  const cloneRes = await gitStream(
-    root,
-    ['clone', url, absTarget],
-    (line, stream) => {
-      // 过滤进度条（pitfalls §009）
-      if (
-        /^\s*[\w-]+:.*\d+%/.test(line) ||
-        /^\s*Receiving objects:/.test(line) ||
-        /^\s*Resolving deltas:/.test(line)
-      ) {
-        return;
-      }
-      const tag = stream === 'stderr' ? '[clone/err]' : '[clone]';
-      console.log(`${tag} ${line}`);
-    },
-    { label: `clone:${dirName}`, timeoutMs: 10 * 60_000 }
-  );
+  // 3. clone（完整优先；失败按 rules.md §4.5 降级为浅克隆重试）
+  mkdirSync(join(absTarget, '..'), { recursive: true });
+  const cloneRes = await cloneWithFallback({
+    url,
+    target: absTarget,
+    timeoutMs: r.cloneTimeoutMs ?? DEFAULT_CLONE_TIMEOUT_MS,
+    allowShallow: r.allowShallow !== false,
+    shallowFirst: r.shallowFirst === true,
+    run: (cloneArgs) =>
+      gitStream(
+        root,
+        ['clone', ...cloneArgs, url, absTarget],
+        (line, stream) => {
+          // 过滤进度条（pitfalls §009）
+          if (
+            /^\s*[\w-]+:.*\d+%/.test(line) ||
+            /^\s*Receiving objects:/.test(line) ||
+            /^\s*Resolving deltas:/.test(line)
+          ) {
+            return;
+          }
+          const tag = stream === 'stderr' ? '[clone/err]' : '[clone]';
+          console.log(`${tag} ${line}`);
+        },
+        { label: `clone:${dirName}`, timeoutMs: r.cloneTimeoutMs ?? DEFAULT_CLONE_TIMEOUT_MS, detached: true }
+      ),
+  });
   if (!cloneRes.ok) {
+    // 失败必不留半成品目录（rules.md §4.4）
+    cleanupPartialClone(absTarget);
     return {
       ok: false,
       fullName,
-      message: `clone failed (exit ${cloneRes.code}, ${cloneRes.exitReason})`,
+      message: `clone failed (exit ${cloneRes.code}, ${cloneRes.attempts} attempt(s)): ${cloneRes.message}`,
     };
   }
 
@@ -120,15 +132,21 @@ export async function addRepo(input, cwd = process.cwd()) {
 
 /** CLI 注册信息（由 cli.mjs 汇总） */
 export const def = {
-  usage: 'add <repo> [--group <group>] [--no-build-index]',
+  usage:
+    'add <repo> [--group <group>] [--no-build-index] [--shallow] [--timeout <minutes>]',
   summary:
-    '收录新仓库（owner/repo 或 https URL，默认完整 clone + 同步 docs + doc manager 索引）',
-  booleans: ['--no-build-index'],
-  strings: ['--group'],
+    '收录新仓库（owner/repo 或 https URL，默认完整 clone + 同步 docs + doc manager 索引；失败降级浅克隆）',
+  booleans: ['--no-build-index', '--shallow'],
+  strings: ['--group', '--timeout'],
   positionals: 1,
   async run(flags, positionals) {
     const input = positionals[0];
     const parsed = parseRepoInput(input);
+    // --timeout <minutes>：覆盖默认 clone 超时（大仓在慢速网络下需要更长）
+    const timeoutMin = flags.timeout ? Number(flags.timeout) : undefined;
+    if (timeoutMin !== undefined && (!Number.isFinite(timeoutMin) || timeoutMin <= 0)) {
+      return { ok: false, message: `--timeout 需要正数分钟，收到：${flags.timeout}` };
+    }
     const r = await addRepo({
       owner: parsed.owner,
       repo: parsed.repo,
@@ -139,6 +157,8 @@ export const def = {
         : undefined,
       group: flags.group,
       skipBuildIndex: flags['build-index'] === false,
+      shallowFirst: flags.shallow === true,
+      cloneTimeoutMs: timeoutMin ? timeoutMin * 60_000 : undefined,
     });
     console.log(`${r.ok ? '✓' : '✗'} ${r.fullName} — ${r.message}`);
     if (!r.ok) process.exit(1);

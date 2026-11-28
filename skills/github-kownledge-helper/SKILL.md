@@ -15,6 +15,7 @@ description: 本地 GitHub 仓库管家技能。管理本地第三方仓库收�
 | 场景 | 动作 | 指针 |
 |---|---|---|
 | 收录新仓库 | `node scripts/cli.mjs add <owner/repo>` 完整克隆 + 同步 docs + 索引 | [workflows.md](references/workflows.md) §1 |
+| 批量收录仓库 | `node scripts/cli.mjs add-batch <repo...>` 顺序执行、已收录跳过、支持断点续跑 | [workflows.md](references/workflows.md) §1 |
 | 更新单个仓库 | `node scripts/cli.mjs update <full_name>` ff-only 更新 | [workflows.md](references/workflows.md) §2 |
 | 一键全部更新 | `node scripts/cli.mjs update-all` 顺序拉取防网络阻塞 | [workflows.md](references/workflows.md) §3 |
 | 答疑 / 状态查询 | `node scripts/cli.mjs query <repo> --log/tag/show/grab/freshness` | [workflows.md](references/workflows.md) §4 |

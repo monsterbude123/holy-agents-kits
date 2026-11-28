@@ -11,6 +11,7 @@ import { pathToFileURL } from 'node:url';
 
 import { parseArgs } from './lib/argv.mjs';
 import { def as defAdd } from './commands/add.mjs';
+import { def as defAddBatch } from './commands/add-batch.mjs';
 import { def as defUpdate } from './commands/update.mjs';
 import { def as defUpdateAll } from './commands/update-all.mjs';
 import { def as defQuery, defAll as defQueryAll } from './commands/query.mjs';
@@ -30,6 +31,7 @@ const COMMANDS = {
   query: defQuery,
   'query-all': defQueryAll,
   add: defAdd,
+  'add-batch': defAddBatch,
   'verify-docs': defVerifyDocs,
   'sync-to': defSyncTo,
 };
