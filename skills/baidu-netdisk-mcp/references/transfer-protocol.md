@@ -102,6 +102,52 @@
 
 **Range 可用 ⇒ 下载断点续传可行**：本地留 `.part`，续传时带 `Range: bytes=<已有>-`。
 
+## 三之二、上传幂等：同名必变 `x(1).ext`，上传前必须先查远端
+
+**实测（2026-11-28，真实踩坑）**：用原生分片协议（`transfer.mjs upload`）传归档，
+第一轮传了 4 个文件，第二轮因为「重新打包后 zip 字节变了」又传了一遍 ——
+远端多出 4 个 `xxx(1).zip` 副本，其中一个是 276 MB。
+
+### 机制
+
+`precreate` 传的是 **`path`（目标完整路径）**，不是 `parent_path + filename`。
+百度网盘的行为是：**目标路径已存在 → 不覆盖、不报错，静默改名成 `x(1).ext` 另存一份**。
+
+于是「远端已存在同名文件」这个检查**永远命中不了**：
+- 你请求 `a.zip`，服务端实际存成了 `a(1).zip`；
+- 下一次再请求 `a.zip`，又变成 `a(2).zip`……**无声堆积，用户毫无感知**。
+
+`transfer.mjs upload` 内部那套「目标已存在且大小一致 → 跳过」只对**本地临时文件**
+（`x.zip.part` 续传场景）生效，**不覆盖远端同名的情况**。
+
+### 正确做法（上传前先查远端）
+
+```js
+// 1) 用技能自带的 listDir 拉远端目录，得到已有文件名集合
+const { resolveToken, listDir } = await import(xpanApiUrl);
+const existing = new Set((await listDir(token, REMOTE_DIR)).map(e => e.server_filename));
+
+// 2) 上传前逐个比对：命中就跳过，不要靠「传完再看」补救
+for (const f of files) {
+  if (existing.has(f)) { console.log(`跳过 ${f}（远端已存在）`); continue; }
+  // …再调 transfer.mjs upload
+}
+```
+
+**要点**：判据是**文件名**，不是 sha256。
+重新打包的 zip 字节会变（zip 含时间戳/文件序），sha256 变了但**语义是同一个文件** ——
+按 sha256 判会误判成「不同文件，该传」，于是又堆一份 `(1)`。
+
+### 补救：已堆积的副本怎么清
+
+`filemanager?op=delete` 用**网盘 API 的 access_token 会返回 `errno:2`（params error）**
+—— 实测四种参数组合（`/api/filemanager`、`+method=filemanager`、`/rest/2.0/xpan/file`）
+带括号与不带括号的路径都试过，全是 `errno:2`。删除能力在 **MCP 的 `file_delete` 工具**上。
+
+**默认隔离而非删除**（与本技能治理口径一致）：用 `baidu-netdisk-move.mjs` 把重复副本
+移到 `/90_待清理/`，由用户在客户端删 —— 可逆。实测 5 项一次移动全部成功。
+
+
 ## 四、哈希口径：两级，各司其职
 
 | 层级 | 用什么 | 为什么 |
