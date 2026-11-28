@@ -28,7 +28,7 @@
 curl -s -x http://127.0.0.1:10808 "https://data.services.jetbrains.com/products/releases?code=IIC&latest=true&type=release"
 # 下载（1.4GB，走代理约 3MB/s；-C - 支持断点续传）
 curl -sL -x http://127.0.0.1:10808 --retry 3 -C - \
-  -o "D:\workplace\_idea-setup\download\idea-<ver>.win.zip" \
+  -o "<下载缓存目录>\idea-<ver>.win.zip" \
   "https://download.jetbrains.com/idea/idea-<ver>.win.zip"
 ```
 
@@ -36,8 +36,8 @@ curl -sL -x http://127.0.0.1:10808 --retry 3 -C - \
 
 ```bash
 # zip 无顶层目录（条目以 bin/ 开头），必须解进专用目录
-mkdir -p "/d/workplace/idea-<ver>"
-/c/Windows/System32/tar.exe -xf "D:\workplace\_idea-setup\download\idea-<ver>.win.zip" -C "D:\workplace\idea-<ver>"
+mkdir -p "<IDEA安装根>"
+/c/Windows/System32/tar.exe -xf "<下载缓存目录>\idea-<ver>.win.zip" -C "<IDEA安装根>"
 # Windows JDK 解压后放到固定位置（Git Bash 的 tar 不能 chdir 到 /d/... 风格路径，-C 要用 Windows 路径）
 ```
 
@@ -117,7 +117,7 @@ JDK 放 `<workspace>\jdks\temurin-25-win`，`bin/java -version` 验证。**JDK �
 **现行姿势（2026-11-17 起验证多轮）**：Bash 工具用 `run_in_background: true` 直接跑 exe——后台任务跨轮持续存活，进程不会被回收：
 
 ```bash
-/d/workplace/idea-2026.2.5/bin/idea64.exe "D:\\workplace\\code\\<project>" > <某日志> 2>&1   # run_in_background=true
+<IDEA安装根>/bin/idea64.exe "<项目根>" > <某日志> 2>&1   # run_in_background=true
 ```
 
 就绪等待（**硬上限 60s、每次迭代输出进度**；一般 10-30s 内 29170 就返回 200）：
@@ -262,7 +262,7 @@ bash scripts/install-lang-plugin.sh shim com.intellij.modules.rust-capable      
 
 ```cmd
 :: run-inspect.cmd（与 GUI 互斥，跑之前必须先关 IDE；全部路径无空格时可省引号）
-call D:\workplace\idea-<ver>\bin\inspect.bat <项目路径> <项目路径>\.idea\inspectionProfiles\Project_Default.xml <输出目录>
+call <IDEA安装根>\bin\inspect.bat <项目路径> <项目路径>\.idea\inspectionProfiles\Project_Default.xml <输出目录>
 echo RC=%ERRORLEVEL%
 ```
 

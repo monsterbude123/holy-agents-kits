@@ -100,7 +100,7 @@
   - 自动启停 nginx + iptables 锁 80 端口以完成 HTTP-01 challenge
 - **VR-007 upstream URL 校验**：`publish/utils/validators.py::validate_upstream()`
 - **VR-008 .env 引号剥离**：`publish/config/store.py::_parse_env_file()`
-  - 修 2026-08-20 PowerShell 写 `"C:\..."` 给 paramiko 报 `OSError [Errno 22]` 的根因
+  - 修 2026-08-20 PowerShell 写 `"C:\..."` 给 paramiko 报 `OSError [Errno 22]` 的根因 <!-- doc-hygiene:allow -->
 
 ### Bug Fixes
 

@@ -146,7 +146,7 @@ taskkill /IM idea64.exe; sleep 8; taskkill /F /IM idea64.exe; sleep 2
 10. ❌ 后台读过程指望一次跑完 → 写动作抢读锁会 PCE 取消；必须有界重试（fresh context+dir 每轮；用户主动 cancel 时不重试）
 11. ❌ `performInspectionsWithProgress` + `...AndExportResults` 连调 → export 变体本身执行检视，连调=跑两遍
 12. ❌ 此 shell 裸用 `grep`/`tasklist //FI` → grep 是 ugrep 别名（用 `/usr/bin/grep`）；tasklist 是 `/FI` 不是 `//FI`
-13. ❌ node 里传 `/d/...` → 解析成 `D:\d\...`；node 一律用 Windows 风格路径
+13. ❌ node 里传 `/d/...` → 解析成 `D:\d\...`；node 一律用 Windows 风格路径 <!-- doc-hygiene:allow -->
 14. ❌ 一次长验证里混多个变量 → 每轮构建只验证一个假设；对照实验先设计好"结果 A 说明什么、结果 B 说明什么"
 
 ### 引擎参数与机制速查（262 真源码定案）
@@ -161,7 +161,7 @@ taskkill /IM idea64.exe; sleep 8; taskkill /F /IM idea64.exe; sleep 2
 
 | 方案 | 结论 |
 | --- | --- |
-| fork hechtcarmel/jetbrains-index-mcp-plugin | ✅ 选它。MIT 协议；工具注册规整；**自带 scope 基建**；单插件 Gradle 工程，构建/side-load 简单。**已 fork 为维护仓 `monsterbude123/jetbrains-index-mcp-plugin-monster`**（2026-11-17），本地工作副本 `D:\workplace\_idea-setup\jetbrains-index-mcp-plugin`（origin=维护仓 / upstream=上游 hechtcarmel）。后续所有 ide_inspect 等优化在维护仓开发、构建、side-load；上游发新版时 `git fetch upstream` rebase 工具补丁 |
+| fork hechtcarmel/jetbrains-index-mcp-plugin | ✅ 选它。MIT 协议；工具注册规整；**自带 scope 基建**；单插件 Gradle 工程，构建/side-load 简单。**已 fork 为维护仓 `monsterbude123/jetbrains-index-mcp-plugin-monster`**（2026-11-17），本地工作副本 `<本地工作副本>`（origin=维护仓 / upstream=上游 hechtcarmel）。后续所有 ide_inspect 等优化在维护仓开发、构建、side-load；上游发新版时 `git fetch upstream` rebase 工具补丁 |
 | 贡献 intellij-community 内置 `plugins/mcpserver` | ❌ 暂不。巨仓贡献周期长；其 `AnalysisToolset.lint_files` 走 `readAction` + 本地检查子集（daemon 级），**不经过 GlobalInspectionContext**——这是它不含 P3C/完整 profile 的根因，改它等于大改官方 |
 
 ## 2. 插件架构事实（源码调研）
