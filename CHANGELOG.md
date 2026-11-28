@@ -4,6 +4,32 @@
 
 > ⚠️ **口径**：0.8.0 是 npm 上的第一个带本文件的版本。**已装 0.7.0 的用户看不到本期之前的增量**（0.7.0 及更早没有本文件）—— 这里不假装有历史，往后每版往下追加。
 
+## 0.16.0
+
+> **修 `github-kownledge-helper` 的 clone 三处能力缺口 + 新增 `add-batch` 批量收录。**
+> 真实事故倒逼：归档 10 个 GitHub 仓时本机到 GitHub 只有 ~1 MB/s，完整 clone 大仓必然失败。
+
+### 变更
+
+- **clone 超时可配**（`add`）
+  - 原 `add.mjs` 把 clone 超时硬编码 10 分钟 → 大仓在慢速网络下 100% 超时
+  - 改为默认 60 分钟，`--timeout <分钟>` 覆盖
+- **超时时杀整棵进程树**（`lib/git.mjs`）
+  - 原实现只 kill 直接子进程 → 留下孤儿 `git-remote-https` / `git index-pack` 继续下载；
+    父命令已判失败、后续写 manifest 不执行，而 git clone 失败时又自删目标目录，**已下载数据全丢**
+  - 新增 `killTree()`：Windows `taskkill /T /F`，POSIX 靠独立进程组（`detached` spawn）
+- **落地 rules.md §4.5 承诺的浅克隆降级**（新 `lib/cloneStrategy.mjs`）
+  - 规则早就写了「连续失败可降级为浅克隆重试」，代码里没有实现 —— 规则与实现脱节
+  - 现在：完整 clone 失败自动降级 `--depth 1 --single-branch` 重试；`--shallow` 可直接浅克隆
+  - 实测 orca 完整 clone 3.7 GB / 默认分支工作树 263 MB，**差 14 倍几乎全在 `refs/pull/*` 与侧分支上**
+- **新增 `add-batch` 批量收录命令**
+  - 多仓收录排成一条流水线：顺序执行（不并发打满网络）、已收录自动跳过（**断点续跑**）、
+    单仓失败不中断整批、结束统一收口 manifest
+  - 不必再手动逐个 `add` 重跑
+- **失败必清半成品目录**（rules.md §4.4 原本只写在规则里，没落到代码）
+- 文档同步：`rules.md §4` 补第 6–9 条、`workflows.md §1` 决策树、`commands.md`、`SKILL.md`
+- 测试：`github-kownledge-helper` 94 → 112 全绿（新增 `cloneStrategy` 11 例 + `addBatch` 7 例）
+
 ## 0.15.0
 
 > **新增一个技能**：`video-study` —— 把一个视频（课程/技术分享/讲座/教程/播客）加工成
