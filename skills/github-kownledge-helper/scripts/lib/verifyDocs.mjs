@@ -36,25 +36,3 @@ export function parseQueryIndexOutput(stdout) {
   }
   return hits;
 }
-
-/**
- * 把 hits 按 repo 维度汇总，与 manifest 的 repo 列表对比出 missing。
- */
-export function summarizeFreshness(manifestRepos, hits) {
-  const hitRepos = new Set(hits.map((h) => h.repo));
-  return {
-    total: manifestRepos.length,
-    green: hits.filter((h) => h.freshness === 'green').length,
-    yellow: hits.filter((h) => h.freshness === 'yellow').length,
-    red: hits.filter((h) => h.freshness === 'red').length,
-    missing: manifestRepos.filter((r) => !hitRepos.has(r)),
-  };
-}
-
-/** 从 manifest path 提取 owner__repo 形式（如 "repos/comfyanonymous__ComfyUI" → "comfyanonymous__ComfyUI"） */
-export function pathToRepoKey(relPath) {
-  // 匹配最后一段 owner__repo
-  const m = relPath.match(/(?:^|\/)([^/]+)__([^/]+)$/);
-  if (m) return `${m[1]}__${m[2]}`;
-  return relPath;
-}

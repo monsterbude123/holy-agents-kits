@@ -96,14 +96,12 @@ export function loadEnv(options = {}) {
   const bufferSpace = getVal('STORAGE_BUFFER_SPACE', join(projectRoot, 'buffer'));
   const maxRetained = parseInt(getVal('STORAGE_MAX_RETAINED_SNAPSHOTS', '2'), 10) || 2;
   const trashTtlDays = parseInt(getVal('STORAGE_TRASH_TTL_DAYS', '7'), 10) || 7;
-  const autoTrash = getVal('STORAGE_AUTO_TRASH_ON_PUSH', 'true') !== 'false';
 
   lenientCache = {
     PROJECT_ROOT: projectRoot,
     STORAGE_BUFFER_SPACE: bufferSpace,
     STORAGE_MAX_RETAINED_SNAPSHOTS: maxRetained,
     STORAGE_TRASH_TTL_DAYS: trashTtlDays,
-    STORAGE_AUTO_TRASH_ON_PUSH: autoTrash,
     ENV_FILE_PATH: envFile || '',
     raw: { ...fileConfig, ...process.env },
   };

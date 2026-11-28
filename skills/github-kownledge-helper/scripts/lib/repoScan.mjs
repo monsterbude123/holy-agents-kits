@@ -8,6 +8,7 @@
 import { readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { git } from './git.mjs';
+import { parseRepoInput } from './parseRepoInput.mjs';
 import { reposRoot, GROUPS } from './paths.mjs';
 
 /**
@@ -19,6 +20,13 @@ import { reposRoot, GROUPS } from './paths.mjs';
 
 /** 解析 origin url 为 owner/repo */
 export function parseOrigin(url) {
+  // 优先复用 parseRepoInput：正确处理 git@host: / ssh:// / https 全形态
+  try {
+    const { owner, repo } = parseRepoInput(url);
+    return { owner, repo };
+  } catch {
+    /* 回退到既有 split 逻辑（嵌套分组路径等 parseRepoInput 不接受的形态） */
+  }
   const clean = url.replace(/\.git$/, '');
   const parts = clean.split('/');
   if (parts.length < 2) return null;
@@ -43,13 +51,20 @@ function toOwnerRepo(absPath, group) {
   return { owner: parsed.owner, repo: parsed.repo, group };
 }
 
-/** 扫描 repos/，收集每个 git 仓库的 owner/repo/group 列表 */
+/** 扫描 repos/，收集每个 git 仓库的 owner/repo/group 列表；repos/ 不存在时返回空列表（首装自举） */
 export function scanRepos() {
   const found = [];
   const root = reposRoot();
 
-  // 顶层
-  for (const name of readdirSync(root)) {
+  // 顶层（repos/ 尚未创建 → 空清单，让 sync-manifest 仍可自举写出 manifest.json）
+  let names = [];
+  try {
+    names = readdirSync(root);
+  } catch (err) {
+    if (err?.code === 'ENOENT') return found;
+    throw err;
+  }
+  for (const name of names) {
     if (name === '.gitkeep') continue;
     if (GROUPS.includes(name)) continue;
     const hit = toOwnerRepo(join(root, name), '');

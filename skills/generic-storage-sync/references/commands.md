@@ -153,10 +153,6 @@ STORAGE_TARGET_LOCAL_BACKUP="local:./backup/snapshots"
 STORAGE_MAX_RETAINED_SNAPSHOTS=2
 # 回收站冷却存活期（天，超过才允许物理清除）
 STORAGE_TRASH_TTL_DAYS=7
-# 暂存残卷超时阈值（小时）
-STORAGE_STAGING_TIMEOUT_HOURS=2
-# push 成功后是否自动检查淘汰
-STORAGE_AUTO_TRASH_ON_PUSH=true
 ```
 
 ---

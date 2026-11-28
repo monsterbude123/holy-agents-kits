@@ -100,6 +100,8 @@ export class SyncCoordinator {
       fullName, group: options.group, commitSha: packed.commitSha, commitShort: packed.commitShort,
       commitDate: commitDateOf(repoPath), archiveName: packed.archiveName, archiveFormat: 'git-bundle',
       sizeBytes: packed.sizeBytes, checksumSha256: packed.sha256, tags: (packed.refs || []).map((r) => r.ref),
+      // 增量打包基准：必须随快照入库，否则 pull 无法识别「需 base 在场」（index_store 实体预留字段）
+      ...(options.baseCommitSha ? { baseCommitSha: options.baseCommitSha } : {}),
     };
     const record = {
       repoFullName: fullName, targetId: this.targetId, syncedCommitSha: packed.commitSha,
@@ -116,6 +118,10 @@ export class SyncCoordinator {
     const remote = normalizeRemoteIndex(await this.driver.readIndex(), this.store);
     const snapshot = remote.snapshots[fullName];
     if (!snapshot) throw new DriverError(E.GSS_E_NOT_FOUND, `远端索引没有 ${fullName} 的快照`);
+    if (snapshot.baseCommitSha) {
+      // 增量 bundle 缺 base 提交时 git clone 会报 prerequisite 裸错；提前拦下并给出可操作提示
+      throw new DriverError(E.GSS_E_INVALID_ARG, `增量快照（baseCommitSha=${snapshot.baseCommitSha}）无法直接 clone：需要 base 快照在场，请先还原对应 base 版本`);
+    }
     const localBundle = join(this.bufferRoot, snapshot.archiveName);
     mkdirSync(this.bufferRoot, { recursive: true });
     const res = await this.driver.download(snapshot.archiveName, localBundle, { onProgress: options.onProgress, signal: options.signal });

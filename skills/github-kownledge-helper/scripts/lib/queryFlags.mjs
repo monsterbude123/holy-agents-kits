@@ -23,17 +23,11 @@ const DEFAULT_FLAGS = {
 
 /**
  * 解析 query 的 argv 片段为 QueryFlags。
- * 位置参数（第一个非 -- 开头的 token）视为 repo。
+ * 位置参数（第一个非 -- 开头、且不是字符串 flag 消费的值的 token）视为 repo。
  */
 export function parseQueryFlags(args) {
   const f = { ...DEFAULT_FLAGS };
-
-  for (const a of args) {
-    if (!a.startsWith('--') && !f.repo) {
-      f.repo = a;
-      break;
-    }
-  }
+  const consumed = new Set(); // 字符串 flag 消费掉的值 token，不参与 repo 扫描
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i] ?? '';
@@ -45,16 +39,19 @@ export function parseQueryFlags(args) {
       case '--tag':
         f.mode = 'tag';
         f.tag = next ?? '';
+        if (next !== undefined) consumed.add(next);
         i++;
         break;
       case '--show':
         f.mode = 'show';
         f.show = next ?? '';
+        if (next !== undefined) consumed.add(next);
         i++;
         break;
       case '--grab':
         f.mode = 'grab';
         f.grab = next ?? '';
+        if (next !== undefined) consumed.add(next);
         i++;
         break;
       case '--freshness':
@@ -68,14 +65,17 @@ export function parseQueryFlags(args) {
         break;
       case '--limit':
         f.limit = parseInt(next ?? '20', 10);
+        if (next !== undefined) consumed.add(next);
         i++;
         break;
       case '--since':
         f.since = next ?? '';
+        if (next !== undefined) consumed.add(next);
         i++;
         break;
       case '--until':
         f.until = next ?? '';
+        if (next !== undefined) consumed.add(next);
         i++;
         break;
       case '--json':
@@ -89,12 +89,31 @@ export function parseQueryFlags(args) {
         break;
       case '--context':
         f.context = parseInt(next ?? '3', 10);
+        if (next !== undefined) consumed.add(next);
         i++;
         break;
       case '--top':
         f.top = parseInt(next ?? '15', 10);
+        if (next !== undefined) consumed.add(next);
         i++;
         break;
+    }
+  }
+
+  // repo 扫描：优先取第一个非 -- 开头且未被字符串 flag 消费的 token；
+  // 全部被消费（如 `query myrepo --tag myrepo`，flag 值与 repo 同名）时回退第一个非 -- token
+  for (const a of args) {
+    if (!a.startsWith('--') && !consumed.has(a) && !f.repo) {
+      f.repo = a;
+      break;
+    }
+  }
+  if (!f.repo) {
+    for (const a of args) {
+      if (!a.startsWith('--') && !f.repo) {
+        f.repo = a;
+        break;
+      }
     }
   }
 

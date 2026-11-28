@@ -20,6 +20,8 @@
   - 纪律：数字必须可溯源到视频原话或画面；需要学习者本人真实经历处用 `[填空]` 占位不代填；
     原理篇必须答「为什么这样设计 + 什么时候失效」
   - 纯方法论技能（无 scripts/ 无凭据）：判断与模板在正文与 references，工具对照表写明三级降级路径
+- **纪律口径统一（入库评审）**：SKILL.md 内联摘要与 spec 同为「四条纪律」——第 4 条「不虚构」
+  此前只在 spec 里，标题与内联都还是「三条」
 
 ## 0.14.0
 
@@ -34,7 +36,7 @@
   - 知识沉淀：顶层文档同步到 `docs/`、建索引与文档地图、`manifest.json` 作唯一事实源（原子写入）
   - 实测答疑：`query` 用本地 git 实测回答 commit / tag / 版本号，附新鲜度标注（🟢/🟡/🔴）
   - 镜像：`sync-to <repo> <绝对路径>` 含 `.git`，可把单个仓搬去任意盘
-  - 零构建零依赖：原生 `.mjs` + Node ≥22 内置模块，**87 个用例**
+  - 零构建零依赖：原生 `.mjs` + Node ≥22 内置模块，**94 个用例**
 - **新增 `generic-storage-sync` —— 通用异构存储同步**
   - **介质透明**：上层只认「快照实体」，底层是物理盘 / 挂载盘 / SFTP / SMB / 网盘都一样
   - 打包与推送：`pack` 出 git bundle + SHA-256，`push` 两阶段提交，`pull` 拉回还原，
@@ -46,11 +48,31 @@
     只报清单与可释放字节数
   - **驱动 SPI 抽象**：新介质继承 `BaseDriver` 即可接入，必须跑通技能自带的合规套件；
     百度 / 夸克驱动由对应 Agent 实现（本版只交付契约与套件）
-  - 零构建零依赖：原生 `.mjs` + Node ≥18 内置模块，**105 个用例**
+  - 零构建零依赖：原生 `.mjs` + Node ≥18 内置模块，**110 个用例**
 - **门面同步**：README 导语 / mindmap / 技能一览表 / 详解节 / 仓库结构 五处补齐，
   标题「十八个技能」→「**二十个技能**」，`check-readme-sync.mjs` 四面全对账通过
-- **测试接入门禁**：两个技能的 192 个用例接进 `npm test`，不再是「装了但没人跑」
+- **测试接入门禁**：两个技能的 204 个用例接进 `npm test`，不再是「装了但没人跑」
 - **版本**：0.13.3 → 0.14.0
+
+### 入库评审修复（2026-11-28，未发布即修，随本版发出）
+
+- **github-kownledge-helper**
+  - `parseOrigin` 不认 SSH remote（`git@host:owner/repo`）→ 坏 owner 污染 manifest 唯一事实源；
+    改为复用 `parseRepoInput`（嵌套路径回退保留）
+  - **首装死锁**：`load_env` 硬性要求 manifest.json 存在而 sync-manifest 自身也崩 →
+    改 warn 不阻断 + 空清单自举，全新项目（连 repos/ 都没有）`sync-manifest` 也能跑通
+  - `query` 位置参数误吞 flag 值（`--limit 5 myrepo` → repo='5'）+ flag 值与 repo 同名回退
+  - `cli.mjs` 命令体异常裸堆栈 → ✗ 兜底；`update-all` 汇总打两遍去重；终行恢复总耗时
+  - `listTags` 每 tag 3 次子进程 → 单次 `for-each-ref`（剥壳字段优先，annotated/lightweight 语义不变）
+  - 补 `.env.example`（缺环境变量模板违反仓约）；删除仅测试在养的死代码
+- **generic-storage-sync**
+  - `clean-trash --yes` 会把「回收站死副本与活快照重名」的活记录误标 purged →
+    核销前探测介质根同名活文件，只清死副本不动账本
+  - dry-run 有内存副作用（markPurged 改在内存账本上）→ `apply` 门控，纯预演零改动
+  - `push({baseCommitSha})` 打增量 bundle 却丢 baseCommitSha 字段 → snapshot 保留该字段，
+    `pull` 对增量快照明确拦截并提示先还原 base
+  - 删两个死配置（`STORAGE_AUTO_TRASH_ON_PUSH` / `STORAGE_STAGING_TIMEOUT_HOURS`，解析了没消费者）；
+    `env.mjs` 双技能「逐字节一致」同源约定恢复
 
 ## 0.13.3
 

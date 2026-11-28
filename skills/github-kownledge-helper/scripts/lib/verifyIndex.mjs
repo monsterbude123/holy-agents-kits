@@ -4,7 +4,7 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { querySqlitePaths, querySqliteFull } from './docmapSqlite.mjs';
+import { querySqliteFull } from './docmapSqlite.mjs';
 
 /**
  * @typedef {Object} IndexEntry
@@ -50,19 +50,6 @@ export function summarizeCoverage(manifestKeys, indexed) {
   }
 
   return { total: manifestKeys.length, green, yellow, red, missing };
-}
-
-/** 检查某个 docs 路径下是否在索引中（至少 1 个文件） */
-export async function pathExistsInIndex(repoKey, projectRoot) {
-  const dbPath = join(projectRoot, 'docs', '.docmap', 'docmap.db');
-  if (!existsSync(dbPath)) return false;
-  const stdout = await querySqlitePaths(dbPath);
-  try {
-    const keys = JSON.parse(stdout);
-    return keys.includes(repoKey);
-  } catch {
-    return false;
-  }
 }
 
 /** 一次性拉所有 indexed entries 做汇总（不走 query-index.py） */

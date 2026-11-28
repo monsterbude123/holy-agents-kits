@@ -1,28 +1,9 @@
-// docmapSqlite.mjs — 以 python 读 SQLite，取 doc-map-manager 索引的 path 聚合
+// docmapSqlite.mjs — 以 python 读 SQLite，取 doc-map-manager 索引的 repoKey 聚合
 //
 // 为什么不直接用 node 读 SQLite：Node 22 无内置 SQLite 驱动，引入 npm 依赖会破坏零构建。
 // 故 spawn python 执行内联 SQL（python 是 doc-map-manager 的既有前置依赖）。
 
 import { spawn } from 'node:child_process';
-
-const SQL_PATHS = `
-import sqlite3, sys, json
-db_arg = sys.argv[1] if len(sys.argv) > 1 else ''
-if not db_arg or not __import__('os').path.exists(db_arg):
-    print('[]')
-    sys.exit(0)
-c = sqlite3.connect(db_arg)
-rows = c.execute("SELECT DISTINCT path FROM files").fetchall()
-c.close()
-out = []
-for (p,) in rows:
-    parts = p.split('/')
-    if len(parts) >= 2 and '__' in parts[0]:
-        out.append(parts[0])
-    elif len(parts) >= 3 and '__' in parts[1]:
-        out.append(parts[0] + '/' + parts[1])
-print(json.dumps(out, ensure_ascii=False))
-`;
 
 const SQL_FULL = `
 import sqlite3, sys, json
@@ -62,11 +43,6 @@ function runPython(sql, dbPath) {
     child.on('close', () => resolve(out));
     child.on('error', () => resolve('[]'));
   });
-}
-
-/** 取索引里出现过的全部 repoKey */
-export async function querySqlitePaths(dbPath) {
-  return runPython(SQL_PATHS, dbPath);
 }
 
 /** 取索引里每个 repoKey 的最高 freshness_score */

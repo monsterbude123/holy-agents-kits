@@ -60,6 +60,30 @@ describe('parseQueryFlags', () => {
     const f = parseQueryFlags(['react', '--log', '--json']);
     assert.strictEqual(f.json, true);
   });
+
+  it('does not mistake a string flag value for repo', () => {
+    // 回归：--limit 的值 token 不得被位置参数扫描误认为 repo
+    const f = parseQueryFlags(['--limit', '5', 'myrepo', '--log']);
+    assert.strictEqual(f.repo, 'myrepo');
+    assert.strictEqual(f.limit, 5);
+  });
+
+  it('repo scan skips values consumed by tag/show/grab/since/until/context/top', () => {
+    const f1 = parseQueryFlags(['--tag', 'v19', 'myrepo']);
+    assert.strictEqual(f1.repo, 'myrepo');
+    const f2 = parseQueryFlags(['--since', '2026-01-01', '--until', '2026-02-01', 'myrepo', '--recent']);
+    assert.strictEqual(f2.repo, 'myrepo');
+    const f3 = parseQueryFlags(['--top', '15', '--context', '3', 'myrepo', '--freshness']);
+    assert.strictEqual(f3.repo, 'myrepo');
+  });
+
+  it('falls back to first bare token when flag value equals repo name', () => {
+    // 回归：`query myrepo --tag myrepo`——所有非 -- token 都被消费时，回退首个非 -- token
+    const f = parseQueryFlags(['myrepo', '--tag', 'myrepo']);
+    assert.strictEqual(f.repo, 'myrepo');
+    assert.strictEqual(f.tag, 'myrepo');
+    assert.strictEqual(f.mode, 'tag');
+  });
 });
 
 describe('formatLog', () => {

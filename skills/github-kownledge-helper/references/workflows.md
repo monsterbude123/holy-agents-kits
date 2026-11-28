@@ -77,6 +77,7 @@
 
 ## 5. 首次启动自检
 
+0. 首装无 `manifest.json` 时先自举：`node scripts/cli.mjs sync-manifest`（扫描 repos/ 生成）。
 1. 读取 `manifest.json`，确认存在且 schema 合法。
 2. 抽查 1~2 个 repo 目录是否存在。
 3. 检查 `docs/.docmap/docmap.db` 是否存在，不存在提示构建索引。

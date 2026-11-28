@@ -24,7 +24,6 @@ const MANAGED_KEYS = [
   'STORAGE_BUFFER_SPACE',
   'STORAGE_MAX_RETAINED_SNAPSHOTS',
   'STORAGE_TRASH_TTL_DAYS',
-  'STORAGE_AUTO_TRASH_ON_PUSH',
 ];
 
 let tmpRoot;
@@ -121,7 +120,6 @@ describe('loadEnv', () => {
     assert.strictEqual(env.STORAGE_BUFFER_SPACE, join(process.cwd(), 'buffer'));
     assert.strictEqual(env.STORAGE_MAX_RETAINED_SNAPSHOTS, 2);
     assert.strictEqual(env.STORAGE_TRASH_TTL_DAYS, 7);
-    assert.strictEqual(env.STORAGE_AUTO_TRASH_ON_PUSH, true);
   });
 
   it('探测链上没有 .env 时回退默认值', () => {
@@ -162,13 +160,11 @@ describe('loadEnv', () => {
         'STORAGE_BUFFER_SPACE="./buffer-space"',
         'STORAGE_MAX_RETAINED_SNAPSHOTS=5',
         'STORAGE_TRASH_TTL_DAYS=14',
-        'STORAGE_AUTO_TRASH_ON_PUSH=false',
       ].join('\n'),
     );
     const env = loadEnv({ envFile, forceReload: true });
     assert.strictEqual(env.STORAGE_BUFFER_SPACE, './buffer-space');
     assert.strictEqual(env.STORAGE_MAX_RETAINED_SNAPSHOTS, 5);
     assert.strictEqual(env.STORAGE_TRASH_TTL_DAYS, 14);
-    assert.strictEqual(env.STORAGE_AUTO_TRASH_ON_PUSH, false);
   });
 });

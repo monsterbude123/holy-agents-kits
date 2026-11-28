@@ -3,10 +3,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  parseQueryIndexOutput,
-  summarizeFreshness,
-} from '../lib/verifyDocs.mjs';
+import { parseQueryIndexOutput } from '../lib/verifyDocs.mjs';
 
 describe('parseQueryIndexOutput', () => {
   it('extracts hits from successful grab output', () => {
@@ -48,28 +45,5 @@ describe('parseQueryIndexOutput', () => {
       Math.abs((hits[0]?.freshnessScore ?? NaN) - 0.2) < 1e-9,
       `expected freshnessScore ≈ 0.2, got ${hits[0]?.freshnessScore}`
     );
-  });
-});
-
-describe('summarizeFreshness', () => {
-  it('reports green/yellow/red counts and missing repos', () => {
-    const manifestRepos = ['a__x', 'b__y', 'c__z'];
-    const hits = [
-      { repo: 'a__x', file: 'README.md', freshness: 'green', freshnessScore: 1.0, score: 0.9 },
-      { repo: 'b__y', file: 'README.md', freshness: 'red', freshnessScore: 0.1, score: 0.5 },
-    ];
-    const summary = summarizeFreshness(manifestRepos, hits);
-    assert.strictEqual(summary.green, 1);
-    assert.strictEqual(summary.yellow, 0);
-    assert.strictEqual(summary.red, 1);
-    assert.deepStrictEqual(summary.missing, ['c__z']);
-    assert.strictEqual(summary.total, 3);
-  });
-
-  it('returns all missing when no hits', () => {
-    const summary = summarizeFreshness(['a', 'b'], []);
-    assert.deepStrictEqual(summary.missing, ['a', 'b']);
-    assert.strictEqual(summary.green, 0);
-    assert.strictEqual(summary.total, 2);
   });
 });

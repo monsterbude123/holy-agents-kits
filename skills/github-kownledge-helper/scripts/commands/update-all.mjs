@@ -7,6 +7,7 @@ import { updateOne } from './update.mjs';
 
 /**
  * 批量更新：顺序拉取（禁止并发），一次性回写 manifest。
+ * 返回 { results, totalTimeSec }：汇总表由 printResults 打（带逐仓明细与总耗时），此处不重复输出。
  */
 export async function updateAll() {
   const manifest = readManifest();
@@ -37,18 +38,12 @@ export async function updateAll() {
 
   writeManifest(manifest);
 
-  const totalTime = ((Date.now() - startTs) / 1000).toFixed(1);
-  const okCount = results.filter((x) => x.ok).length;
-  const changedCount = results.filter((x) => x.changed).length;
-  const failCount = results.filter((x) => !x.ok).length;
-  console.log(
-    `=== UPDATE DONE: ${okCount} ok (${changedCount} changed), ${failCount} failed, ${totalTime}s ===`
-  );
-  return results;
+  const totalTimeSec = ((Date.now() - startTs) / 1000).toFixed(1);
+  return { results, totalTimeSec };
 }
 
 /** 批量结果汇总表 */
-function printResults(results) {
+function printResults(results, totalTimeSec) {
   let ok = 0;
   let changed = 0;
   let failed = 0;
@@ -65,8 +60,9 @@ function printResults(results) {
       console.log(`✗ ${r.repo.full_name.padEnd(50)} ${r.message}`);
     }
   }
+  const elapsed = totalTimeSec !== undefined ? `, ${totalTimeSec}s` : '';
   console.log(
-    `=== UPDATE DONE: ${ok} ok (${changed} changed), ${failed} failed ===`
+    `=== UPDATE DONE: ${ok} ok (${changed} changed), ${failed} failed${elapsed} ===`
   );
 }
 
@@ -78,7 +74,7 @@ export const def = {
   strings: [],
   positionals: 0,
   async run() {
-    const results = await updateAll();
-    printResults(results);
+    const { results, totalTimeSec } = await updateAll();
+    printResults(results, totalTimeSec);
   },
 };

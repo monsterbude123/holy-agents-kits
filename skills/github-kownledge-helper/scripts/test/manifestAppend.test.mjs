@@ -3,10 +3,18 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { appendEntry, findByFullName } from '../lib/manifest.mjs';
+import { appendEntry, findByFullName, readManifest } from '../lib/manifest.mjs';
+import { runSyncManifest } from '../commands/sync-manifest.mjs';
+import {
+  _resetForTest,
+  _setDotEnvForTest,
+  SKILL_ENV,
+  SKILL_ENV_STD,
+} from '../lib/envStrict.mjs';
+import { cleanupDir, leaveDir } from './helpers.mjs';
 
 function makeEntry(over = {}) {
   return {
@@ -83,5 +91,60 @@ describe('manifest appendEntry', () => {
     m.repos.push(e);
     assert.deepStrictEqual(findByFullName(m, 'foo/bar'), e);
     assert.strictEqual(findByFullName(m, 'x/y'), null);
+  });
+});
+
+describe('manifest 首装自举（无 manifest.json）', () => {
+  let tmpRoot;
+  let savedEnv;
+  let savedEnvStd;
+
+  beforeEach(() => {
+    tmpRoot = mkdtempSync(join(tmpdir(), 'ghh-bootstrap-'));
+    savedEnv = process.env[SKILL_ENV];
+    savedEnvStd = process.env[SKILL_ENV_STD];
+    process.env[SKILL_ENV_STD] = tmpRoot;
+    process.env[SKILL_ENV] = tmpRoot;
+    _resetForTest();
+    _setDotEnvForTest(false); // 测试隔离，不读本地 .agents/.env
+  });
+
+  afterEach(() => {
+    if (savedEnvStd === undefined) delete process.env[SKILL_ENV_STD];
+    else process.env[SKILL_ENV_STD] = savedEnvStd;
+    if (savedEnv === undefined) delete process.env[SKILL_ENV];
+    else process.env[SKILL_ENV] = savedEnv;
+    _resetForTest();
+    leaveDir(tmpRoot);
+    cleanupDir(tmpRoot);
+  });
+
+  it('readManifest returns empty manifest when file is missing', () => {
+    const m = readManifest(tmpRoot);
+    assert.deepStrictEqual(m, {
+      version: '1.1',
+      updated_at: null,
+      repo_count: 0,
+      repos: [],
+    });
+  });
+
+  it('runSyncManifest bootstraps a fresh project and writes manifest.json', () => {
+    // 空 repos/ 目录（仅 .gitkeep，扫描时跳过）
+    mkdirSync(join(tmpRoot, 'repos'), { recursive: true });
+    writeFileSync(join(tmpRoot, 'repos', '.gitkeep'), '');
+    // tmpRoot 下无 repos 目录时 scanRepos 也会因 ENOENT 崩，这里只造空仓场景
+    const logs = [];
+    const origLog = console.log;
+    console.log = (m) => logs.push(String(m));
+    try {
+      runSyncManifest(tmpRoot);
+    } finally {
+      console.log = origLog;
+    }
+    assert.ok(existsSync(join(tmpRoot, 'manifest.json')), '应写出 manifest.json');
+    const written = JSON.parse(readFileSync(join(tmpRoot, 'manifest.json'), 'utf-8'));
+    assert.strictEqual(written.repo_count, 0);
+    assert.deepStrictEqual(written.repos, []);
   });
 });

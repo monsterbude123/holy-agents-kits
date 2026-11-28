@@ -32,9 +32,15 @@ import { manifestPath, getProjectRoot } from './paths.mjs';
  * @property {RepoEntry[]} repos 仓库列表
  */
 
-/** 读取 manifest.json，解析为 Manifest 对象。cwd 决定项目根。 */
+/** 空清单：首装自举用（writeManifest 会创建文件） */
+export function emptyManifest() {
+  return { version: '1.1', updated_at: null, repo_count: 0, repos: [] };
+}
+
+/** 读取 manifest.json，解析为 Manifest 对象；不存在时返回空清单。cwd 决定项目根。 */
 export function readManifest(cwd) {
   const path = cwd ? join(getProjectRoot(cwd), 'manifest.json') : manifestPath();
+  if (!existsSync(path)) return emptyManifest();
   const raw = readFileSync(path, 'utf-8');
   return JSON.parse(raw);
 }

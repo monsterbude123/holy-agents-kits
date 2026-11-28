@@ -103,7 +103,14 @@ export async function main(argv = process.argv) {
     process.exit(1);
   }
 
-  await cmd.run(parsed.flags, parsed.positionals, rest);
+  try {
+    await cmd.run(parsed.flags, parsed.positionals, rest);
+  } catch (err) {
+    // 命令体异常兜底：不裸抛堆栈，按既有 ✗ 风格输出并以非零码退出
+    console.error(`✗ ${err?.message || err}`);
+    if (err?.code) console.error(`  错误码：${err.code}`);
+    process.exit(1);
+  }
 }
 
 // 直接执行时运行 main；被 import 时仅导出符号。

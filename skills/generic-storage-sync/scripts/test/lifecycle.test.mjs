@@ -198,6 +198,72 @@ describe('铁律3 索引先行：先记账落盘，再物理删除', () => {
   });
 });
 
+describe('活快照防御：介质根仍有同名活文件时只清回收站副本，不动账本', () => {
+  const LIVE = 'x-commit2.bundle';
+  /** 模拟「push 半途失败 → 同 commit 重推成功」：介质根有活快照，.trash 留旧死副本，账本记 synced */
+  const setupLiveSnapshot = async () => {
+    writeFileSync(join(media, LIVE), 'live');
+    trashPath(`20260101T000000Z_${LIVE}`);
+    store.recordSync({ repoFullName: 'owner/x', targetId: 't1', syncedCommitSha: 'sha-x2', syncedArchiveName: LIVE, syncedAt: '2026-01-02T00:00:00Z', status: 'synced' });
+    await driver.writeIndex({
+      version: '1.0', updatedAt: null,
+      snapshots: { 'owner/x': snap({ fullName: 'owner/x', archiveName: LIVE, commitSha: 'sha-x2' }) },
+      syncRecords: { 'owner/x::t1': { repoFullName: 'owner/x', targetId: 't1', syncedCommitSha: 'sha-x2', syncedArchiveName: LIVE, syncedAt: '2026-01-02T00:00:00Z', status: 'synced' } },
+      targets: {},
+    });
+  };
+  it('execute=true：回收站死副本被物理清理，活快照记账保持 synced 不被误标', async () => {
+    await setupLiveSnapshot();
+    const scan = await scanExpiredTrash(driver, 7);
+    assert.equal(scan.expired.length, 1);
+    const res = await purgeExpired(driver, scan.expired, { store, execute: true });
+    assert.equal(res.purged.length, 1, '回收站死副本应被清理');
+    assert.equal(res.failed.length, 0);
+    assert.deepEqual(res.skipped.map((s) => s.reason), ['live-snapshot-exists'], '被跳过核销的条目须记入 skipped');
+    assert.deepEqual(res.purgedRecords, [], '活快照在场时不得产生任何核销记账');
+    assert.equal(store.listSyncRecords()[0].status, 'synced', '本地账本活记录不得被标 purged');
+    const ledger = JSON.parse(readFileSync(join(buffer, '.ghh-index.json'), 'utf-8'));
+    assert.equal(ledger.syncRecords['owner/x::t1'].status, 'synced');
+    const mediaIdx = await driver.readIndex();
+    assert.equal(mediaIdx.syncRecords['owner/x::t1'].status, 'synced', '介质索引活记录不得被标 purged');
+    assert.notEqual(mediaIdx.snapshots['owner/x'].status, 'purged', '介质索引活快照不得被核销（未核销的快照实体无 status）');
+    assert.equal(existsSync(join(media, LIVE)), true, '活快照文件必须保留');
+    assert.equal(existsSync(join(media, '.trash', `20260101T000000Z_${LIVE}`)), false, '回收站死副本应被清理');
+  });
+  it('dry-run：活快照在场时不删除回收站副本，也不产生任何标记副作用（含内存账本）', async () => {
+    await setupLiveSnapshot();
+    const ledgerBefore = JSON.parse(JSON.stringify(store.data));
+    const mediaBefore = await driver.readIndex();
+    const scan = await scanExpiredTrash(driver, 7);
+    const res = await purgeExpired(driver, scan.expired, { store });
+    assert.equal(res.dryRun, true);
+    assert.equal(res.purged.length, 0);
+    assert.deepEqual(res.purgedRecords, [], '活快照在场：dry-run 预演同样不产生核销清单');
+    assert.deepEqual(store.data, ledgerBefore, 'dry-run 不得改动内存账本');
+    assert.deepEqual(await driver.readIndex(), mediaBefore, 'dry-run 不得改动介质索引');
+    assert.equal(store.listSyncRecords()[0].status, 'synced');
+    assert.equal(existsSync(join(media, '.trash', `20260101T000000Z_${LIVE}`)), true, 'dry-run 不得删除回收站副本');
+  });
+  it('dry-run 无活文件：purgedRecords 给出 would-be 核销清单，但索引数据零改动', async () => {
+    await register(); // 介质根没有同名活文件 → 真执行会核销
+    trashPath('20260101T000000Z_owner__repo-aaa1111.bundle');
+    const ledgerBefore = JSON.parse(JSON.stringify(store.data));
+    const mediaBefore = await driver.readIndex();
+    const scan = await scanExpiredTrash(driver, 7);
+    const res = await purgeExpired(driver, scan.expired, { store });
+    assert.equal(res.dryRun, true);
+    // 本地 Ledger 与介质索引两个记账目标各报一遍（与 execute 路径的聚合口径一致）
+    assert.deepEqual(
+      res.purgedRecords,
+      ['owner/repo::t1', 'snapshot:owner/repo', 'owner/repo::t1', 'snapshot:owner/repo'],
+      'dry-run 应给出将核销的记录清单'
+    );
+    assert.deepEqual(store.data, ledgerBefore, 'dry-run 不得改动内存账本');
+    assert.deepEqual(await driver.readIndex(), mediaBefore, 'dry-run 不得改动介质索引');
+    assert.equal(store.listSyncRecords()[0].status, 'synced', 'dry-run 下账本状态不得变为 purged');
+  });
+});
+
 describe('铁律4 孤儿防御：未登记游离文件只隔离不删除', () => {
   it('孤儿被扫描出来，dry-run 不动它，真执行隔离到 .trash/orphans/ 且文件仍在', async () => {
     await register();

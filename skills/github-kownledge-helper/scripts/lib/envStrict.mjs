@@ -83,8 +83,10 @@ export function load_env() {
       throw new LoadEnvError(`${SKILL_ENV_STD}=${root} 路径不存在。`);
     }
     if (!existsSync(join(root, 'manifest.json'))) {
-      throw new LoadEnvError(
-        `${SKILL_ENV_STD}=${root} 不是合法项目根（缺 manifest.json）。`
+      // 首装自举：manifest.json 由 sync-manifest 生成，缺失只提示不阻断初始化
+      console.warn(
+        `[load_env] ${root} 下暂无 manifest.json。首装请先运行 ` +
+          `node scripts/cli.mjs sync-manifest 生成（将扫描 repos/ 下已有仓库，没有则生成空清单）。`
       );
     }
 

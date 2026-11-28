@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { resolveRepo } from '../commands/query.mjs';
+import { listTags } from '../lib/queryGit.mjs';
 import { git, makeRepoFixture, cleanupDir } from './helpers.mjs';
 
 function makeManifest(proj) {
@@ -110,5 +111,34 @@ describe('query e2e (real git only)', () => {
     git(fix.path, ['tag', 'v0.0.1']);
     const t2 = git(fix.path, ['tag', '--list', PAT]);
     assert.strictEqual(t2, 'v0.0.1');
+  });
+
+  it('listTags returns pointed commit for both lightweight and annotated tags', () => {
+    // 第二个 commit：annotated tag 挂它上面；lightweight tag 挂首个 commit
+    writeFileSync(join(fix.path, 'b.txt'), 'b\n');
+    git(fix.path, ['add', '.']);
+    git(fix.path, ['commit', '-q', '-m', 'c2 second']);
+    const sha2 = git(fix.path, ['rev-parse', 'HEAD']);
+    const sha1 = fix.sha;
+    git(fix.path, ['tag', 'lw-1.0', sha1]); // lightweight
+    git(fix.path, ['tag', '-a', '-m', 'release note', 'ann-1.0', sha2]); // annotated
+
+    const tags = listTags(fix.path, null);
+    assert.strictEqual(tags.length, 2);
+
+    const lw = tags.find((t) => t.name === 'lw-1.0');
+    assert.strictEqual(lw?.commit, sha1, 'lightweight tag 应指向所在 commit');
+    assert.ok(lw?.date, 'lightweight tag 应有日期');
+    assert.ok(lw?.subject, 'lightweight tag 应有主题');
+
+    const ann = tags.find((t) => t.name === 'ann-1.0');
+    assert.strictEqual(ann?.commit, sha2, 'annotated tag 应返回被指向 commit 的 sha');
+    assert.strictEqual(ann?.subject, 'c2 second', 'annotated tag 主题应为 commit subject（非 tag message）');
+    assert.ok(ann?.date);
+
+    // pattern 过滤仍可用
+    const filtered = listTags(fix.path, 'lw*');
+    assert.strictEqual(filtered.length, 1);
+    assert.strictEqual(filtered[0]?.name, 'lw-1.0');
   });
 });

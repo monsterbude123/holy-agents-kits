@@ -144,6 +144,21 @@ describe('sync_coordinator · Push 两阶段提交', () => {
     assert.equal(Object.keys(remote.syncRecords).length, 1);
     assert.equal(localStore().listSyncRecords().length, 1);
   });
+
+  it('6b · 增量 push：baseCommitSha 必须保留在快照与远端索引中', async () => {
+    // 再提交一版，保证 base != HEAD（增量 bundle 才非空且可 verify）
+    writeFileSync(join(repo.path, 'v2.txt'), 'v2\n');
+    git(repo.path, ['add', '.']);
+    git(repo.path, ['commit', '-q', '-m', 'c2']);
+    const baseSha = repo.headSha;
+    const driver = new LocalFsDriver({ root: media });
+    const res = await coordOf(driver).push({ repoPath: repo.path, fullName: 'acme/widget', baseCommitSha: baseSha });
+    assert.equal(res.snapshot.baseCommitSha, baseSha, 'snapshot 实体必须保留 baseCommitSha');
+    const remote = await driver.readIndex();
+    assert.equal(remote.snapshots['acme/widget'].baseCommitSha, baseSha, '远端索引必须保留 baseCommitSha');
+    const store = localStore();
+    assert.equal(store.get('acme/widget').baseCommitSha, baseSha, '本地 Ledger 也必须保留 baseCommitSha');
+  });
 });
 
 describe('sync_coordinator · Pull 与灾难恢复', () => {
@@ -175,6 +190,22 @@ describe('sync_coordinator · Pull 与灾难恢复', () => {
       () => coordOf(driver).pull({ fullName: 'acme/absent', destPath: join(tmpRoot, 'absent') }),
       E.GSS_E_NOT_FOUND
     );
+  });
+
+  it('9b · pull 增量快照（带 baseCommitSha）：拒绝直接 clone 并提示先还原 base 版本', async () => {
+    const driver = new LocalFsDriver({ root: media });
+    const coord = coordOf(driver);
+    await coord.push({ repoPath: repo.path, fullName: 'acme/widget' });
+    // 模拟库调用方的增量快照在场：远端索引补写 baseCommitSha（CLI 路径从不带）
+    const remote = await driver.readIndex();
+    remote.snapshots['acme/widget'].baseCommitSha = repo.headSha;
+    await driver.writeIndex(remote);
+    const dest = join(tmpRoot, 'restored-inc');
+    await assert.rejects(
+      () => coord.pull({ fullName: 'acme/widget', destPath: dest }),
+      (e) => e.code === E.GSS_E_INVALID_ARG && e.message.includes('baseCommitSha')
+    );
+    assert.equal(existsSync(dest), false, '拒绝还原时不得产出工作区');
   });
 
   it('10 · rebuild：仅凭远端索引重建本地 Ledger 与索引', async () => {

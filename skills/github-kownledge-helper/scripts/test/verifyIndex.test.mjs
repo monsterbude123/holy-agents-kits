@@ -1,32 +1,12 @@
-// verifyIndex.test.mjs — 验证索引覆盖度（SQLite 直查，node:test）
+// verifyIndex.test.mjs — 验证索引覆盖度（node:test）
 // 用例已迁移到 node:test runner（Node 内置，无第三方依赖）
 
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import {
   pathToDocsQueryKey,
   summarizeCoverage,
-  pathExistsInIndex,
 } from '../lib/verifyIndex.mjs';
-
-function setUpFakeIndex() {
-  const root = mkdtempSync(join(tmpdir(), 'ghh-vi-'));
-  // 建一个真正的 SQLite 库（用 python 连建）
-  const dbPath = join(root, 'docs', '.docmap', 'docmap.db');
-  execFileSync(
-    'python',
-    [
-      '-c',
-      `import sqlite3, os; os.makedirs(os.path.dirname(${JSON.stringify(dbPath)}), exist_ok=True); c = sqlite3.connect(${JSON.stringify(dbPath)}); c.execute("CREATE TABLE files (path TEXT, freshness_score REAL, last_git_commit TEXT)"); c.executemany("INSERT INTO files VALUES (?, ?, ?)", [("ai-app/AIDC-AI__Pixelle-Video/README.md", 0.9, "abc"), ("comfyanonymous__ComfyUI/README.md", 0.95, "def"), ("top-level/readme.md", 0.5, None)]); c.commit(); c.close()`,
-    ],
-    { stdio: 'pipe' }
-  );
-  return { projectRoot: root };
-}
 
 describe('pathToDocsQueryKey', () => {
   it('strips docs/ prefix', () => {
@@ -90,35 +70,5 @@ describe('summarizeCoverage', () => {
     assert.strictEqual(s.green, 1);
     assert.strictEqual(s.yellow, 1);
     assert.strictEqual(s.red, 1);
-  });
-});
-
-describe('pathExistsInIndex (real SQLite)', () => {
-  let cleanup;
-  beforeEach(() => {
-    cleanup = setUpFakeIndex();
-  });
-  afterEach(() => {
-    rmSync(cleanup.projectRoot, {
-      recursive: true,
-      force: true,
-      maxRetries: 5,
-      retryDelay: 100,
-    });
-  });
-
-  it('returns true for group-prefixed repo with at least one file', async () => {
-    const ok = await pathExistsInIndex('ai-app/AIDC-AI__Pixelle-Video', cleanup.projectRoot);
-    assert.strictEqual(ok, true);
-  });
-
-  it('returns true for root-level repo', async () => {
-    const ok = await pathExistsInIndex('comfyanonymous__ComfyUI', cleanup.projectRoot);
-    assert.strictEqual(ok, true);
-  });
-
-  it('returns false for repo not in index', async () => {
-    const ok = await pathExistsInIndex('does-not-exist__nope', cleanup.projectRoot);
-    assert.strictEqual(ok, false);
   });
 });

@@ -151,6 +151,8 @@ export const defCleanTrash = {
         }
         const res = await purgeExpired(driver, expired, { execute, ttlDays, store, index: remoteIndex });
         console.log(`    可释放: ${fmtBytes(res.freedBytes)}`);
+        const liveSkipped = (res.skipped || []).filter((s) => s.reason === 'live-snapshot-exists');
+        if (liveSkipped.length) console.log(`    跳过核销 ${liveSkipped.length} 个：介质根仍有同名活快照，账本保持原状`);
         if (execute) console.log(`    已物理清理 ${res.purged.length} 个，失败 ${res.failed.length} 个`);
         else console.log('    (演练模式，未删除任何文件；加 --yes 执行)');
       } catch (err) {

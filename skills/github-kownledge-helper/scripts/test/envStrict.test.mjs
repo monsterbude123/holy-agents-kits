@@ -1,5 +1,5 @@
 // envStrict.test.mjs — 严格环境加载层单测（node:test）
-// 覆盖：env 缺失 / 绝对路径校验 / 路径不存在 / 缺 manifest.json / 正常解析 / 幂等 / 未知 key
+// 覆盖：env 缺失 / 绝对路径校验 / 路径不存在 / 缺 manifest.json（warn 不阻断）/ 正常解析 / 幂等 / 未知 key
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -67,10 +67,24 @@ describe('load_env', () => {
     assert.throws(() => load_env(), /路径不存在/);
   });
 
-  it('throws when path lacks manifest.json', () => {
+  it('warns but still initializes when path lacks manifest.json', () => {
     const dir = mkdtempSync(join(tmpdir(), 'ghh-loadenv-'));
-    setEnv(dir); // dir 存在但不含 manifest.json
-    assert.throws(() => load_env(), /缺 manifest\.json/);
+    setEnv(dir); // dir 存在但不含 manifest.json（首装自举场景）
+    const warns = [];
+    const origWarn = console.warn;
+    console.warn = (m) => warns.push(String(m));
+    try {
+      load_env();
+    } finally {
+      console.warn = origWarn;
+    }
+    assert.ok(
+      warns.join('\n').includes('manifest.json'),
+      '应提示缺 manifest.json 并建议 sync-manifest'
+    );
+    // 初始化照常完成，路径可用
+    assert.strictEqual(get('project_root'), dir);
+    assert.strictEqual(get('manifest_path'), join(dir, 'manifest.json'));
   });
 
   it('loads successfully with valid root', () => {
