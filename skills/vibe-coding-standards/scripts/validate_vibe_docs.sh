@@ -19,6 +19,18 @@
 
 set -u
 
+# ── node 解析:Git Bash 的 PATH 常常不含 node,直接调会 "command not found" ──
+NODE_BIN=""
+for cand in "$(command -v node 2>/dev/null)" \
+            "/c/nodejs/node.exe" \
+            "/c/Program Files/nodejs/node.exe"; do
+  if [ -n "$cand" ] && [ -x "$cand" ]; then NODE_BIN="$cand"; break; fi
+done
+if [ -z "$NODE_BIN" ]; then
+  echo "SKIP validate_vibe_docs：找不到 node 可执行文件"
+  exit 2
+fi
+
 # 调用时的 CWD（用户给的相对目录按它解析,切到仓根之后仍指原来那个地方）
 ORIG_PWD="$(pwd)"
 
@@ -38,7 +50,7 @@ ROOT="$(pwd)"
 # node 需要本机可解析的绝对路径：cygpath -m 给出 D:/... 形式
 STD_ABS="$(cygpath -m "$ROOT/scripts/gates/standards.json" 2>/dev/null || echo "$ROOT/scripts/gates/standards.json")"
 load_harness_standards() {
-  STD_PATH="$STD_ABS" node -e '
+  STD_PATH="$STD_ABS" "$NODE_BIN" -e '
 const s = require(process.env.STD_PATH), c = s.components;
 console.log("TH_AGENTS=" + c.agents_md.max_lines);
 console.log("TH_SKILL=" + c.skill_md.max_lines);

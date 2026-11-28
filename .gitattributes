@@ -1,0 +1,32 @@
+# 行尾归一化（按类型，不按全局 autocrlf）
+# 理由：Windows 上 core.autocrlf=true 会把 *.sh 转成 CRLF，
+# 导致 bash 脚本在 Windows 上直接语法错误（set: - invalid option / $'\r': command not found）。
+# 这里显式声明：shell 脚本与其它文本一律 LF 入库，工作区不做转换。
+
+# 文本文件：一律 LF 入库，checkout 不转换
+* text=auto eol=lf
+
+# 必须按字节处理的二进制
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.mp4 binary
+*.mp3 binary
+*.wasm binary
+*.node binary
+
+# 明确行尾要求
+*.sh text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

@@ -19,6 +19,18 @@
 # 放置:skills/rules-layer-governance/templates/;ROOT 自动回退到 git 顶层(脚本位置上溯 3 级)。
 set -u
 
+# ── node 解析:Git Bash 的 PATH 常常不含 node,直接调会 "command not found" ──
+NODE_BIN=""
+for cand in "$(command -v node 2>/dev/null)" \
+            "/c/nodejs/node.exe" \
+            "/c/Program Files/nodejs/node.exe"; do
+  if [ -n "$cand" ] && [ -x "$cand" ]; then NODE_BIN="$cand"; break; fi
+done
+if [ -z "$NODE_BIN" ]; then
+  echo "SKIP check-dead-refs：找不到 node 可执行文件"
+  exit 2
+fi
+
 # 注意:不要写成 `git ... || cd ... && pwd` —— shell 里 || 与 && 左结合,
 # git 成功时仍会执行 pwd,两段路径会被拼成两行,后续 cd 必失败。
 if ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" && [ -n "$ROOT" ]; then
@@ -35,7 +47,7 @@ STD_ABS="$(cygpath -m "$ROOT/scripts/gates/standards.json" 2>/dev/null || echo "
 
 # 唯一标准来源：scripts/gates/standards.json（node 边车输出 KEY=VALUE）
 load_harness_standards() {
-  STD_PATH="$STD_ABS" node -e '
+  STD_PATH="$STD_ABS" "$NODE_BIN" -e '
 const s = require(process.env.STD_PATH), d = s.dead_refs || {};
 const q = (v) => JSON.stringify(String(v == null ? "" : v));
 console.log("DEAD_REFS_ENABLED=" + (d.enabled ? 1 : 0));

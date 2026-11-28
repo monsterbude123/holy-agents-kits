@@ -3,8 +3,9 @@
 //
 // 报告里的 file 一律是**仓根相对路径**且真实存在（能直接打开定位）；
 // line 是该文件内的 1 基行号，0 表示「整文件级问题」（计数类，行数在 message 里）。
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { resolveBash } from "../run-bash.mjs";
 
 const ROOT = process.cwd();
 const STANDARD_PATH = "scripts/gates/standards.json";
@@ -13,6 +14,10 @@ const maxLines = standard.components.skill_md.max_lines;
 
 // 路径归一：反斜杠 → /，去掉 ./ 前缀
 const slash = (p) => String(p || "").replace(/\\/g, "/").replace(/^\.\//, "");
+
+// bash 定位见 scripts/run-bash.mjs 的说明（Windows 上 PATH 里的 bash 是 WSL 的，
+// 里面没有 node 也没有 /c 挂载，跑 .sh 必然失败）
+const BASH = resolveBash();
 
 function run(cmd, args) {
   const r = spawnSync(cmd, args, { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
@@ -32,9 +37,9 @@ const deadArgs = ["skills/rules-layer-governance/templates/check-dead-refs.sh"];
 const hygArgs = ["skills/human-docs/scripts/check-doc-hygiene.sh", "."];
 const applied = {
   validate_skill_argv: ["python", ...pyArgs],
-  vibe_argv: ["bash", ...vibeArgs],
-  dead_refs_argv: ["bash", ...deadArgs],
-  doc_hygiene_argv: ["bash", ...hygArgs],
+  vibe_argv: [BASH, ...vibeArgs],
+  dead_refs_argv: [BASH, ...deadArgs],
+  doc_hygiene_argv: [BASH, ...hygArgs],
 };
 
 const r1 = run("python", pyArgs);
@@ -93,9 +98,9 @@ function parseShellIssues(text) {
   return out;
 }
 
-const r2 = run("bash", vibeArgs);
-const r3 = run("bash", deadArgs);
-const r4 = run("bash", hygArgs);
+const r2 = run(BASH, vibeArgs);
+const r3 = run(BASH, deadArgs);
+const r4 = run(BASH, hygArgs);
 
 const checkers = [
   { name: "validate_skill", exit_code: r1.status, issues: pyIssues },

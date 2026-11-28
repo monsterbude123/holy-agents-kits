@@ -19,6 +19,21 @@
 # 退出码:0=干净 / 1=有命中 / 2=环境错误
 set -u
 
+# ── node 解析:Git Bash 的 PATH 常常不含 node(C:\nodejs 不在其中),
+#    直接调 node 会 "command not found" → 误报 exit 2。
+#    依次尝试:command -v → Windows 常见安装位置 → npx 边车。 ──
+NODE_BIN=""
+for cand in "$(command -v node 2>/dev/null)" \
+            "/c/nodejs/node.exe" \
+            "/c/Program Files/nodejs/node.exe" \
+            "$NODE_BIN"; do
+  if [ -n "$cand" ] && [ -x "$cand" ]; then NODE_BIN="$cand"; break; fi
+done
+if [ -z "$NODE_BIN" ]; then
+  echo "SKIP check-doc-hygiene：找不到 node 可执行文件"
+  exit 2
+fi
+
 # ── selftest:临时 git 仓注入阳性/阴性样本,期望恰 2 条 FAIL;全过 exit 0 ──
 if [ "${1:-}" = "--selftest" ]; then
   T="$(mktemp -d)" || exit 2
@@ -64,7 +79,7 @@ DIRS_CSV="$(IFS=,; echo "${DIRS[*]}")"
 
 # 排除清单:standards.json doc_hygiene.exclude_globs(node 边车,缺省 vendor)
 STD_ABS="$(cygpath -m "$ROOT/scripts/gates/standards.json" 2>/dev/null || echo "$ROOT/scripts/gates/standards.json")"
-EXCLUDES="$(STD_PATH="$STD_ABS" node -e 'const s=require(process.env.STD_PATH);((s.doc_hygiene||{}).exclude_globs||["skills/*/references/vendor/*"]).forEach(g=>console.log(g))' 2>/dev/null)"
+EXCLUDES="$(STD_PATH="$STD_ABS" "$NODE_BIN" -e 'const s=require(process.env.STD_PATH);((s.doc_hygiene||{}).exclude_globs||["skills/*/references/vendor/*"]).forEach(g=>console.log(g))' 2>/dev/null)"
 [ -z "$EXCLUDES" ] && EXCLUDES="skills/*/references/vendor/*"
 EXCLUDES_CSV="$(printf '%s' "$EXCLUDES" | tr '\n' ',')"
 
@@ -82,7 +97,7 @@ fi
 SCAN="$(dirname "$0")/scan-doc-hygiene.mjs"
 SCAN_ABS="$(cygpath -m "$SCAN" 2>/dev/null || echo "$SCAN")"
 ROOT_ABS="$(cygpath -m "$ROOT" 2>/dev/null || echo "$ROOT")"
-node "$SCAN_ABS" "$ROOT_ABS" "$DIRS_CSV" "$EXCLUDES_CSV" < "$LIST" > "$HITS" || { echo "SKIP check-doc-hygiene：扫描边车异常"; exit 2; }
+"$NODE_BIN" "$SCAN_ABS" "$ROOT_ABS" "$DIRS_CSV" "$EXCLUDES_CSV" < "$LIST" > "$HITS" || { echo "SKIP check-doc-hygiene：扫描边车异常"; exit 2; }
 
 FAILED=0
 while IFS=$'\t' read -r kind f ln rest; do
