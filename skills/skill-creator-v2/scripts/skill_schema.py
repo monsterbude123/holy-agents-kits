@@ -56,7 +56,7 @@ DEFAULT_SKILL_MD_MAX_LINES = _COMPONENTS.get("skill_md", {}).get("max_lines", 15
 SKILL_MD_COMPONENT = _COMPONENTS.get("skill_md", {})
 # 行数是否只算正文（true ⇒ 排除 frontmatter）
 COUNTS_BODY_ONLY = SKILL_MD_COMPONENT.get("counts_body_only", True)
-# 是否禁止文档里出现本机绝对路径（warn 级检查）
+# 是否禁止出现本机绝对路径（文档 + 代码注释）
 FORBID_WINDOWS_PATHS = SKILL_MD_COMPONENT.get("forbid_windows_paths", True)
 # references/ 的最大层级（1 ⇒ references/ 下的文件不得再链 references/ 下的文件）
 MAX_REFERENCE_DEPTH = SKILL_MD_COMPONENT.get("max_reference_depth", 1)
@@ -100,7 +100,7 @@ REFERENCE_MD_LINK_RE = re.compile(r"\]\(\s*references/([A-Za-z0-9_./-]+\.md)")
 SCRIPT_LINK_RE = re.compile(r"scripts/([A-Za-z0-9_./-]+\.(?:py|mjs))")
 
 # 本机绝对路径判定：复用 skills/idea-backend/scripts/check-experiment.js 的 LOCAL_PATH_RE 口径
-# （盘符形态 D:/... 与 URL 编码形态 d%3A/...；盘符字母前面不能是字母数字，否则 JSON 转义假阳性）。
+# （盘符形态 <盘符>:/... 与 URL 编码形态 <盘符>%3A/...；盘符字母前面不能是字母数字，否则 JSON 转义假阳性）。 <!-- doc-hygiene:allow -->
 LOCAL_PATH_RE = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|[A-Za-z]%3[Aa][\\/])")
 
 # 行内豁免标记：教学示例与「字面量即证据」的行打在行尾，该行整行豁免。
@@ -420,6 +420,63 @@ def _markdown_files(info: SkillInfo) -> List[Tuple[str, Path]]:
     return files
 
 
+# 代码扫描的排除目录：测试夹具里的盘符是**测试数据**（如 "E:\\media"），不是硬编码路径。 <!-- doc-hygiene:allow -->
+_CODE_SCAN_SKIP_DIRS = ("test", "tests", "fixtures", "__pycache__")
+
+
+def _code_comment_files(info: SkillInfo) -> List[Tuple[str, Path]]:
+    """scripts/ 下参与「本机绝对路径」检查的代码文件 [(相对路径, 实体)]。
+
+    只扫技能自己写的脚本；测试目录排除（盘符字面量是测试数据）。
+    """
+    out: List[Tuple[str, Path]] = []
+    for path in info.script_files():
+        rel = info.relative(path)
+        parts = rel.split("/")
+        if any(part in _CODE_SCAN_SKIP_DIRS for part in parts):
+            continue
+        out.append((rel, path))
+    return out
+
+
+def _iter_code_comments(path: Path):
+    """逐行产出代码文件里的**注释文本** [(行号, 注释内容)]。
+
+    只取注释，不取字符串字面量与正则 —— 后者常含盘符样式的字符类（如 [\\\\/]），
+    是模式描述而非真实路径。py 取 # 之后；mjs/js 取 // 之后与 /* */ 块注释。
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return
+    suffix = path.suffix.lower()
+    in_block = False
+    for idx, line in enumerate(text.splitlines(), start=1):
+        if suffix == ".py":
+            pos = line.find("#")
+            if pos != -1:
+                yield idx, line[pos + 1:]
+            continue
+        # mjs / js
+        stripped = line.strip()
+        if in_block:
+            yield idx, stripped
+            if "*/" in stripped:
+                in_block = False
+            continue
+        if stripped.startswith("/*"):
+            body = stripped[2:]
+            if "*/" in body:
+                yield idx, body.split("*/")[0]
+            else:
+                in_block = True
+                yield idx, body
+            continue
+        pos = line.find("//")
+        if pos != -1:
+            yield idx, line[pos + 2:]
+
+
 def validate_skill(
     skill_dir: Path,
     max_lines: int = DEFAULT_SKILL_MD_MAX_LINES,
@@ -570,7 +627,8 @@ def validate_skill(
             )
 
     # ---- 本机绝对路径（warn） ------------------------------------------
-    # 口径复用 idea-backend 的 LOCAL_PATH_RE（不另造正则）；扫 SKILL.md 与 references/ 下的 md。
+    # 口径复用 idea-backend 的 LOCAL_PATH_RE（不另造正则）；扫 SKILL.md 与 references/ 下的 md，
+    # 以及 scripts/ 下代码文件的**注释部分**（代码里的盘符字面量多为正则/测试数据，不算硬编码）。
     if FORBID_WINDOWS_PATHS:
         for rel, path in _markdown_files(info):
             for idx, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -582,6 +640,21 @@ def validate_skill(
                         _enforcement_level("forbid_windows_paths"),
                         "path.windows",
                         "%s 含本机绝对路径「%s」：文档里只写仓库相对路径" % (rel, found.group(0)),
+                        file=rel,
+                        line=idx,
+                    )
+
+        for rel, path in _code_comment_files(info):
+            for idx, comment in _iter_code_comments(path):
+                if DOC_HYGIENE_ALLOW in comment:
+                    continue
+                found = LOCAL_PATH_RE.search(comment)
+                if found:
+                    add(
+                        _enforcement_level("forbid_windows_paths"),
+                        "path.windows",
+                        "%s 注释里含本机绝对路径「%s」：绝对路径只进 .env，代码与注释都不写死"
+                        % (rel, found.group(0)),
                         file=rel,
                         line=idx,
                     )

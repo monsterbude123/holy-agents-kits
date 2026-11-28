@@ -19,7 +19,7 @@ export const ENV_KEYS = [
   'dot_env_path',
 ];
 
-/** repos 根目录配置项：可把仓库本体放到项目根之外（如统一放 D:\workspace\GitHub） */
+/** repos 根目录配置项：可把仓库本体放到项目根之外（如统一放大盘的 GitHub 目录） */
 export const REPOS_DIR_ENV = 'GITHUB_KNOWLEDGE_HELPER_REPOS_DIR';
 
 /**
