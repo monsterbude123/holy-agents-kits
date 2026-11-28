@@ -103,6 +103,10 @@ SCRIPT_LINK_RE = re.compile(r"scripts/([A-Za-z0-9_./-]+\.(?:py|mjs))")
 # （盘符形态 D:/... 与 URL 编码形态 d%3A/...；盘符字母前面不能是字母数字，否则 JSON 转义假阳性）。
 LOCAL_PATH_RE = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|[A-Za-z]%3[Aa][\\/])")
 
+# 行内豁免标记：教学示例与「字面量即证据」的行打在行尾，该行整行豁免。
+# 与 human-docs 的 check-doc-hygiene.sh 共用同一标记（登记处说明见 scripts/gates/EXCEPTIONS.md）。
+DOC_HYGIENE_ALLOW = "<!-- doc-hygiene:allow -->"
+
 # 正文里出现这类变量名说明技能需要密钥配置，应配套 .env.example（运行时协议 §5.2）
 ENV_HINT_RE = re.compile(r"\b[A-Z][A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD)\b")
 
@@ -570,6 +574,8 @@ def validate_skill(
     if FORBID_WINDOWS_PATHS:
         for rel, path in _markdown_files(info):
             for idx, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+                if DOC_HYGIENE_ALLOW in line:
+                    continue  # 行内豁免：教学示例 / 字面量即证据的行
                 found = LOCAL_PATH_RE.search(line)
                 if found:
                     add(

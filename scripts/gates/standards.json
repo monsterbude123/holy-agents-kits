@@ -47,5 +47,11 @@
       "AGENTS.md",
       ".agents/skills/*/SKILL.md"
     ]
+  },
+  "doc_hygiene": {
+    "exclude_globs": [
+      "skills/*/references/vendor/*",
+      "skills/*/fixtures/*"
+    ]
   }
 }
