@@ -348,11 +348,11 @@ npx holy-agents-kits install jenkins-cli --force
 
 ### video-study —— 视频学习加工
 
-**可观察行为**：把一个视频（课程/技术分享/讲座/教程/播客）加工成可直接用的学习材料：转写+全片采样摸底 → 按章节深挖关键段并抽关键帧 → 产出图文笔记 `note.md` 与结构化学习包 `study/`（必产导航、逐主题原理深挖、术语速查；选配概念迁移表、题库、动手验收标准、前置知识清单）。每个数字标时间戳可溯源，`[填空]` 标出必须学习者本人补真实经历的位置。
+**可观察行为**：把一个视频（课程/技术分享/讲座/教程/播客）加工成可直接用的学习材料：转写+全片采样摸底 → 按章节深挖关键段并抽关键帧 → 产出图文笔记 `note.md` 与结构化学习包 `study/`（必产导航、逐主题原理深挖、术语速查；选配概念迁移表、题库、动手验收标准、前置知识清单）。每个数字标时间戳可溯源，`[填空]` 标出必须学习者本人补真实经历的位置。时间戳来源按「画面编号卡/烧录字幕 > 转写自带时间轴」取，交付前跑 `scripts/check-output.py` 自检四类机械项。
 
-**用法**：说「视频学习」「看视频学」「整理视频笔记」「视频转学习包」「这个视频讲了什么」，agent 先问学习者画像（背景/目标/缺口），再走五步：立档 → 摸底 → 深挖 → 笔记 → 学习包 → 自检交付。
+**用法**：说「视频学习」「看视频学」「整理视频笔记」「视频转学习包」「这个视频讲了什么」，agent 先问学习者画像（背景/目标/缺口），再走五步：立档 → 摸底 → 深挖 → 笔记 → 学习包 → 自检交付。画像只影响选配模块，必产三件可先开工。
 
-**边界**：机械层复用宿主已有视频工具（video-agent-kit / video2code / ffmpeg 降级），没有转写能力就停下报告，不手搓 ASR；不做剪辑渲染，不管出题评分训练循环。
+**边界**：机械层复用宿主已有视频工具（video-agent-kit / video2code / 宿主自带多模态 ASR / ffmpeg 降级），既无 ASR 又无字幕文件才停下报告，不手搓 ASR；不做剪辑渲染，不管出题评分训练循环。
 
 ## 仓库结构
 
@@ -379,7 +379,7 @@ holy-agents-kits/
 │   ├── baidu-netdisk-mcp/          SKILL.md + references/ + scripts/（网盘点库 + 移动器 + 传输层）
 │   ├── github-kownledge-helper/    SKILL.md + references/ + scripts/（CLI + 库 + 命令 + 测试）
 │   ├── generic-storage-sync/       SKILL.md + references/ + SPEC.md + scripts/（驱动 + 协调器 + 生命周期 + CLI）
-│   └── video-study/                SKILL.md + references/（工具对照 + 笔记格式 + 学习包规范）
+│   └── video-study/                SKILL.md + references/（工具对照 + 笔记格式 + 学习包规范）+ scripts/（产物自检）
 ├── bin/cli.js                      安装器（零依赖）
 ├── FEEDBACK.md                     issue 上报入口与必填信息
 └── package.json
