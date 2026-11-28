@@ -56,11 +56,11 @@ JDK 放 `<workspace>\jdks\temurin-25-win`，`bin/java -version` 验证。**JDK �
       <name value="temurin-25" />
       <type value="JavaSDK" />
       <version value="openjdk version &quot;25.0.5&quot;" />
-      <homePath value="D:/workplace/jdks/temurin-25-win" />
+      <homePath value="<JDK安装根>" />
       <roots>
         <classPath>
           <root type="composite">
-            <root url="jrt://D:/workplace/jdks/temurin-25-win!/lib" type="simple" />
+            <root url="jrt://<JDK安装根>!/lib" type="simple" />
           </root>
         </classPath>
         <sourcePath>
@@ -92,7 +92,7 @@ JDK 放 `<workspace>\jdks\temurin-25-win`，`bin/java -version` 验证。**JDK �
   <component name="TrustedProjects">
     <option name="TRUSTED_PROJECT_PATHS">
       <map>
-        <entry key="D:/workplace/code/<project>" value="true" />
+        <entry key="<项目根>" value="true" />
       </map>
     </option>
   </component>

@@ -22,7 +22,7 @@ IDEA 的 TS 能力分两层，别混：
 - JetBrains Marketplace 上 JavaScript and TypeScript 插件（id 22069）的兼容产品是 `["IDEA_PRO","PYCHARM_PRO"]`，**不含社区版的 `IDEA`**——所以在社区版里补装语言插件这条路走不通（可用的只有免费的 JavaScript Debugger 插件 id 17562，它只管调试，不管语言服务）。
 - JetBrains 文档说 JS/TS 插件 "is bundled and enabled in IntelliJ IDEA by default" —— 这里的 "IntelliJ IDEA" 指 Ultimate。**社区版安装里根本没有这个插件目录**，实测已确认（见下）。
 
-本机实测（2026-11-20）：`D:/workplace/idea-2026.2.5`，`productCode=IC`，62 个捆绑插件里没有 `javascript-impl` / `javascript-frontend` / `nodejs`，配置目录 `%APPDATA%/JetBrains/IdeaIC2026.2/options/` 下也没有 `javascriptLanguageService.xml` / `typescriptLanguageService.xml` / `nodejs.xml`。
+本机实测（2026-11-20）：`<IDEA安装根>`（2026.2.5），`productCode=IC`，62 个捆绑插件里没有 `javascript-impl` / `javascript-frontend` / `nodejs`，配置目录 `%APPDATA%/JetBrains/IdeaIC2026.2/options/` 下也没有 `javascriptLanguageService.xml` / `typescriptLanguageService.xml` / `nodejs.xml`。
 
 **判定脚本**：`bash scripts/setup-env.sh probe <IDEA安装根>` 会输出 `IDEA_EDITION=` 与 `IDEA_TS_PLUGINS=`。
 

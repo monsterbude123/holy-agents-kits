@@ -68,8 +68,8 @@ unzip -p "<sideLoadDir>/lib/jetbrains-index-mcp-plugin-<ver>.jar" META-INF/plugi
 
 | 坑 | 现象 | 解法 |
 |---|---|---|
-| node 读 MSYS 路径 | `ENOENT: D:\tmp\x`（`/tmp/x` 被解析成 `<当前盘>\tmp\x`） | 传给 node 前 `cygpath -m`（`/tmp/x` → `C:/Users/<u>/AppData/Local/Temp/x`） |
-| Git Bash 判 `-d "C:/..."` | 恒假 | `cygpath -u` 转成 `/c/...` 再判/拷贝 |
+| node 读 MSYS 路径 | `ENOENT: D:\tmp\x`（`/tmp/x` 被解析成 `<当前盘>\tmp\x`） | 传给 node 前 `cygpath -m`（`/tmp/x` → `C:/Users/<u>/AppData/Local/Temp/x`） | <!-- doc-hygiene:allow --> |
+| Git Bash 判 `-d "C:/..."` | 恒假 | `cygpath -u` 转成 `/c/...` 再判/拷贝 | <!-- doc-hygiene:allow --> |
 | `grep` 是 ugrep | `grep 'pat' /c/path` → 「invalid option」（把路径当选项） | 用 `node -e` / `awk` / 脚本内联列表 |
 | `ide_search_text` 的 context 过滤 | `context=code` 可能少命中 | 拿不准就用 `context=all` + 读文件复核 |
 

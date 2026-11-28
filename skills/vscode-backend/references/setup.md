@@ -96,7 +96,7 @@ code --list-extensions | grep bifrost
 1. **位置基准不一致**：扩展自己的 schema 文本写 `position.line` 是 “One-based line number”，**实现是零基准**。
    实测：传 216（当作 1-based）→ 落到第 217 行的 `Date.now()`，返回的是 **Date 的引用**；传 215 → 正好命中 `getImageCacheStats`。
    ⇒ **位置一律按零基准给**（行、列都是）。
-2. **uri 必须是 `file:///d:/...` 这种三斜杠形式**；只给 `filePath` 或裸路径会报 `Unable to read file '\'`。
+2. **uri 必须是 `file:///d:/...` 这种三斜杠形式**；只给 `filePath` 或裸路径会报 `Unable to read file '\'`。 <!-- doc-hygiene:allow -->
 
 ## 5. 工具面（19 个）
 

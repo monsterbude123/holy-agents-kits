@@ -101,7 +101,7 @@ launchInspectionsOffline(scope, outputDir, runGlobalToolsOnly, results)  // = pe
 反编译命令（IDE 自带 FernFlower；**decompiler 类版本 69 → 必须用 JDK25 跑**，temurin-24 报 UnsupportedClassVersionError）：
 ```bash
 unzip -o -j <jar> '<entry>*.class' -d <clsdir>   # IDE 运行中 jar 被锁，先拷 jar 或先关 IDE
-D:/workplace/jdks/temurin-25-win/bin/java.exe -cp "D:\workplace\idea-2026.2.5\plugins\java-decompiler\lib\java-decompiler.jar" \
+<JDK安装根>/bin/java.exe -cp "<IDEA安装根>\plugins\java-decompiler\lib\java-decompiler.jar" \
   org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler -dgs=1 <clsdir> <outdir>
 ```
 网络事实（2026-11-17 实测）：`api.github.com` 走 `127.0.0.1:10808` 代理可用（tag→SHA：`git/refs/tags/idea/2026.2.5` → commit `46153841961a…`；contents API 返回 base64）；`raw.githubusercontent.com` 与 `cdn.jsdelivr.net` 该代理下均不可用。
