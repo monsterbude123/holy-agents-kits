@@ -247,8 +247,8 @@ tools:
 
 | 坑 | 现象 | 解法 |
 |---|---|---|
-| node 读 MSYS 路径 | `ENOENT: D:\tmp\x`（`/tmp/x` 被当成 `D:\tmp\x`） | 传给 node 前 `cygpath -m` |
-| Git Bash 判 `-d "C:/..."` | 恒假（认不出盘符形式） | `cygpath -u` 转成 `/c/...` 再判/拷贝 |
+| node 读 MSYS 路径 | `ENOENT: D:\tmp\x`（`/tmp/x` 被当成 `D:\tmp\x`） | 传给 node 前 `cygpath -m` | <!-- doc-hygiene:allow --> |
+| Git Bash 判 `-d "C:/..."` | 恒假（认不出盘符形式） | `cygpath -u` 转成 `/c/...` 再判/拷贝 | <!-- doc-hygiene:allow --> |
 | `grep` 是 ugrep | `grep '^X=' /c/path` → 「invalid option」（把路径当选项） | 用 `node -e` / `awk` / 脚本内联列表 |
 | `DeferredToolCall` 包装层 | 数组参数被转成 object → 参数校验失败 | 数组参数走 `mcp-call.sh` 兜底 |
 | `ide_search_text` 的 context 过滤 | `context=code` 扫 `"jobs/"` 返回 0 命中，实际 38 处 | **一律 context=all + 读文件复核**，别信过滤 |

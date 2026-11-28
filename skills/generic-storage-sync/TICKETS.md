@@ -177,7 +177,7 @@
 - **文档要求**：
   - `SKILL.md`：合法 YAML frontmatter（`name` + `description`）、主轴决策表、正文 **≤ 150 行**、末尾仓库级反馈入口；
   - `references/` 三篇互相引用且**无孤儿文档**（SKILL.md 必须链到每一篇），单篇 ≤ 300 行；
-  - **全文清零本机绝对路径**（`D:\` / `C:/` 等），配置一律走 `.agents/.env`；
+  - **全文清零本机绝对路径**（盘符根路径等），配置一律走 `.agents/.env`；
   - `references/rules.md` 承载 TKT-06 的四铁律。
 - **验收标准 (DoD)**：
   - 上述 9 条命令均可运行，`status` 能输出本地与各介质差异；

@@ -267,7 +267,7 @@
 
 ## 附：版本门禁的机器事实（2026-11-20 实测，非文档）
 
-- 本机 IDEA：`D:/workplace/idea-2026.2.5`，`product-info.json` 的 `productCode` = **IC**（社区版），
+- 本机 IDEA：`<IDEA安装根>`（2026.2.5），`product-info.json` 的 `productCode` = **IC**（社区版），
   `version` = 2026.2.5，`buildNumber` = 262.12573.28。
 - 该安装的 `plugins/` 共 62 个插件，**不含** `javascript-impl` / `javascript-frontend` /
   `nodejs` 等 JS/TS 插件栈——社区版不捆绑它们。

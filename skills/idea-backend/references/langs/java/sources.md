@@ -9,7 +9,7 @@
 > 与本机 IDEA 2026.2.5 差一个次版本，条目以 2026.2 为准）。
 >
 > 本机事实（2026-11-22 实测）：IDEA **IdeaIC 2026.2.5**（社区版，`productCode=IC`）、
-> JDK **OpenJDK 25.0.5.1 LTS**（`D:/workplace/jdk-25/jdk-25.0.5.1`，JAVA_HOME 已设到用户级环境变量，
+> JDK **OpenJDK 25.0.5.1 LTS**（`<JDK安装根>`，JAVA_HOME 已设到用户级环境变量，
 > 机器事实记在 `config.json` 的 `toolchains.java`，不入库、不分发）。本机**没有** Maven/Gradle，
 > 因此本分册的清单判据全部是**离线可跑**的：JDK 工具链事实 + 文件/状态断言。
 
@@ -159,12 +159,12 @@
 
 ## 附：本机实测事实（2026-11-22）
 
-- IDEA：`D:/workplace/idea-2026.2.5`，`product-info.json` 的 `productCode` = **IC**（社区版）、
+- IDEA：`<IDEA安装根>`（2026.2.5），`product-info.json` 的 `productCode` = **IC**（社区版）、
   `version` = 2026.2.5、`buildNumber` = 262.12573.28 → **JVM 语言栈全版本捆绑，社区版即可用**；
   `plugins/` 下有 `java` 与 `kotlin` 目录。
 - JDK：**本机原本一个 JDK 都没有**（`JAVA_HOME` 未设、`java` 不在 PATH）。已装
   **OpenJDK 25.0.5.1 LTS**（Oracle 官方 GA 包，2026-11-17 构建）到
-  `D:/workplace/jdk-25/jdk-25.0.5.1`，`JAVA_HOME` 已设到**用户级**环境变量，
+  `<JDK安装根>`，`JAVA_HOME` 已设到**用户级**环境变量，
   用户 PATH 前置了 `<JDK>\bin`（用户 PATH 512 → 549 字符，未触及 setx 的 1024 上限）。
   选 25 的依据：JDK 25 是 LTS，且是 IDEA 2026.x 的 LTS 对齐档（IDEA 2026.2 支持的语言级别
   上探 Java 27，Java 25 这一档带稳定特性）。

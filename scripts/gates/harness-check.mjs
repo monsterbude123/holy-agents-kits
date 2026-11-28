@@ -29,10 +29,12 @@ const pyArgs = [
 ];
 const vibeArgs = ["skills/vibe-coding-standards/scripts/validate_vibe_docs.sh", "."];
 const deadArgs = ["skills/rules-layer-governance/templates/check-dead-refs.sh"];
+const hygArgs = ["skills/human-docs/scripts/check-doc-hygiene.sh", "."];
 const applied = {
   validate_skill_argv: ["python", ...pyArgs],
   vibe_argv: ["bash", ...vibeArgs],
   dead_refs_argv: ["bash", ...deadArgs],
+  doc_hygiene_argv: ["bash", ...hygArgs],
 };
 
 const r1 = run("python", pyArgs);
@@ -93,11 +95,13 @@ function parseShellIssues(text) {
 
 const r2 = run("bash", vibeArgs);
 const r3 = run("bash", deadArgs);
+const r4 = run("bash", hygArgs);
 
 const checkers = [
   { name: "validate_skill", exit_code: r1.status, issues: pyIssues },
   { name: "validate_vibe_docs", exit_code: r2.status, issues: parseShellIssues(r2.stdout) },
   { name: "check_dead_refs", exit_code: r3.status, issues: parseShellIssues(r3.stdout) },
+  { name: "check_doc_hygiene", exit_code: r4.status, issues: parseShellIssues(r4.stdout) },
 ];
 const ok = !schemaFailed && checkers.every((c) => c.exit_code === 0);
 

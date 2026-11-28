@@ -22,3 +22,10 @@
 
 # `.agents/.env` 是本机运行时凭据文件，由使用者创建、不入库 —— 它不是死引用
 except-dead-refs: .agents/.env
+
+### 机器路径族的豁免走行内标记（不登记在本文件）
+
+`check-doc-hygiene.sh`（human-docs）与 `validate_skill.py` 的 forbid_windows_paths 共用
+**行内豁免标记** `<!-- doc-hygiene:allow -->`：打在命中行行尾，该行整行豁免——
+教学示例、「字面量即证据」的行专用。与上面两种形式互不通用：机器路径族的豁免随行走
+（行号登记会随编辑漂移，标记不会），死引用族的豁免登记在本文件。

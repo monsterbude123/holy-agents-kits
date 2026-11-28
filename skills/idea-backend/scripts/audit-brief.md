@@ -37,8 +37,8 @@ bash <skill>/scripts/mcp-call.sh index <tool> '<json-args>'
 输出即 `content[0].text`。**不要手搓 curl/JSON-RPC**（花括号拼接、路径转换、ANSI 转义都踩过）。
 
 **Windows/MSYS 坑**（跑 bash 脚本时）：
-- 传给 node 的路径先 `cygpath -m`（`/tmp/x` → `C:/.../x`，否则 node 报 `ENOENT: D:\tmp\x`）；
-- Git Bash 判目录用 `cygpath -u "C:/..."` → `/c/...`；
+- 传给 node 的路径先 `cygpath -m`（`/tmp/x` → `C:/.../x`，否则 node 报 `ENOENT: D:\tmp\x`）； <!-- doc-hygiene:allow -->
+- Git Bash 判目录用 `cygpath -u "C:/..."` → `/c/...`； <!-- doc-hygiene:allow -->
 - `grep` 是 ugrep，`grep 'pat' /c/path` 会把路径当选项 → 用 `node -e` 或 `awk`。
 
 ---

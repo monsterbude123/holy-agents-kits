@@ -12,7 +12,7 @@
 | 运行时 | ZCode（兼容 Claude Code 的 agent 运行时），有子代理（`Agent` 工具） |
 | `claude` CLI | **没有**。`scripts/run_eval.py` / `run_loop.py` / `improve_description.py` 依赖 `claude -p`，本机跑不了 |
 | `present_files` 工具 | **没有**。要交付文件就直接把绝对路径告诉用户 |
-| Python | Windows 上 `python` 未必在 PATH。依次试 `python` → `python3` → `py -3`；本机 anaconda 在 `C:/Users/admin/anaconda3/python.exe` |
+| Python | Windows 上 `python` 未必在 PATH。依次试 `python` → `python3` → `py -3`；anaconda 装机用 `conda info --base` 定位基目录 |
 | 技能安装路径 | `skills/` = **要交付出去的技能**；`.agents/skills/` = 研发期用的元技能（如本技能） |
 | 浏览器 | 有 MCP 浏览器工具，但不一定有图形界面；评测视图优先用 `--static` 输出独立 HTML |
 
