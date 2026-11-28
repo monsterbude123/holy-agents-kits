@@ -15,7 +15,7 @@
       "forbid_windows_paths": true,
       "max_reference_depth": 1,
       "enforcement": {
-        "forbid_windows_paths": "warn",
+        "forbid_windows_paths": "error",
         "max_reference_depth": "warn"
       }
     },
