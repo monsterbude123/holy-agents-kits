@@ -28,7 +28,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, appendFileS
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { parseArgs, num } from './args.mjs';
+import { parseArgs, num, human } from './args.mjs';
 import { sha256File } from './hashes.mjs';
 
 // 解析可执行文件：Windows 上 Node 的 spawn 不走 shell，PATH 里的 shell 包装脚本
@@ -80,12 +80,6 @@ const asJson = !!opt.json;
 
 const out = [];
 const say = (...a) => { const s = a.map(String).join(' '); out.push(s); if (!asJson) process.stderr.write(s + '\n'); };
-function human(b) {
-  const u = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let i = 0, n = Number(b) || 0;
-  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return n.toFixed(1) + u[i];
-}
 // 归档名必须 ASCII：网盘路径、跨平台 shell、各家解压工具都更稳。
 // 原名与 sha256 记在包内 manifest.json 和台账里，可完整还原。
 function asciiName(name) {
@@ -320,7 +314,10 @@ function cmdUpload() {
   // 「还缺哪几片」，续传是服务端驱动的。详见 references/transfer-protocol.md。
   const transfer = join(dirname(fileURLToPath(import.meta.url)), 'transfer.mjs');
   const r = spawnSync(process.execPath, [transfer, 'upload',
-    `--file=${packPath}`, `--remote=${remote}`, `--slice=${opt.slice || '4MB'}`],
+    `--file=${packPath}`, `--remote=${remote}`,
+    // 切片大小不写死：transfer 会按会员等级自动选（SVIP=32MB，比 4MB 档快 70%）；
+    // 用户显式给 --slice 时才透传。
+    ...(opt.slice ? [`--slice=${opt.slice}`] : [])],
     { encoding: 'utf8', windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
   if (r.stderr) process.stderr.write(r.stderr);
   let payload = null;

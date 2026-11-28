@@ -225,5 +225,38 @@ eq('值里有等号', parseArgs(['--k=a=b'])['k'], 'a=b');
   rmSync(dir, { recursive: true, force: true });
 }
 
+// ---- parseLoose / extractJson（MCP 返回解析——P0「全绿但一次都没传出去」的护栏） ----
+{
+  const { extractJson, parseLoose } = await import('./xpan-api.mjs');
+
+  // 完整对象
+  const full = extractJson('{"errno":0,"info":[{"errno":0}]}');
+  eq('完整对象 depth=0', full.depth, 0);
+  eq('完整对象可 parse', JSON.parse(full.json).errno, 0);
+
+  // MCP 实测形状：前导换行 + 末尾少一个 }
+  const truncated = extractJson('\n{"errno":12,"info":[{"errno":-9}],"request_id":883');
+  eq('截断文本 depth=1', truncated.depth, 1);
+  const repaired = parseLoose(truncated.json);
+  eq('补括号后 parse 成功', repaired.errno, 12);
+  eq('补括号后 info 可读', repaired.info[0].errno, -9);
+
+  // 字符串里的花括号不干扰配对
+  const withBraces = extractJson('{"show_msg":"body:{\\"errno\\":2}","errno":-1}');
+  eq('字符串内花括号不干扰', withBraces.depth, 0);
+  eq('字符串内花括号可 parse', JSON.parse(withBraces.json).errno, -1);
+
+  // 多 content 块拼接（前有日志行）
+  const glued = parseLoose('日志行\n{"errno":0,"info":[]}');
+  eq('多块拼接解析', glued.errno, 0);
+
+  // 完全不是 JSON
+  eq('非 JSON 返回 null', parseLoose('params error: nothing here'), null);
+
+  // 嵌套对象（info 数组 + 嵌套）
+  const nested = parseLoose('{"a":{"b":[1,2,{"c":3}]}}');
+  eq('嵌套结构解析', nested.a.b[2].c, 3);
+}
+
 console.log(`${failed ? 'FAIL' : 'OK'}：${passed} 通过，${failed} 失败`);
 process.exit(failed ? 1 : 0);

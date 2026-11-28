@@ -44,3 +44,11 @@ export function parseSize(v, d) {
   if (mult === undefined) throw new Error(`无法解析体积单位：${v}（支持 B/K/KB/M/MB/G/GB/T/TB）`);
   return Math.floor(Number(m[1]) * mult);
 }
+
+// 字节数的人读格式（B/KB/MB/GB/TB）。三个脚本都要展示体量，只留这一份。
+export function human(b) {
+  const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let i = 0, n = Number(b) || 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return n.toFixed(1) + u[i];
+}

@@ -160,3 +160,55 @@ export async function listDir(token, dir, limit = 100) {
   const r = await xpanGet(token, '/xpan/file?method=list', { dir, order: 'name', limit: String(limit) });
   return r.list || [];
 }
+
+// 查账号会员等级（0 普通 / 1 会员 / 2 超级会员）—— 决定百度允许的切片大小上限。
+// 失败时抛错，由调用方决定回落策略（transfer 回落 4MB 安全档）。
+export async function getUserVipType(token) {
+  const r = await xpanGet(token, '/xpan/nas?method=uinfo', {});
+  return Number(r.vip_type || 0);
+}
+
+// ---- 宽松 JSON 解析（MCP 返回实测会截断 / 拼块 / 前导换行） ----
+
+// 从一段可能夹杂多个 JSON 的文本里，扫出**第一个 JSON 对象**。
+// 按花括号配对计数，跳过字符串字面量里的花括号。
+// 返回 { json, depth }：depth > 0 表示文本**被截断**、还缺 depth 个右花括号。
+export function extractJson(text) {
+  const start = text.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return { json: text.slice(start, i + 1), depth: 0 };
+    }
+  }
+  return { json: text.slice(start), depth };
+}
+
+// 宽松解析：MCP 的 file_move 返回实测**末尾少一个 `}`**（花括号 2 vs 1），
+// 而且返回可能由多个 content 块拼成、前面还带换行。
+// 直接 JSON.parse(整段) 会失败 → 真实 errno/info 全丢，只剩一句「no-info」。
+// 修法：按括号配对扫出第一个 JSON 对象；若还缺右括号就补齐再 parse。
+export function parseLoose(raw) {
+  const got = extractJson(raw);
+  if (!got) return null;
+  for (const cand of [got.json, raw.trim()]) {
+    if (!cand) continue;
+    try { return JSON.parse(cand); } catch { /* 试补括号 */ }
+    const g2 = extractJson(cand);
+    if (g2 && g2.depth > 0) {
+      try { return JSON.parse(g2.json + '}'.repeat(g2.depth)); } catch { /* 继续 */ }
+    }
+  }
+  return null;
+}

@@ -25,7 +25,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
-import { parseArgs, num, parseSize } from './args.mjs';
+import { parseArgs, num, parseSize, human } from './args.mjs';
 
 const CFG = process.env.ZCODE_CFG || localConfig().zcodeConfig
   || join(homedir(), '.zcode', 'cli', 'config.json');
@@ -39,12 +39,6 @@ const opt = parseArgs(argv.slice(1));
 const out = [];
 const say = (...a) => out.push(a.map((x) => (typeof x === 'string' ? x : String(x))).join(' '));
 
-function human(b) {
-  const u = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-  let i = 0, n = Number(b) || 0;
-  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return n.toFixed(i === 0 ? 0 : 1) + u[i];
-}
 
 const HELP = [
   '百度网盘本地盘点库',
@@ -307,10 +301,14 @@ function cmdDup() {
 
 function cmdDeep() {
   const md = num(opt['max-depth'], 4);
-  const rows = db.prepare('SELECT path,size,depth FROM nodes WHERE is_dir=0 AND depth>? ORDER BY depth DESC LIMIT 60').all(md);
-  const total = db.prepare('SELECT COUNT(*) c FROM nodes WHERE is_dir=0 AND depth>?').get(md).c;
+  // depth 列是**相对各扫描根**的层数（每次 scan 从 root 记 0），
+  // 全扫与深扫混在一起时语义错位 —— 这里改用**绝对层数**（路径里的斜杠数），
+  // 与 dirSizes 的汇总口径一致，跨扫描可比。
+  const ABS = "(LENGTH(path) - LENGTH(REPLACE(path, '/', '')))";
+  const rows = db.prepare(`SELECT path,size,${ABS} d FROM nodes WHERE is_dir=0 AND ${ABS}>? ORDER BY d DESC LIMIT 60`).all(md);
+  const total = db.prepare(`SELECT COUNT(*) c FROM nodes WHERE is_dir=0 AND ${ABS}>?`).get(md).c;
   say(`\n=== 路径层级 > ${md} 的文件 (共 ${total} 个) ===`);
-  for (const r of rows) say(`${String(r.depth).padStart(2)}层 ${human(r.size).padStart(9)}  ${r.path}`);
+  for (const r of rows) say(`${String(r.d).padStart(2)}层 ${human(r.size).padStart(9)}  ${r.path}`);
   return { maxDepth: md, total, rows };
 }
 

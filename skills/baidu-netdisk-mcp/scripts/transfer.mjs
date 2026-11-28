@@ -19,9 +19,9 @@ import { createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, sta
 import { dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { parseArgs, num, parseSize } from './args.mjs';
-import { digestFile, sha256File, SLICE_BYTES } from './hashes.mjs';
-import { resolveToken, precreate, uploadSlice, createFile, downloadLink, listDir, timedFetch, XpanError } from './xpan-api.mjs';
+import { parseArgs, num, parseSize, human } from './args.mjs';
+import { digestFile, sha256File, sliceSizeFor, SLICE_BYTES } from './hashes.mjs';
+import { resolveToken, precreate, uploadSlice, createFile, downloadLink, listDir, timedFetch, getUserVipType, XpanError } from './xpan-api.mjs';
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -30,7 +30,12 @@ const opt = parseArgs(argv.slice(1));
 // 日志实时写 stderr（不缓存）：出错时也不需要重放——重放会让每行出现两遍。
 const say = (...a) => { process.stderr.write(a.map(String).join(' ') + '\n'); };
 
-const DEFAULT_SLICE = SLICE_BYTES.free; // 4MB：普通用户也能用的下限
+// 默认切片大小按**会员等级自动选**（SVIP=32MB，实测 4.8MB/s，比 4MB 档快 70%）。
+// 探测失败（离线 / token 问题）回落 4MB 安全档；--slice 显式指定时优先。
+async function defaultSlice(token) {
+  try { return sliceSizeFor(await getUserVipType(token)); }
+  catch { return SLICE_BYTES.free; }
+}
 const DEFAULT_STATE = join(homedir(), '.baidu-transfer-state');
 
 // 百度只认这三种切片大小（按会员等级）。传别的，服务端会在某一片上拒收 ——
@@ -45,12 +50,6 @@ function checkSlice(size) {
   return size;
 }
 
-function human(b) {
-  const u = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let i = 0, n = Number(b) || 0;
-  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return n.toFixed(1) + u[i];
-}
 
 // ---- 进度条（stderr，\r 原地刷新，节流 200ms） ----
 // 速度用**滑动窗口**（最近 5 秒），不是全程平均——平均会把刚加速的一段抹平。
@@ -168,7 +167,7 @@ async function cmdUpload() {
   // 想仍然只在应用数据区里传，就显式给 --remote=/apps/bdpan/... 。
 
   const token = resolveToken();
-  const sliceSize = checkSlice(parseSize(opt.slice, DEFAULT_SLICE));
+  const sliceSize = checkSlice(parseSize(opt.slice, await defaultSlice(token)));
   const retries = num(opt.retry, 3);
   const stateDir = opt['state-dir'] ? resolve(opt['state-dir']) : DEFAULT_STATE;
   const dryRun = !!opt['dry-run'];
@@ -289,7 +288,6 @@ async function cmdDownload() {
 
   const token = resolveToken();
   const parent = remote.slice(0, remote.lastIndexOf('/')) || '/';
-  const name = remote.slice(remote.lastIndexOf('/') + 1);
 
   // 找 fsid（远端路径 → fsid）
   const items = await listDir(token, parent, 200);
@@ -321,10 +319,18 @@ async function cmdDownload() {
   if (existsSync(to) && (!total || statSync(to).size === total)) {
     say(`  目标已存在且大小一致，跳过：${to}`);
     const sha = sha256File(to);
-    if (opt['expect-sha256'] && opt['expect-sha256'] !== sha) {
-      throw new Error(`已存在文件的 sha256 与期望不符：期望 ${opt['expect-sha256']}，实际 ${sha}`);
+    if (expect && expect !== sha) {
+      throw new Error(`已存在文件的 sha256 与期望不符：期望 ${expect}，实际 ${sha}`);
     }
     return { to, bytes: total, sha256: sha, skipped: true };
+  }
+
+  // 校验期望值：显式 --expect-sha256 优先；没给就查台账里这条 remote **上传时**记下的
+  // sha256 —— 「传上去再下回来」的闭环校验就不需要手工复制哈希了。
+  let expect = opt['expect-sha256'] || null;
+  if (!expect) {
+    const hit = lookupLedgerSha(remote);
+    if (hit) { expect = hit.sha256; say(`  台账里有这条的上传记录（${hit.ts}），自动按其 sha256 校验`); }
   }
 
   const headers = done > 0 ? { Range: `bytes=${done}-` } : {};
@@ -359,9 +365,9 @@ async function cmdDownload() {
 
   // 校验：sha256 是我们的尺子（网盘 md5 复现不出来，不能用）
   const sha = sha256File(to);
-  if (opt['expect-sha256']) {
-    if (opt['expect-sha256'] !== sha) {
-      throw new Error(`sha256 校验失败：期望 ${opt['expect-sha256']}，实际 ${sha}`);
+  if (expect) {
+    if (expect !== sha) {
+      throw new Error(`sha256 校验失败：期望 ${expect}，实际 ${sha}`);
     }
     say(`  sha256 校验通过：${sha}`);
   } else {
@@ -374,14 +380,17 @@ async function cmdDownload() {
     seconds: Number(seconds.toFixed(2)), speed_bps: Math.round(speed), resumed: done > 0,
   };
   appendLedger(entry);
-  return { to, bytes: written, sha256: sha, seconds: Number(seconds.toFixed(2)), speed_bps: Math.round(speed), resumed: done > 0 };
+  return { to, bytes: written, sha256: sha, sha256Source: opt['expect-sha256'] ? 'flag' : (expect ? 'ledger' : 'none'), seconds: Number(seconds.toFixed(2)), speed_bps: Math.round(speed), resumed: done > 0 };
 }
 
 // ================= 哈希 / 台账 =================
 async function cmdHash() {
   const file = opt.file ? resolve(opt.file) : null;
   if (!file) throw new Error('需要 --file=<本地文件>');
-  const sliceSize = checkSlice(parseSize(opt.slice, DEFAULT_SLICE));
+  // hash 的分片展示要和 upload 实际用的一致 → 同样按会员等级自动选。
+  // 想纯离线算就显式给 --slice=4MB。
+  const token = resolveToken();
+  const sliceSize = checkSlice(parseSize(opt.slice, await defaultSlice(token)));
   const d = digestFile(file, sliceSize);
   say(`  sha256 ${d.sha256}`);
   say(`  md5    ${d.md5}`);
@@ -428,6 +437,23 @@ function readTailLines(p, maxLines) {
     return text.split('\n').filter(Boolean).slice(-maxLines);
   } finally { closeSync(fd); }
 }
+// 从台账尾部找这条 remote 最近一次 upload 记录的 sha256。
+// 台账只增不减，尾部 500 条基本覆盖近期上传；找不到返回 null（调用方跳过自动校验）。
+function lookupLedgerSha(remote) {
+  const p = ledgerPath();
+  if (!existsSync(p)) return null;
+  try {
+    const lines = readTailLines(p, 500);
+    for (let i = lines.length - 1; i >= 0; i--) {
+      let e; try { e = JSON.parse(lines[i]); } catch { continue; }
+      if (e && e.op === 'upload' && e.remote === remote && e.sha256) {
+        return { sha256: e.sha256, ts: e.ts };
+      }
+    }
+  } catch { /* 台账坏了不影响下载主流程 */ }
+  return null;
+}
+
 function cmdLedger() {
   const p = ledgerPath();
   if (!existsSync(p)) { say(`台账不存在：${p}`); return { ledger: p, count: 0, entries: [] }; }
