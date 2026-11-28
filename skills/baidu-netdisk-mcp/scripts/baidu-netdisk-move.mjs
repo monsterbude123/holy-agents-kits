@@ -27,6 +27,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { parseArgs, num } from './args.mjs';
+import { parseLoose } from './xpan-api.mjs';
 
 const CFG = process.env.ZCODE_CFG || localConfig().zcodeConfig
   || join(homedir(), '.zcode', 'cli', 'config.json');
@@ -36,7 +37,7 @@ const opt = parseArgs(argv);
 const log = (...a) => process.stderr.write(a.map(String).join(' ') + '\n');
 
 if (!opt.spec) {
-  log('用法: node baidu-netdisk-move.mjs --spec=spec.json [--batch=10] [--async=0] [--result=out.json]');
+  log('用法: node baidu-netdisk-move.mjs --spec=spec.json [--batch=10] [--async=0|1] [--wait-timeout=30分钟] [--result=out.json]');
   process.stdout.write(JSON.stringify({ ok: false, error: '缺少 --spec' }) + '\n');
   process.exit(1);
 }
@@ -76,49 +77,6 @@ async function mcpStart() {
   await call('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'netdisk-move', version: '1' } });
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
   mcp = { child, call };
-}
-
-// 从一段可能夹杂多个 JSON 的文本里，扫出**第一个 JSON 对象**。
-// 按花括号配对计数，跳过字符串字面量里的花括号。
-// 返回 { json, depth }：depth > 0 表示文本**被截断**、还缺 depth 个右花括号。
-function extractJson(text) {
-  const start = text.indexOf('{');
-  if (start < 0) return null;
-  let depth = 0, inStr = false, esc = false;
-  for (let i = start; i < text.length; i++) {
-    const ch = text[i];
-    if (inStr) {
-      if (esc) esc = false;
-      else if (ch === '\\') esc = true;
-      else if (ch === '"') inStr = false;
-      continue;
-    }
-    if (ch === '"') inStr = true;
-    else if (ch === '{') depth++;
-    else if (ch === '}') {
-      depth--;
-      if (depth === 0) return { json: text.slice(start, i + 1), depth: 0 };
-    }
-  }
-  return { json: text.slice(start), depth };
-}
-
-// 宽松解析：MCP 的 file_move 返回实测**末尾少一个 `}`**（花括号 2 vs 1），
-// 而且返回可能由多个 content 块拼成、前面还带换行。
-// 直接 JSON.parse(整段) 会失败 → 真实 errno/info 全丢，只剩一句「no-info」。
-// 修法：按括号配对扫出第一个 JSON 对象；若还缺右括号就补齐再 parse。
-function parseLoose(raw) {
-  const got = extractJson(raw);
-  if (!got) return null;
-  for (const cand of [got.json, raw.trim()]) {
-    if (!cand) continue;
-    try { return JSON.parse(cand); } catch { /* 试补括号 */ }
-    const g2 = extractJson(cand);
-    if (g2 && g2.depth > 0) {
-      try { return JSON.parse(g2.json + '}'.repeat(g2.depth)); } catch { /* 继续 */ }
-    }
-  }
-  return null;
 }
 
 const callTool = async (name, args) => {
@@ -236,7 +194,7 @@ try {
       const submitted = !!(j && j.taskid) || (j && j.errno === 0 && !info.length);
       // 整批被拒（参数错、批次过大…）：这是**调用没发出去**，不是「已完成」。
       // 必须硬失败 —— 否则幂等回查会把它变成「已就位」，335 项全绿而一次都没传。
-      if (j && j.errno !== undefined && j.errno !== 0 && j.errno !== 12 && !info.length) {
+      if (j && j.errno !== undefined && j.errno !== 0 && !info.length) {
         throw new Error(`file_move 被拒：errno=${j.errno} ${j.show_msg || ''}`.trim());
       }
       let bOk = 0, bBad = 0;
@@ -263,7 +221,7 @@ try {
         if (bad) { bBad++; fail++; log(`    FAIL ${x.path}  errno=${it?.errno ?? 'no-info'}`); }
         else { bOk++; ok++; }
       }
-      log(`[batch ${Math.floor(i / BATCH) + 1}] ${batch.length} 项 -> 成功 ${bOk} 失败 ${bBad}`);
+      log(`[batch ${Math.floor(i / step) + 1}] ${batch.length} 项 -> 成功 ${bOk} 失败 ${bBad}`);
       // 目标目录的内容每批都在变 → 缓存必须失效，否则「目标已在」永远按搬之前的旧列表判，
       // 已经就位的文件会被误报成失败（实测 335 项里 11 项误报）。
       for (const d of new Set(batch.map((x) => x.dest))) dirCache.delete(d);

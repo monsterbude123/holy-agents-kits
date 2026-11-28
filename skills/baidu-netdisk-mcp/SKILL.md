@@ -21,9 +21,9 @@ license: MIT
 - **传文件（要进度/续传/校验）** = `transfer.mjs upload|download` —— 原生分片上传，每片一个进度刻度，断点续传，sha256 校验
   （**只支持单文件**，目录要先打包；续传会在本地文件已改变时自动作废重来）
 - **只查一两个目录** = 直接用 `file_list` / `file_meta` 工具，别灌库
-- **岔路**：`scan` 撞上限 → 调大 `--depth`/`--max-dirs` 增量续灌；`move` 报 -9 → 源已被搬走，回目标核对；报 -8 → 目录太大，改 `--async=1`
+- **岔路**：`scan` 撞上限 → 调大 `--depth`/`--max-dirs` 增量续灌；`move` 报 -9 → 源已被搬走，回目标核对；报 -8 → 要么目录太大改 `--async=1`，要么目标已有同名（网盘文件名**大小写不敏感**）→ 目标名去重
 
-**动手前先扫一眼 `references/counter-examples.md`**——里面是这次实际踩过的 33 个坑
+**动手前先扫一眼反例清单**——`references/counter-examples.md`（网盘与用法 19 条）+ `references/counter-examples-runtime.md`（脚本与运行时 14 条），合计 33 个坑
 （枚举算体积会少一半、按 100 判断末页、`make_dir` 默认重命名、`async=1` 误判失败…），
 照着避坑比读脚本源码快得多。
 
@@ -75,7 +75,7 @@ node "$SK/scripts/baidu-netdisk-db.mjs" dup --min-size=50MB
 node "$SK/scripts/baidu-netdisk-db.mjs" deep --max-depth=5
 node "$SK/scripts/baidu-netdisk-db.mjs" find --name=safetensors --path=/01_AI
 node "$SK/scripts/baidu-netdisk-db.mjs" plan --spec=spec.json --out=move_plan.json
-node "$SK/scripts/baidu-netdisk-move.mjs" --spec=spec.json --batch=10
+node "$SK/scripts/baidu-netdisk-move.mjs" --spec=spec.json --batch=10   # 大目录加 --async=1 --wait-timeout=30
 
 # 模型备份到网盘（加密压缩 → 上传 → 台账）
 node "$SK/scripts/model-backup.mjs" pick --root=<模型库根> --include=loras --limit=5
@@ -85,7 +85,7 @@ node "$SK/scripts/model-backup.mjs" restore --pack=<包.zip> --to=<还原目录>
 node "$SK/scripts/model-backup.mjs" upload --pack=<包.zip> --remote=/apps/bdpan/model-backup/x.zip
 
 # 传输层（原生分片：进度 + 速度 + 断点续传 + sha256 校验）
-node "$SK/scripts/transfer.mjs" upload   --file=<本地文件> --remote=/99_索引/x.zip --slice=32MB
+node "$SK/scripts/transfer.mjs" upload   --file=<本地文件> --remote=/99_索引/x.zip   # 切片按会员等级自动选，可 --slice=32MB
 node "$SK/scripts/transfer.mjs" download --remote=/apps/bdpan/x.zip --to=<本地文件> --expect-sha256=<hex>
 node "$SK/scripts/transfer.mjs" hash     --file=<本地文件>
 node "$SK/scripts/transfer.mjs" ledger
@@ -120,7 +120,7 @@ Git Bash 下跑这两个脚本必须加 `MSYS2_ARG_CONV_EXCL='*'`，否则 `/课
 
 - `references/api-quirks.md` —— 百度网盘 MCP 的九个 API 陷阱（分页每页 10 条、`make_dir` 默认重命名、`category` 字段不可靠、`file_move` 的 async 语义、depth 记的是相对层数、路径含 `+`/全角括号报 1002、`file_list` 不返回 mtime、`file_upload_by_content` 不覆盖同名、ZCode 里显示红色/toolCount=0）；**排查报错或算出来的体量不对时读**
 - `references/dirsize.md` —— 拿目录**权威体积**的正确接口（openapi 的 `method=dirsize` 提交任务 + web 端 `/mid_mucw/api/ostp/file/taskQuery` 取结果）、为什么自己枚举加总会偏低、以及怎么从网盘 JS bundle 里挖出未知接口；**要目录大小、或要查「网盘到底调了哪个接口」时读**
-- `references/counter-examples.md` —— **反例清单**（网盘 API 与用法）：这次实际犯过的 33 个错（枚举算体积、猜接口名、`category` 判目录、按 100 判断末页、`make_dir` 默认 rtype、`async=1` 误判失败、`AbortSignal.timeout` 提前退出、Git Bash 路径转换、并发开 mcp-remote、以为 MCP 没有删除…）；**动手前先扫一眼，能省掉几小时的错**
+- `references/counter-examples.md` —— **反例清单**（网盘 API 与用法）：19 条（另 14 条脚本与运行时层的在 `counter-examples-runtime.md`，合计 33）（枚举算体积、猜接口名、`category` 判目录、按 100 判断末页、`make_dir` 默认 rtype、`async=1` 误判失败、`AbortSignal.timeout` 提前退出、Git Bash 路径转换、并发开 mcp-remote、以为 MCP 没有删除…）；**动手前先扫一眼，能省掉几小时的错**
 - `references/counter-examples-runtime.md` —— **反例清单（脚本与运行时）**：参数解析的 NaN、块内 `const` 遮蔽、MCP 返回格式与参数类型、幂等回查掩盖失败、扫描不剪枝 —— **改脚本前读**
 - `references/model-backup-method.md` —— **模型备份方法（我们自己的做法）**：选模型 → 收集同名附件 → zip 加密 → 上传网盘 → 台账，含目录命名约定、密码约定、还原流程与踩过的坑；**要备份模型到网盘、或要还原某个备份时读**
 - `references/transfer-protocol.md` —— **传输协议与实测边界**：百度原生分片上传三段式（precreate/superfile2/create）、服务端驱动的续传、下载 dlink 与 Range、**两级哈希口径**（片级 md5 / 文件级 sha256 / 网盘 md5 为何不能当尺子）、bdpan CLI 的实测边界与速度基线；**要传大文件、排查上传下载、或做同步之前读**

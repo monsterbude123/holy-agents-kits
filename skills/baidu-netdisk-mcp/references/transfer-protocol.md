@@ -174,7 +174,7 @@ node "$SK/scripts/transfer.mjs" hash     --file=<本地> [--slice=32MB]
 node "$SK/scripts/transfer.mjs" ledger
 ```
 
-- `--slice`：百度只认 4MB / 16MB / 32MB（按会员等级）。**切片大小变了，已传的片就作废**。
+- `--slice`：百度只认 4MB / 16MB / 32MB（按会员等级）。**不给 `--slice` 时按账号会员等级自动选**（探测失败回落 4MB）。**切片大小变了，已传的片就作废**。
 - 续传状态默认落 `~/.baidu-transfer-state/`，可用 `--state-dir` 改。
 - 传/下的台账（sha256、字节、速度、是否续传）在同一目录的 `ledger.jsonl`。
 - 远端路径必须是**网盘绝对路径**（以 `/` 开头、不含 `..`）。原生协议能写整个网盘，
