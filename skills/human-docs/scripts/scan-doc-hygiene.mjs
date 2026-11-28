@@ -42,7 +42,7 @@ for (const f of list) {
     continue;
   }
   lines.forEach((s, i) => {
-    if (s.includes("doc-hygiene:allow")) return;
+    if (s.includes("<!-- doc-hygiene:allow -->")) return; // 完整标记串,与 skill_schema.py 同口径(子串形态会把讲到豁免机制的正文行误豁免)
     if (re.test(s)) console.log("A\t" + f + "\t" + (i + 1) + "\t" + s.trim().slice(0, 80));
     let m;
     link.lastIndex = 0;

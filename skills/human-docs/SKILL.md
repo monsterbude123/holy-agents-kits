@@ -136,6 +136,6 @@ bash skills/human-docs/scripts/check-doc-hygiene.sh <目标目录>
 6. 文档主张抽查对回真实行为(file:line 级),对不上就是文档撒谎,改文档或改行为——**file:line 证据只进自检工件与 agent 手记,不进甲层正文**;
 7. agent 手记可机读性:DAG 任务表的依赖列 / 索引地图的层级,能被脚本解析。
 
-无门禁的项目:把本技能 scripts/ 下的检查器复制进自己的 hooks,让「必跑」由工具强制而不是自觉。(两层的干净都靠机器守)
+无门禁的项目:把本技能的 `scripts/check-doc-hygiene.sh` 与 `scripts/scan-doc-hygiene.mjs` 两个文件复制进自己的 hooks,让「必跑」由工具强制而不是自觉。(两层的干净都靠机器守)
 
 > 反馈：本技能来自 [holy-agents-kits](https://github.com/monsterbude123/holy-agents-kits)。发现错误、缺步骤或命令跑不通，直接开 issue：https://github.com/monsterbude123/holy-agents-kits/issues/new
