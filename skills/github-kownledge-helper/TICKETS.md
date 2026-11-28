@@ -237,3 +237,39 @@
   - `node scripts/cli.mjs verify-docs` → `=== verify-docs: total=50 🟢5 🟡44 🔴1 ===`（exit 1 来自 1 个仓索引新鲜度 <0.3 的**既有数据状态**，非迁移引入；查询链路本身可用）；
   - 旧目录已删除（旧 TS CLI 目录 / vitest 配置 / TS 配置 / `pnpm-lock.yaml` / `pnpm-workspace.yaml` / `node_modules/`）；
   - `docs/.docmap/config.json` **未改**：索引范围只覆盖 `docs/`（rules.md §5「索引目标：仅 docs/ 目录」），本就不含 `.agents/`，条件不成立。
+
+---
+
+<a id="ghk-10"></a>
+
+## GHK-10 · clone 三处能力缺口修复 + add-batch 批量收录
+
+- **状态**：`done`
+- **类型**：能力补齐（真实事故倒逼）
+- **触发场景**：归档 10 个 GitHub 仓到百度网盘，本机到 GitHub 带宽仅 ~1 MB/s。
+- **涉及文件**：`scripts/lib/cloneStrategy.mjs`（新）、`scripts/commands/add-batch.mjs`（新）、`scripts/commands/add.mjs`、`scripts/lib/git.mjs`、`scripts/cli.mjs`、`references/rules.md`、`references/workflows.md`、`references/commands.md`、`SKILL.md`
+- **三个缺口（均已核实，非推测）**：
+  1. **clone 超时硬编码 10 分钟** —— `add.mjs` 原写死 `timeoutMs: 10 * 60_000`。大仓在 ~1 MB/s 下必然超时（orca 完整 clone 需 60+ 分钟）。
+  2. **超时只 kill 直接子进程** —— `git.mjs` 原 `child.kill('SIGTERM')`。git clone 派生的 `git-remote-https` / `git index-pack` 变孤儿继续下载；父命令已判失败、后续写 manifest 不执行，而 git clone 失败时又自删目标目录 → **已下载 2.3 GB 全部丢失**。
+  3. **rules.md §4.5 承诺的浅克隆降级无实现** —— 规则写了「连续失败 2 次可降级为浅克隆重试」，代码里搜不到任何 `--depth` → 规则与实现脱节。
+- **动作**：
+  1. 新增 `lib/cloneStrategy.mjs`：超时默认 60 分钟且可配；完整 clone 失败自动降级 `--depth 1 --single-branch` 重试；失败必清半成品目录。
+  2. `lib/git.mjs` 新增 `killTree()`：Windows `taskkill /T /F`，POSIX 独立进程组（`detached` spawn）+ `kill(-pid)`。
+  3. 新增 `add-batch`：顺序执行、已收录自动跳过（断点续跑）、单仓失败不中断整批、结束统一收口 manifest。
+  4. `add` 新增 `--shallow` / `--timeout <分钟>`。
+- **关键实测数据**（写进 rules.md 作为判据）：
+  - orca 完整 clone 3.7 GB / 默认分支工作树 263 MB —— **差 14 倍，差值几乎全在 `refs/pull/*` 与侧分支**（orca 有 41782 个 PR ref、21976 个 head）。
+  - 浅克隆耗时对比：orca 完整 clone 60+ 分钟 → 浅克隆 332 秒。
+- **验收标准 (DoD)**：
+  - `node --test "scripts/test/*.test.mjs"` → 112 passed / 0 failed（原 94）；
+  - 新增 `cloneStrategy.test.mjs`（11 例）与 `addBatch.test.mjs`（7 例）；
+  - `add-batch` 真实跑通「已收录仓自动跳过」（3 仓跳过、0 clone）；
+  - rules.md §4 与 workflows.md §1 决策树反映新行为；
+  - 全局副本经 `install --force` 同步，sha256 逐文件核对 63 个文件零差异。
+- **验收证据**：
+  - `node --test "scripts/test/*.test.mjs"` → `# tests 112 / # pass 112 / # fail 0`；
+  - `node scripts/cli.mjs add-batch mattpocock/skills debpalash/VoiceStudio cloudflare/security-audit-skill` → 「⊘ ×3 已收录，跳过 / 共 3，成功 0，跳过 3，失败 0」；
+  - `node scripts/cli.mjs --help` → 命令表出现 `add-batch`；
+  - `node bin/cli.js install github-kownledge-helper --force` → sha256 核对 63 文件、差异 0；
+  - 提交：`7b78156`（能力修复 + 新增命令）、`948e934`（0.16.0 版本与 CHANGELOG）。
+
