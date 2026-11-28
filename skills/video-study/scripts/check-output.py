@@ -7,8 +7,12 @@
 产物目录 = 含 note.md / study/ / images/ 的那一层。检查:
   1. note.md 里引用的本地图片都在盘上
   2. study/ 下每个 .md（README.md 除外）都被 study/README.md 导航到
-  3. note.md 每个「讲点」下的要点都带 mm:ss 时间戳
-  4. README 若宣称「术语速查（N 条）」，术语表实际行数等于 N
+  3. note.md 每个「讲点」下的要点都带 mm:ss 时间戳（弹点与数字列表都认；
+     note-format 骨架规定用弹点，数字列表本身属格式偏差，但漏检比误报危险——
+     报出来让作者顺手改回弹点或补时间戳，两个问题一起解决）
+  4. README 若宣称「术语速查（N 条）」，全部术语文件的表格数据行**求和**等于 N
+     （spec 规定术语速查单件必产；出现多个含「术语」的文件时按总和核对，
+     免得静默只查第一个造成假绿）
 
 退出码: 0 全过；1 有失败项；2 目录结构不对（缺 note.md 或 study/）。
 """
@@ -17,7 +21,7 @@ import sys
 from pathlib import Path
 
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)\s]+)")
-BULLET_RE = re.compile(r"^\s*[-*]\s+(.*)$")
+BULLET_RE = re.compile(r"^\s*(?:[-*]|\d+[.、)])\s+(.*)$")
 TS_RE = re.compile(r"\d{1,2}:\d{2}")
 CLAIM_RE = re.compile(r"术语[^\n]{0,24}?(\d+)\s*条|(\d+)\s*条术语")
 SEP_ROW_RE = re.compile(r"^\|[\s:\-|]+\|$")
@@ -71,28 +75,33 @@ def check_timestamps(note_text, problems):
     print("[%s] 讲点缺时间戳 %d 条" % ("OK" if not missing else "FAIL", len(missing)))
 
 
+def _table_rows(path):
+    rows = 0
+    for line in read(path).splitlines():
+        if not line.strip().startswith("|") or SEP_ROW_RE.match(line.strip()):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if cells and cells[0] and not set(cells[0]) <= set("-: "):
+            rows += 1
+    return max(rows - 1, 0)  # 去掉各文件自己的表头
+
+
 def check_glossary(study, readme_text, problems):
     glossaries = sorted(p for p in study.glob("*.md") if "术语" in p.name)
     claims = [m.group(1) or m.group(2) for m in CLAIM_RE.finditer(readme_text)]
     if not glossaries:
         print("[SKIP] 未找到术语文件，跳过条数核对")
         return
-    rows = 0
-    for line in read(glossaries[0]).splitlines():
-        if not line.strip().startswith("|") or SEP_ROW_RE.match(line.strip()):
-            continue
-        cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if cells and cells[0] and not set(cells[0]) <= set("-: "):
-            rows += 1
-    rows = max(rows - 1, 0)  # 去掉表头
+    rows = sum(_table_rows(p) for p in glossaries)
+    names = "、".join(p.name for p in glossaries)
     if not claims:
         print("[SKIP] README 未宣称术语条数（实际 %d 条）" % rows)
         return
     claimed = int(claims[0])
     ok = claimed == rows
     if not ok:
-        problems.append("术语条数不一致：README 宣称 %d 条，%s 实际 %d 条" % (claimed, glossaries[0].name, rows))
-    print("[%s] 术语条数 README=%d 实际=%d" % ("OK" if ok else "FAIL", claimed, rows))
+        problems.append("术语条数不一致：README 宣称 %d 条，实际 %d 条（%s）" % (claimed, rows, names))
+    print("[%s] 术语条数 README=%d 实际=%d（%d 个文件：%s）" % ("OK" if ok else "FAIL", claimed, rows, len(glossaries), names))
 
 
 def main():

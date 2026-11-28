@@ -34,7 +34,7 @@ description: 把一个视频（课程/技术分享/讲座/教程/播客）加工
 python "$HOME/.agents/skills/video-study/scripts/check-output.py" <产物目录>
 ```
 
-脚本全绿后，再按 [study-package-spec.md](references/study-package-spec.md) 自检清单过它覆盖不到的判断题（无臆测、图文对应、口径一致）。交付时报告产出清单 + 给学习者一条建议使用路径（先读什么后读什么）。
+`python` 不在 PATH 时依次试 `python3` / `py -3`（Windows）。脚本全绿后，再按 [study-package-spec.md](references/study-package-spec.md) 自检清单过它覆盖不到的判断题（无臆测、图文对应、口径一致）。交付时报告产出清单 + 给学习者一条建议使用路径（先读什么后读什么）。
 
 ## 分叉与退出
 

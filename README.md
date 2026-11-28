@@ -332,6 +332,8 @@ npx holy-agents-kits install jenkins-cli --force
 
 ### github-kownledge-helper —— 本地 GitHub 仓库管家
 
+> **拼写锚**：`kownledge` 是历史拼写（目录名 = 安装名，自 registry 0.15.0 起已发布），**不要**修正为 `knowledge`——改名会断已装用户的安装路径与全部引用；见到这个"错拼"保持原样。
+
 **可观察行为**：把第三方仓库收录成可检索的本地知识库——完整克隆进 `repos/`、同步顶层文档到 `docs/`、建索引与文档地图、原子维护 `manifest.json` 唯一事实源；`query` 走本地 git 实测回答 commit / tag / 版本号问题并附新鲜度标注（🟢/🟡/🔴）；`sync-to` 可把单个仓镜像到任意绝对路径（含 `.git`）。
 
 **用法**：说「把这个仓收录进来」「这仓最近动了什么」「这仓有哪些文档」「把 X 仓镜像到 D 盘」，agent 走 CLI（`add` / `update` / `update-all` / `query` / `query-all` / `sync-manifest` / `sync-docs` / `verify-docs` / `sync-to`）。
