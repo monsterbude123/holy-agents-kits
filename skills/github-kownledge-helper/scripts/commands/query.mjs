@@ -3,7 +3,7 @@
 // 复用：lib/queryFlags.mjs（解析）/ lib/queryModes.mjs（各模式）/ lib/queryFormat.mjs（格式化）
 
 import { join } from 'node:path';
-import { getProjectRoot } from '../lib/paths.mjs';
+import { getProjectRoot, reposRoot } from '../lib/paths.mjs';
 import { readManifest } from '../lib/manifest.mjs';
 import { parseQueryFlags } from '../lib/queryFlags.mjs';
 import { formatRecent } from '../lib/queryFormat.mjs';
@@ -75,7 +75,7 @@ export async function runQuery(args, cwd = process.cwd()) {
 
   const ctx = {
     repo,
-    absRepo: join(root, repo.path),
+    absRepo: join(reposRoot(cwd), repo.path),
     manifest: readManifest(cwd),
   };
 

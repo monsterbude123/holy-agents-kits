@@ -31,7 +31,7 @@ description: 本地 GitHub 仓库管家技能。管理本地第三方仓库收�
 ## §2 核心红线
 
 - **只读追踪**：绝对禁止修改第三方仓库源码（除非用户显式要求 patch）。
-- **空间受限**：禁止在项目根（`.agents/.env` 声明的路径）之外写任何文件。
+- **空间受限**：禁止在项目根（`.agents/.env` 声明的路径）之外写任何文件 —— 唯一例外是显式配置的仓库本体落地目录（`GITHUB_KNOWLEDGE_HELPER_REPOS_DIR`，见 [rules.md](references/rules.md) §1）。
 - **唯一事实源**：以 `manifest.json` 为准，原子写入；冲突以 git 实测为准并修正 manifest。
 - **实测答疑**：commit / tag / 版本号必须本地 git 实测，以代码为准；文档引用附带新鲜度（🟢/🟡/🔴）。
 - 详见硬约束清单：[rules.md](references/rules.md)。
@@ -63,7 +63,7 @@ node --test ".agents/skills/github-kownledge-helper/scripts/test/*.test.mjs"   #
 - 库：`scripts/lib/env.mjs` `scripts/lib/envStrict.mjs` `scripts/lib/paths.mjs` `scripts/lib/time.mjs` `scripts/lib/parseRepoInput.mjs` `scripts/lib/git.mjs` `scripts/lib/manifest.mjs` `scripts/lib/buildEntryFromRepo.mjs` `scripts/lib/buildIndex.mjs` `scripts/lib/argv.mjs` `scripts/lib/repoScan.mjs`
 - 库（续）：`scripts/lib/queryFlags.mjs` `scripts/lib/queryFormat.mjs` `scripts/lib/queryGit.mjs` `scripts/lib/queryModes.mjs` `scripts/lib/verifyDocs.mjs` `scripts/lib/verifyIndex.mjs` `scripts/lib/docmapSqlite.mjs` `scripts/lib/mirror.mjs` `scripts/lib/updateLog.mjs` `scripts/lib/cloneStrategy.mjs`
 - 命令：`scripts/commands/add.mjs` `scripts/commands/add-batch.mjs` `scripts/commands/update.mjs` `scripts/commands/update-all.mjs` `scripts/commands/query.mjs` `scripts/commands/sync-manifest.mjs` `scripts/commands/sync-docs.mjs` `scripts/commands/verify-docs.mjs` `scripts/commands/sync-to.mjs`
-- 测试：`scripts/test/helpers.mjs` `scripts/test/env.test.mjs` `scripts/test/envStrict.test.mjs` `scripts/test/query.test.mjs` `scripts/test/queryRepo.test.mjs` `scripts/test/runBuildIndex.test.mjs` `scripts/test/parseRepoInput.test.mjs` `scripts/test/repoScan.test.mjs` `scripts/test/buildEntryFromRepo.test.mjs` `scripts/test/manifestAppend.test.mjs` `scripts/test/mergeEntry.test.mjs` `scripts/test/add.e2e.test.mjs` `scripts/test/addBatch.test.mjs` `scripts/test/cloneStrategy.test.mjs` `scripts/test/syncTo.test.mjs` `scripts/test/verifyDocs.test.mjs` `scripts/test/verifyIndex.test.mjs`
+- 测试：`scripts/test/helpers.mjs` `scripts/test/env.test.mjs` `scripts/test/envStrict.test.mjs` `scripts/test/reposRootConfig.test.mjs` `scripts/test/query.test.mjs` `scripts/test/queryRepo.test.mjs` `scripts/test/runBuildIndex.test.mjs` `scripts/test/parseRepoInput.test.mjs` `scripts/test/repoScan.test.mjs` `scripts/test/buildEntryFromRepo.test.mjs` `scripts/test/manifestAppend.test.mjs` `scripts/test/mergeEntry.test.mjs` `scripts/test/add.e2e.test.mjs` `scripts/test/addBatch.test.mjs` `scripts/test/cloneStrategy.test.mjs` `scripts/test/syncTo.test.mjs` `scripts/test/verifyDocs.test.mjs` `scripts/test/verifyIndex.test.mjs`
 
 ---
 

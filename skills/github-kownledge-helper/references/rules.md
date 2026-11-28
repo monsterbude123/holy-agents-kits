@@ -6,16 +6,23 @@
 
 | 用途 | 路径 | 说明 |
 | --- | --- | --- |
-| 仓库 clone 落地 | `repos/<owner>__<repo>/` | 双下划线分隔，避免同名冲突 |
-| 文档镜像 | `docs/<owner>__<repo>/` | 与 repos 一一对应，doc-map-manager 索引目标 |
-| 仓库清单 | `manifest.json` | 项目根，唯一事实源 |
-| 本地环境配置 | `.agents/.env` | 声明项目根路径与外部脚本位置（不入 git） |
-| 知识索引缓存 | `docs/.docmap/` | doc-map-manager 产物 |
+| 仓库 clone 落地 | `<repos_root>/<owner>__<repo>/` | 双下划线分隔，避免同名冲突；`<repos_root>` 默认 `<项目根>/repos`，可用 `GITHUB_KNOWLEDGE_HELPER_REPOS_DIR` 外置 |
+| 聚合分组 | `<repos_root>/<group>/<owner>__<repo>/` | group 目录名见 [workflows-aggregate.md](./workflows-aggregate.md) §5 |
+| 文档镜像 | `<项目根>/docs/<owner>__<repo>/` | 与 repos 一一对应，doc-map-manager 索引目标（**始终在项目根，不随 repos_root 外移**） |
+| 仓库清单 | `<项目根>/manifest.json` | 项目根，唯一事实源 |
+| 本地环境配置 | `<项目根>/.agents/.env` | 声明项目根路径与外部脚本位置（不入 git） |
+| 知识索引缓存 | `<项目根>/docs/.docmap/` | doc-map-manager 产物 |
 | CLI 工具源码 | `.agents/skills/github-kownledge-helper/scripts/` | 零构建原生 `.mjs`（`lib/` + `commands/` + `cli.mjs`），零 npm 依赖 |
 | CLI 入口 | `scripts/cli.mjs` | 项目根薄转发器 → 技能内 `scripts/cli.mjs`（唯一实现） |
 | CLI 测试 | `.agents/skills/github-kownledge-helper/scripts/test/` | `node:test` + `node:assert/strict`，`*.test.mjs` |
 
-**禁止**：在项目根（由 `.agents/.env` 中 `GITHUB_KNOWLEDGE_HELPER_SPACE` 定义）之外写任何文件。
+**repos 根目录可外置**：`GITHUB_KNOWLEDGE_HELPER_REPOS_DIR`（读 `<项目根>/.agents/.env` 或进程环境变量）把仓库本体放到项目根之外，例如统一放某个大盘的 GitHub 目录。
+
+- **归属原则**：repos 根属于**项目自身**，配置只读 `<项目根>/.agents/.env`，**不走 cwd 向上探测** —— 否则在临时目录里跑测试会命中用户全局 `~/.agents/.env`，把 repos 根解析到真实项目目录。
+- **manifest `path` 语义**：相对 **repos 根**（`<owner>__<repo>` 或 `<group>/<owner>__<repo>`），**不带 `repos/` 前缀**。代码一律用 `reposRoot()` 拼接绝对路径。manifest 因此与 repos 根的实际位置解耦，换机器不用改 manifest。
+- **`docs_path` 语义不变**：相对**项目根**（`docs/<owner>__<repo>`），docs 镜像始终留在项目根（入 git，可追溯）。
+
+**禁止**：在项目根（由 `.agents/.env` 中 `GITHUB_KNOWLEDGE_HELPER_SPACE` 定义）之外写任何文件 —— 唯一例外是显式配置了 `GITHUB_KNOWLEDGE_HELPER_REPOS_DIR` 时的仓库本体落地目录。
 
 **零构建**：新代码一律原生 `.mjs` + Node 内置模块（`node:fs` / `node:path` / `node:crypto` / `node:child_process` / `node:test`），不新增 npm 依赖，不引入编译步骤。
 
@@ -31,9 +38,11 @@
 1. **唯一事实源**：仓库状态以 `manifest.json` 为准；与本地 git 冲突时以 git 实测为准并回写修正。
 2. **原子写入**：读 → 改 → 写回，禁止半写状态。先写临时文件再原子重命名。
 3. **必填字段**：`name` / `owner` / `full_name` / `url` / `path` / `default_branch` / `added_at` / `last_pull_at` / `current_commit` / `current_commit_short` / `current_commit_date`。
+   - `path` **相对 repos 根**（`<owner>__<repo>` 或 `<group>/<owner>__<repo>`），不带 `repos/` 前缀。
+   - `docs_path` 相对**项目根**（`docs/<owner>__<repo>`）。
 4. **时间戳**：ISO 8601 带时区，统一 `Asia/Shanghai`。
 5. **去重**：按 `full_name` 去重，禁止重复收录。
-6. **删除**：用户要求移除仓库时，先删 `repos/<path>` 与 `docs/<path>`，再从 manifest 移除条目。
+6. **删除**：用户要求移除仓库时，先删 `<repos_root>/<path>` 与 `<项目根>/<docs_path>`，再从 manifest 移除条目。
 
 ## 4. clone / pull 规则
 
@@ -74,7 +83,7 @@
 1. **不泄露**：manifest 或仓库中若有 token/密钥，输出时必须脱敏。
 2. **本地配置收口**：本机绝对路径只在 `.agents/.env` 配置，禁止在技能文档与代码中硬编码本机路径。
 3. **不修改第三方源码**：第三方仓库仅做只读追踪，除非用户显式要求 patch。
-4. **repos/ 不入 git**：第三方仓库由 gitignore 排除，不污染本项目版本库。
+4. **repos/ 不入 git**：第三方仓库由 gitignore 排除，不污染本项目版本库。repos 根外置到项目根之外时天然不在本仓版本控制内。
 5. **不留报错脚本**：测试或临时脚本失败必须修复或清理，禁止留存不可跑通脚本。
 
 ## 8. 跨技能职责边界

@@ -7,7 +7,7 @@
 import { join } from 'node:path';
 import { parseRepoInput } from '../lib/parseRepoInput.mjs';
 import { readManifest } from '../lib/manifest.mjs';
-import { projectRoot } from '../lib/paths.mjs';
+import { projectRoot, reposRoot } from '../lib/paths.mjs';
 import { syncTo } from '../lib/mirror.mjs';
 
 /**
@@ -53,7 +53,7 @@ export const def = {
       process.exit(1);
     }
 
-    const sourcePath = join(projectRoot(), entry.path);
+    const sourcePath = join(reposRoot(), entry.path);
     console.log(`=== sync-to: ${repo} -> ${destination} ===`);
     console.log(`  source     : ${sourcePath}`);
     console.log(`  destination: ${destination}`);

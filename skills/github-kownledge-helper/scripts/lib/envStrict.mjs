@@ -19,6 +19,44 @@ export const ENV_KEYS = [
   'dot_env_path',
 ];
 
+/** repos 根目录配置项：可把仓库本体放到项目根之外（如统一放 D:\workspace\GitHub） */
+export const REPOS_DIR_ENV = 'GITHUB_KNOWLEDGE_HELPER_REPOS_DIR';
+
+/**
+ * 解析 repos 根目录。
+ *
+ * 归属原则：repos 根属于**项目自身**，配置读 <root>/.agents/.env，
+ * 不走 cwd 向上探测 —— 否则在 tmpRoot 里跑测试时会命中用户全局
+ * ~/.agents/.env，把 repos 根解析到真实项目目录去。
+ *
+ * 优先级：process.env > <root>/.agents/.env > <root>/repos
+ */
+export function resolveReposDir(root) {
+  const fromEnv = String(process.env[REPOS_DIR_ENV] ?? '').trim();
+  let configured = fromEnv;
+  if (!configured) {
+    const envFile = join(root, '.agents', '.env');
+    if (existsSync(envFile)) {
+      try {
+        const parsed = parseDotEnv(readFileSync(envFile, 'utf-8'));
+        configured = String(parsed[REPOS_DIR_ENV] ?? '').trim();
+      } catch {
+        /* 容错：读不到就退回默认 */
+      }
+    }
+  }
+  if (!configured) return join(root, 'repos');
+  if (!isAbsolute(configured)) {
+    throw new LoadEnvError(
+      `${REPOS_DIR_ENV}=${configured} 不是绝对路径。必须是仓库根目录的绝对路径。`
+    );
+  }
+  if (!existsSync(configured)) {
+    throw new LoadEnvError(`${REPOS_DIR_ENV}=${configured} 路径不存在。`);
+  }
+  return configured;
+}
+
 export class LoadEnvError extends Error {
   constructor(msg) {
     super(`[load_env] ${msg}`);
@@ -100,9 +138,12 @@ export function load_env() {
         'scripts'
       );
 
+    // repos 根目录：默认 <project_root>/repos，可用 REPOS_DIR_ENV 外置到任意绝对路径
+    const reposRoot = resolveReposDir(root);
+
     strictCache = {
       project_root: root,
-      repos_root: join(root, 'repos'),
+      repos_root: reposRoot,
       docs_root: join(root, 'docs'),
       manifest_path: join(root, 'manifest.json'),
       doc_map_scripts: docMapScripts,

@@ -3,7 +3,7 @@
 
 import { existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getProjectRoot } from '../lib/paths.mjs';
+import { getProjectRoot, reposRoot } from '../lib/paths.mjs';
 import { readManifest } from '../lib/manifest.mjs';
 
 // 文档白名单（精确匹配，避免 README.zh.md 等多语言变体污染索引）
@@ -29,7 +29,7 @@ export function runSyncDocs(cwd = process.cwd()) {
   let skipped = 0;
 
   for (const repo of manifest.repos) {
-    const srcDir = join(root, repo.path);
+    const srcDir = join(reposRoot(), repo.path);
     const dstDir = join(root, repo.docs_path);
 
     if (!existsSync(srcDir)) {

@@ -96,7 +96,8 @@ export function buildEntry(absPath, opts) {
 
   if (!shaFull) return null;
   const dir = opts.owner + '__' + opts.repo;
-  const path = opts.group ? 'repos/' + opts.group + '/' + dir : 'repos/' + dir;
+  // path 相对 repos 根（repos 根可配置到项目根之外，故不写死 repos/ 前缀）
+  const path = opts.group ? opts.group + '/' + dir : dir;
   const docsPath = opts.group
     ? 'docs/' + opts.group + '/' + dir
     : 'docs/' + dir;

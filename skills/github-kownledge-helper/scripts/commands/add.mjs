@@ -3,7 +3,7 @@
 
 import { mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { getProjectRoot } from '../lib/paths.mjs';
+import { getProjectRoot, reposRoot } from '../lib/paths.mjs';
 import {
   readManifest,
   writeManifest,
@@ -42,8 +42,9 @@ export async function addRepo(input, cwd = process.cwd()) {
   const url = r.cloneUrl ?? `https://github.com/${fullName}.git`;
   const group = r.group ?? '';
   const dirName = `${r.owner}__${r.repo}`;
-  const relPath = group ? `repos/${group}/${dirName}` : `repos/${dirName}`;
-  const absTarget = join(root, relPath);
+  // path 相对 repos 根（repos 根可配置到项目根之外）
+  const relPath = group ? `${group}/${dirName}` : dirName;
+  const absTarget = join(reposRoot(), relPath);
 
   // 1. 重复检查
   const manifest = readManifest(cwd);

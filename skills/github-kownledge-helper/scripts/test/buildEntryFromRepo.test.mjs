@@ -65,7 +65,7 @@ describe('buildEntryFromRepo', () => {
     assert.strictEqual(entry.owner, 'example');
     assert.strictEqual(entry.full_name, 'example/fixture');
     assert.strictEqual(entry.url, 'https://github.com/example/fixture.git');
-    assert.strictEqual(entry.path, 'repos/example__fixture');
+    assert.strictEqual(entry.path, 'example__fixture');
     assert.strictEqual(entry.docs_path, 'docs/example__fixture');
     assert.strictEqual(entry.group, '');
     assert.strictEqual(entry.default_branch, 'main');
@@ -88,7 +88,7 @@ describe('buildEntryFromRepo', () => {
       group: 'ai-app',
       now: '2026-08-13T12:00:00+08:00',
     });
-    assert.strictEqual(entry.path, 'repos/ai-app/example__fixture');
+    assert.strictEqual(entry.path, 'ai-app/example__fixture');
     assert.strictEqual(entry.docs_path, 'docs/ai-app/example__fixture');
     assert.strictEqual(entry.group, 'ai-app');
   });

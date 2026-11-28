@@ -22,7 +22,7 @@ function makeManifest(proj) {
           owner: 'facebook',
           full_name: 'facebook/react',
           url: 'https://github.com/facebook/react.git',
-          path: 'repos/facebook__react',
+          path: 'facebook__react',
           docs_path: 'docs/facebook__react',
           group: '',
           default_branch: 'main',
@@ -39,7 +39,7 @@ function makeManifest(proj) {
           owner: 'someone',
           full_name: 'someone/repo-in-group',
           url: 'https://github.com/someone/repo-in-group.git',
-          path: 'repos/ai-app/someone__repo-in-group',
+          path: 'ai-app/someone__repo-in-group',
           docs_path: 'docs/ai-app/someone__repo-in-group',
           group: 'ai-app',
           default_branch: 'main',
@@ -69,7 +69,7 @@ describe('resolveRepo', () => {
   it('matches by full_name', () => {
     const r = resolveRepo('facebook/react', proj);
     assert.strictEqual(r?.full_name, 'facebook/react');
-    assert.strictEqual(r?.path, 'repos/facebook__react');
+    assert.strictEqual(r?.path, 'facebook__react');
   });
 
   it('matches by name', () => {
@@ -80,7 +80,7 @@ describe('resolveRepo', () => {
   it('matches entry in group', () => {
     const r = resolveRepo('someone/repo-in-group', proj);
     assert.strictEqual(r?.group, 'ai-app');
-    assert.strictEqual(r?.path, 'repos/ai-app/someone__repo-in-group');
+    assert.strictEqual(r?.path, 'ai-app/someone__repo-in-group');
   });
 
   it('returns null on no match', () => {

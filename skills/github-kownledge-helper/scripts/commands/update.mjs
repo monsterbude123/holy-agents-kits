@@ -7,7 +7,7 @@
 // 长过程：每个阶段（start / fetch / pull / done）必须即时打日志，否则用户视角卡死。
 
 import { join } from 'node:path';
-import { projectRoot } from '../lib/paths.mjs';
+import { reposRoot } from '../lib/paths.mjs';
 import { git, gitStream } from '../lib/git.mjs';
 import { readManifest, writeManifest } from '../lib/manifest.mjs';
 import { nowIsoShanghai } from '../lib/time.mjs';
@@ -18,7 +18,7 @@ import { logStart, logResult, isProgressBar } from '../lib/updateLog.mjs';
  * 不强推，遇非快进/网络失败返回 ok=false + 详细 message
  */
 export async function updateOne(repo, idx, total) {
-  const absPath = join(projectRoot(), repo.path);
+  const absPath = join(reposRoot(), repo.path);
   const before = git(absPath, ['rev-parse', '--short', 'HEAD']);
 
   logStart(idx, total, repo, before);

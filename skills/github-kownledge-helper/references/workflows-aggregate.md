@@ -33,8 +33,8 @@ LS 顶层 → 看到聚合目录名
   "owner": "AIDC-AI",
   "full_name": "AIDC-AI/Pixelle-Video",
   "group": "ai-app",                          // ← 新增
-  "path": "repos/ai-app/AIDC-AI__Pixelle-Video",
-  "docs_path": "docs/ai-app/AIDC-AI__Pixelle-Video"
+  "path": "ai-app/AIDC-AI__Pixelle-Video",   // ← 相对 repos 根
+  "docs_path": "docs/ai-app/AIDC-AI__Pixelle-Video"  // ← 相对项目根
 }
 ```
 

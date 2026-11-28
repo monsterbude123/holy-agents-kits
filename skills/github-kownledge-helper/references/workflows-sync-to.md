@@ -16,7 +16,7 @@
 Step 1 — 解析仓库标识
   ├─ 接受 owner/repo 或 owner__repo
   ├─ 校验 manifest 中存在（按 full_name）
-  └─ 目标源：repos/<owner>__<repo>  或  repos/<group>/<owner>__<repo>
+  └─ 目标源：<repos_root>/<path>（path 相对 repos 根，见 rules.md §1）
 
 Step 2 — 校验源 + 目标
   ├─ 源目录存在 + 含 .git（git clone 落地物）

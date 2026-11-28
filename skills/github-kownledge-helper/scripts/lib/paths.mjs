@@ -11,7 +11,7 @@
 
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { get, load_env } from './envStrict.mjs';
+import { get, load_env, resolveReposDir } from './envStrict.mjs';
 
 /** env 提供的项目根（保证存在 + 含 manifest.json） */
 export function projectRoot() {
@@ -19,10 +19,17 @@ export function projectRoot() {
   return get('project_root');
 }
 
-/** env 提供的 repos/ 根目录 */
-export function reposRoot() {
-  load_env();
-  return get('repos_root');
+/**
+ * repos/ 根目录。
+ *
+ * 跟随 cwd 定位到的项目根解析（不是全局 env 的 project_root）：
+ * 测试在 tmpRoot 跑（process.chdir）时，repos 根必须落在 tmpRoot 下，
+ * 否则会命中用户全局 ~/.agents/.env 里的配置，解析到真实项目目录去。
+ * cwd 找不到项目根时回退到 env 的 project_root。
+ */
+export function reposRoot(cwd = process.cwd()) {
+  const root = getProjectRoot(cwd);
+  return resolveReposDir(root);
 }
 
 /** env 提供的 docs/ 根目录 */
@@ -64,7 +71,7 @@ export function getProjectPaths(cwd = process.cwd()) {
   const root = getProjectRoot(cwd);
   return {
     root,
-    repos: join(root, 'repos'),
+    repos: reposRoot(),
     docs: join(root, 'docs'),
     manifest: join(root, 'manifest.json'),
   };
